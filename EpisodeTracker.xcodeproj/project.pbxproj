@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FA54EDA42F858FD900CEDE1A /* CatalogModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA32F858FD900CEDE1A /* CatalogModels.swift */; };
+		FA54EDA62F858FE100CEDE1A /* CatalogParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA52F858FE100CEDE1A /* CatalogParser.swift */; };
+		FA54EDA82F858FFB00CEDE1A /* CatalogCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA72F858FFB00CEDE1A /* CatalogCacheStore.swift */; };
+		FA54EDAA2F85900300CEDE1A /* CatalogRemoteDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA92F85900300CEDE1A /* CatalogRemoteDataSource.swift */; };
+		FAE8CA1A2F85271E0023458E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE8CA192F85271E0023458E /* SettingsView.swift */; };
+		FAE8CA1E2F854A040023458E /* KeyboardDismissModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		FA49ECAF2F85085800521E9B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +36,12 @@
 		FA49EC9F2F85085600521E9B /* EpisodeTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EpisodeTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA49ECAE2F85085800521E9B /* EpisodeTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EpisodeTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA49ECB82F85085800521E9B /* EpisodeTrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EpisodeTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA54EDA32F858FD900CEDE1A /* CatalogModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogModels.swift; sourceTree = "<group>"; };
+		FA54EDA52F858FE100CEDE1A /* CatalogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogParser.swift; sourceTree = "<group>"; };
+		FA54EDA72F858FFB00CEDE1A /* CatalogCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogCacheStore.swift; sourceTree = "<group>"; };
+		FA54EDA92F85900300CEDE1A /* CatalogRemoteDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogRemoteDataSource.swift; sourceTree = "<group>"; };
+		FAE8CA192F85271E0023458E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardDismissModifier.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -79,6 +94,12 @@
 				FA49ECB12F85085800521E9B /* EpisodeTrackerTests */,
 				FA49ECBB2F85085800521E9B /* EpisodeTrackerUITests */,
 				FA49ECA02F85085600521E9B /* Products */,
+				FAE8CA192F85271E0023458E /* SettingsView.swift */,
+				FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */,
+				FA54EDA32F858FD900CEDE1A /* CatalogModels.swift */,
+				FA54EDA52F858FE100CEDE1A /* CatalogParser.swift */,
+				FA54EDA72F858FFB00CEDE1A /* CatalogCacheStore.swift */,
+				FA54EDA92F85900300CEDE1A /* CatalogRemoteDataSource.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -236,6 +257,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAE8CA1E2F854A040023458E /* KeyboardDismissModifier.swift in Sources */,
+				FA54EDA42F858FD900CEDE1A /* CatalogModels.swift in Sources */,
+				FA54EDAA2F85900300CEDE1A /* CatalogRemoteDataSource.swift in Sources */,
+				FA54EDA62F858FE100CEDE1A /* CatalogParser.swift in Sources */,
+				FA54EDA82F858FFB00CEDE1A /* CatalogCacheStore.swift in Sources */,
+				FAE8CA1A2F85271E0023458E /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

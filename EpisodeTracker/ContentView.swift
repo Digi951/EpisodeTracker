@@ -1,61 +1,78 @@
-//
-//  ContentView.swift
-//  EpisodeTracker
-//
-//  Created by Christopher Dieckmann on 07.04.26.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
+    @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
+
+    private var effectiveLibraryTitle: String {
+        let trimmed = libraryTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Meine Hörspiele" : trimmed
+    }
+
+    private var appearanceMode: AppearanceMode {
+        AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        TabView {
+            Tab("Folgen", systemImage: "list.number") {
+                NavigationStack {
+                    EpisodeListView()
+                        .navigationDestination(for: Episode.self) { episode in
+                            EpisodeDetailView(episode: episode)
+                        }
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            switch destination {
+                            case .episode(let episode):
+                                EpisodeDetailView(episode: episode)
+                            case .addEpisode:
+                                EpisodeEditView()
+                            }
+                        }
+                        .navigationTitle(effectiveLibraryTitle)
                 }
             }
-        } detail: {
-            Text("Select an item")
+
+            Tab("Statistiken", systemImage: "chart.bar") {
+                NavigationStack {
+                    StatisticsView()
+                }
+            }
+
+            Tab("Einstellungen", systemImage: "gearshape") {
+                NavigationStack {
+                    SettingsView()
+                }
+            }
+        }
+        .preferredColorScheme(appearanceMode.colorScheme)
+    }
+}
+
+enum AppearanceMode: String, CaseIterable {
+    case light
+    case dark
+    case system
+
+    var title: String {
+        switch self {
+        case .light: "Light"
+        case .dark: "Dark"
+        case .system: "System"
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .light: .light
+        case .dark: .dark
+        case .system: nil
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Episode.self, Mood.self, Universe.self], inMemory: true)
 }
