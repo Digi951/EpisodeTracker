@@ -10,18 +10,12 @@ struct EpisodeListView: View {
     @State private var searchText = ""
     @State private var filterMood: Mood?
     @State private var filterUniverse: Universe?
-    @State private var filterListened: ListenedFilter = .all
     @State private var sortOrder: SortOrder = .number
 
-    enum ListenedFilter: String, CaseIterable {
-        case all = "Alle"
-        case listened = "Gehört"
-        case unlistened = "Nicht gehört"
-    }
-
     enum SortOrder: String, CaseIterable {
+        case recentlyPlayed = "Zuletzt gespielt"
         case number = "Nummer"
-        case title = "Titel"
+        case title = "Titel A-Z"
         case rating = "Bewertung"
     }
 
@@ -45,17 +39,24 @@ struct EpisodeListView: View {
             result = result.filter { $0.universe == filterUniverse }
         }
 
-        switch filterListened {
-        case .all: break
-        case .listened: result = result.filter(\.isListened)
-        case .unlistened: result = result.filter { !$0.isListened }
-        }
-
         if let filterMood {
             result = result.filter { $0.moods.contains(filterMood) }
         }
 
         switch sortOrder {
+        case .recentlyPlayed:
+            result.sort {
+                switch ($0.lastListenedAt, $1.lastListenedAt) {
+                case let (left?, right?):
+                    return left > right
+                case (.some, .none):
+                    return true
+                case (.none, .some):
+                    return false
+                case (.none, .none):
+                    return $0.episodeNumber < $1.episodeNumber
+                }
+            }
         case .number:
             result.sort { $0.episodeNumber < $1.episodeNumber }
         case .title:
@@ -81,7 +82,7 @@ struct EpisodeListView: View {
     }
 
     private var hasActiveFilter: Bool {
-        filterListened != .all || filterMood != nil || filterUniverse != nil
+        filterMood != nil || filterUniverse != nil
     }
 
     var body: some View {
@@ -115,44 +116,56 @@ struct EpisodeListView: View {
         }
         .searchable(text: $searchText, prompt: "Folge suchen…")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink(value: NavigationDestination.addEpisode) {
-                    Label("Neue Folge", systemImage: "plus")
-                }
-            }
-            ToolbarItem(placement: .secondaryAction) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 Menu {
-                    Picker("Sortierung", selection: $sortOrder) {
-                        ForEach(SortOrder.allCases, id: \.self) { order in
-                            Text(order.rawValue)
-                        }
+                    Button {
+                        sortOrder = .recentlyPlayed
+                    } label: {
+                        sortingLabel("Zuletzt gespielt", isSelected: sortOrder == .recentlyPlayed)
                     }
-                    Picker("Gehört-Status", selection: $filterListened) {
-                        ForEach(ListenedFilter.allCases, id: \.self) { filter in
-                            Text(filter.rawValue)
-                        }
+                    Button {
+                        sortOrder = .title
+                    } label: {
+                        sortingLabel("Titel A-Z", isSelected: sortOrder == .title)
+                    }
+                    Button {
+                        sortOrder = .number
+                    } label: {
+                        sortingLabel("Nummer", isSelected: sortOrder == .number)
+                    }
+                    Button {
+                        sortOrder = .rating
+                    } label: {
+                        sortingLabel("Bewertung", isSelected: sortOrder == .rating)
                     }
                     Menu("Katalog") {
-                        Button("Alle") { filterUniverse = nil }
+                        Button {
+                            filterUniverse = nil
+                        } label: {
+                            sortingLabel("Alle", isSelected: filterUniverse == nil)
+                        }
                         ForEach(universes) { universe in
                             Button {
                                 filterUniverse = universe
                             } label: {
-                                Text(universe.name)
+                                sortingLabel(
+                                    universe.name,
+                                    isSelected: filterUniverse?.id == universe.id
+                                )
                             }
                         }
                     }
                     if hasActiveFilter {
                         Button("Filter zurücksetzen", role: .destructive) {
-                            filterListened = .all
                             filterMood = nil
                             filterUniverse = nil
                         }
                     }
                 } label: {
-                    Label("Filter", systemImage: hasActiveFilter
-                          ? "line.3.horizontal.decrease.circle.fill"
-                          : "line.3.horizontal.decrease.circle")
+                    Label("Sortierung", systemImage: "arrow.up.arrow.down")
+                }
+                NavigationLink(value: NavigationDestination.addEpisode) {
+                    Label("Neue Folge", systemImage: "plus")
                 }
             }
         }
@@ -162,7 +175,7 @@ struct EpisodeListView: View {
                     Label("Keine Folgen", systemImage: "magnifyingglass")
                 } description: {
                     if episodes.isEmpty {
-                        Text("Füge deine erste Folge hinzu.")
+                        Text("Tippe auf +, um zu starten.")
                     } else {
                         Text("Ändere Filter oder Suchbegriff.")
                     }
@@ -213,6 +226,16 @@ struct EpisodeListView: View {
         for index in offsets {
             let episode = list[index]
             modelContext.delete(episode)
+        }
+    }
+
+    private func sortingLabel(_ text: String, isSelected: Bool) -> some View {
+        HStack {
+            Text(text)
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark")
+            }
         }
     }
 }
