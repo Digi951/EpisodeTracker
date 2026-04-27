@@ -12,12 +12,12 @@
 
 ## Privacy
 
-- Privacy Policy URL: `https://digi951.github.io/hoerspieltracker/privacy.html`
-- Support URL: `https://digi951.github.io/hoerspieltracker/support.html`
+- Privacy Policy URL: `https://digi951.github.io/EpisodeTracker/privacy.html`
+- Support URL: `https://digi951.github.io/EpisodeTracker/support.html`
 - App Privacy answer: The app does not collect data.
 - Privacy choices URL: not needed.
 
-Adjust the URLs if the GitHub Pages repository path differs from `Digi951/hoerspieltracker`.
+GitHub Pages is published from the `docs/` folder of `Digi951/EpisodeTracker`.
 
 ## Freemium Model
 
