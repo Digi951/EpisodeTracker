@@ -16,34 +16,37 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            Tab("Folgen", systemImage: "list.number") {
-                NavigationStack {
-                    EpisodeListView()
-                        .navigationDestination(for: Episode.self) { episode in
+            NavigationStack {
+                EpisodeListView()
+                    .navigationDestination(for: Episode.self) { episode in
+                        EpisodeDetailView(episode: episode)
+                    }
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        switch destination {
+                        case .episode(let episode):
                             EpisodeDetailView(episode: episode)
+                        case .addEpisode:
+                            EpisodeEditView()
                         }
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            switch destination {
-                            case .episode(let episode):
-                                EpisodeDetailView(episode: episode)
-                            case .addEpisode:
-                                EpisodeEditView()
-                            }
-                        }
-                        .navigationTitle(effectiveLibraryTitle)
-                }
+                    }
+                    .navigationTitle(effectiveLibraryTitle)
+            }
+            .tabItem {
+                Label("Folgen", systemImage: "list.number")
             }
 
-            Tab("Statistiken", systemImage: "chart.bar") {
-                NavigationStack {
-                    StatisticsView()
-                }
+            NavigationStack {
+                StatisticsView()
+            }
+            .tabItem {
+                Label("Statistiken", systemImage: "chart.bar")
             }
 
-            Tab("Einstellungen", systemImage: "gearshape") {
-                NavigationStack {
-                    SettingsView()
-                }
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Einstellungen", systemImage: "gearshape")
             }
         }
         .preferredColorScheme(appearanceMode.colorScheme)

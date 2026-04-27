@@ -1,6 +1,6 @@
-# EpisodeTracker
+# HörspielTracker
 
-A native iOS app for tracking and managing episodes of German audio dramas (*Hörspiele*). Built with SwiftUI and SwiftData, with first-class support for **Die drei ???** and other Europa series.
+A native iOS app for tracking and managing episodes of German audio dramas (*Hörspiele*). Built with SwiftUI and SwiftData, with optional remote catalogs for **Die drei ???** and other series.
 
 ## Features
 
@@ -22,7 +22,8 @@ A native iOS app for tracking and managing episodes of German audio dramas (*Hö
 | Language | Swift 6.3 |
 | UI | SwiftUI |
 | Persistence | SwiftData |
-| Minimum OS | iOS 26 |
+| Minimum OS | iOS 17 |
+| Bundle ID | `de.digi951.hoerspieltracker` |
 | Dependencies | None (no third-party packages) |
 
 ## Architecture
@@ -52,22 +53,20 @@ EpisodeTracker/
 
 ## Catalog System
 
-Episode catalogs are JSON arrays hosted on GitHub and fetched at runtime:
+Episode catalogs are discovered through a GitHub-hosted manifest and fetched at runtime:
 
-| Universe | Source |
-|---|---|
-| Die drei ??? | `github.com/Digi951/Episodes-The_three_questionmarks` |
-| Die drei ??? Kids | `github.com/Digi951/Episodes-The_three_questionmarks_kids` |
-| Die drei !!! | `github.com/Digi951/Episodes-The_tree_exclamationmarks` |
-| Bibi Blocksberg | `github.com/Digi951/Episodes-Bibi_Blocksberg` |
+- Manifest: `https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/manifest.json`
+- Catalog files: `https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/*.json`
+- GitHub `blob` URLs are normalized to raw file URLs before fetching.
 
 **Caching strategy:**
 
-1. On first launch the bundled `EpisodeCatalog.json` (240 episodes, Die drei ???) is used immediately — no network required.
-2. In the background, the app fetches each source with `If-None-Match` / `If-Modified-Since` headers. A `304 Not Modified` response costs only one round-trip with no body.
-3. Updated data is written to disk (`Application Support/EpisodeTracker/RemoteCatalogs/`).
-4. Subsequent launches load from disk cache; a fresh network check happens at most every **6 hours**.
-5. Network failures are silent — existing cached data is preserved unchanged.
+1. The app loads the cached manifest, or falls back to a small built-in list of default catalog sources.
+2. In the background, the app refreshes the manifest with `If-None-Match` / `If-Modified-Since`.
+3. Each catalog listed by the manifest is refreshed with the same conditional HTTP strategy.
+4. Updated manifest and catalog data are written to disk (`Application Support/EpisodeTracker/`).
+5. Subsequent launches load from disk cache; a fresh network check happens at most every **6 hours**.
+6. Network failures are silent — existing cached data or built-in fallback sources are preserved unchanged.
 
 ## Default Moods
 
@@ -88,7 +87,7 @@ Custom moods (name + emoji) can be added and deleted in **Einstellungen → Stim
 
 1. Clone the repository
 2. Open `EpisodeTracker.xcodeproj` in Xcode 26+
-3. Select a simulator or device running iOS 26+
+3. Select a simulator or device running iOS 17+
 4. Build and run (`⌘R`)
 
 No additional setup required. The app seeds universes and default moods on first launch and fetches the latest episode catalogs in the background.

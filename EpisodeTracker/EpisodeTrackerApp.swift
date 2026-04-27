@@ -44,6 +44,7 @@ struct EpisodeTrackerApp: App {
                     ensureBundledCollectionExists(container: sharedModelContainer)
                     assignMissingCollectionsIfNeeded(container: sharedModelContainer)
                     await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+                    ensureBundledCollectionExists(container: sharedModelContainer)
                 }
         }
         .modelContainer(sharedModelContainer)

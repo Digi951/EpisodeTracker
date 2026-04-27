@@ -29,4 +29,8 @@ struct CatalogParser {
             )
         }
     }
+
+    func parseManifest(from data: Data) throws -> CatalogManifest {
+        try JSONDecoder().decode(CatalogManifest.self, from: data)
+    }
 }

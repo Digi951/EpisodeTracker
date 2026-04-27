@@ -247,6 +247,7 @@ struct EpisodeEditView: View {
         }
 
         if let episode {
+            let wasListened = episode.isListened
             episode.episodeNumber = episodeNumber
             episode.title = title
             episode.releaseYear = releaseYear
@@ -256,7 +257,7 @@ struct EpisodeEditView: View {
             episode.universe = selectedUniverse
             episode.moods = Array(selectedMoods)
 
-            if isListened && !episode.isListened {
+            if isListened && !wasListened {
                 episode.listenCount += 1
                 episode.lastListenedAt = .now
             }

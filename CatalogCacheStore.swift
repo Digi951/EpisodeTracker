@@ -11,6 +11,7 @@ struct CatalogCacheStore {
     }
 
     private let customCatalogsURL: URL
+    private let manifestURL: URL
     private let remoteCatalogDirectoryURL: URL
 
     init(fileManager: FileManager = .default) {
@@ -19,6 +20,7 @@ struct CatalogCacheStore {
         try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
         customCatalogsURL = directoryURL.appendingPathComponent("CustomCatalogs.json")
+        manifestURL = directoryURL.appendingPathComponent("CatalogManifest.json")
 
         remoteCatalogDirectoryURL = directoryURL.appendingPathComponent("RemoteCatalogs", isDirectory: true)
         try? fileManager.createDirectory(at: remoteCatalogDirectoryURL, withIntermediateDirectories: true)
@@ -41,6 +43,20 @@ struct CatalogCacheStore {
 
         let data = try JSONEncoder().encode(stored)
         try data.write(to: customCatalogsURL, options: [.atomic])
+    }
+
+    func loadManifest() -> CatalogManifest? {
+        guard let data = try? Data(contentsOf: manifestURL),
+              let decoded = try? JSONDecoder().decode(CatalogManifest.self, from: data)
+        else {
+            return nil
+        }
+        return decoded
+    }
+
+    func saveManifest(_ manifest: CatalogManifest) throws {
+        let data = try JSONEncoder().encode(manifest)
+        try data.write(to: manifestURL, options: [.atomic])
     }
 
     func loadRemoteCache(universeName: String) -> [CatalogEntry]? {

@@ -8,10 +8,25 @@ enum RemoteCatalogFetchResult {
 
 struct CatalogRemoteDataSource {
     func fetch(
+        from url: URL,
+        metadata: RemoteCatalogMetadata?
+    ) async throws -> RemoteCatalogFetchResult {
+        var request = URLRequest(url: url)
+        return try await fetch(request: &request, metadata: metadata)
+    }
+
+    func fetch(
         from source: ManagedCatalogSource,
         metadata: RemoteCatalogMetadata?
     ) async throws -> RemoteCatalogFetchResult {
         var request = URLRequest(url: source.url)
+        return try await fetch(request: &request, metadata: metadata)
+    }
+
+    private func fetch(
+        request: inout URLRequest,
+        metadata: RemoteCatalogMetadata?
+    ) async throws -> RemoteCatalogFetchResult {
         request.timeoutInterval = 20
         request.cachePolicy = .reloadIgnoringLocalCacheData
 

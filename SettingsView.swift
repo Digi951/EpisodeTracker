@@ -426,8 +426,12 @@ private struct CatalogManagementView: View {
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
 
+    private var predefinedCatalogSources: [ManagedCatalogSource] {
+        CatalogSourceRegistry.managedSources
+    }
+
     private var predefinedUniverseNames: [String] {
-        CatalogSourceRegistry.managedSources.map(\.name)
+        predefinedCatalogSources.map(\.name)
     }
 
     private var existingUniverseNameKeys: Set<String> {
@@ -483,6 +487,11 @@ private struct CatalogManagementView: View {
             }
         }
         .navigationTitle("Kataloge")
+        .onAppear {
+            if selectedManagedCatalogName.isEmpty {
+                selectedManagedCatalogName = predefinedUniverseNames.first ?? ""
+            }
+        }
     }
 
     private func addPredefinedUniverse(named universeName: String) {
