@@ -24,6 +24,7 @@ struct EpisodeEditView: View {
     @State private var formValidationMessage: String?
     @State private var moodValidationMessage: String?
     @State private var showingDeleteConfirmation = false
+    @State private var pendingCatalogRefreshKey: String?
 
     private var isNew: Bool { episode == nil }
     private var parsedEpisodeNumber: Int? {
@@ -35,6 +36,18 @@ struct EpisodeEditView: View {
     private var suggestedMoods: [(name: String, icon: String)] {
         Mood.defaultSuggestions.filter { suggestion in
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
+        }
+    }
+    private var preferredCatalogUniverse: Universe? {
+        let sourceNames = CatalogSourceRegistry.managedSources.map(\.name)
+        if let bundledUniverse = universes.first(where: {
+            $0.name.caseInsensitiveCompare(CatalogSourceRegistry.bundledCollectionName) == .orderedSame
+        }) {
+            return bundledUniverse
+        }
+
+        return universes.first { universe in
+            sourceNames.contains { $0.caseInsensitiveCompare(universe.name) == .orderedSame }
         }
     }
 
@@ -229,7 +242,7 @@ struct EpisodeEditView: View {
                 selectedUniverse = episode.universe ?? universes.first
             } else if releaseYearText.isEmpty {
                 releaseYearText = "1979"
-                selectedUniverse = universes.first
+                selectedUniverse = preferredCatalogUniverse ?? universes.first
             }
             refreshCatalogMatch()
         }
@@ -297,7 +310,28 @@ struct EpisodeEditView: View {
             catalogMatch = nil
             return
         }
-        catalogMatch = EpisodeCatalog.shared.entry(for: number, in: selectedUniverse?.name)
+
+        let universeName = selectedUniverse?.name
+        catalogMatch = EpisodeCatalog.shared.entry(for: number, in: universeName)
+
+        if catalogMatch == nil {
+            refreshCatalogForSuggestionIfNeeded(number: number, universeName: universeName)
+        }
+    }
+
+    private func refreshCatalogForSuggestionIfNeeded(number: Int, universeName: String?) {
+        guard let universeName, !universeName.isEmpty else { return }
+        let refreshKey = "\(universeName)#\(number)"
+        guard pendingCatalogRefreshKey != refreshKey else { return }
+        pendingCatalogRefreshKey = refreshKey
+
+        Task { @MainActor in
+            await EpisodeCatalog.shared.refreshManagedCatalog(universeName: universeName, force: false)
+            if pendingCatalogRefreshKey == refreshKey {
+                catalogMatch = EpisodeCatalog.shared.entry(for: number, in: universeName)
+                pendingCatalogRefreshKey = nil
+            }
+        }
     }
 
     private func addSuggestedMood(_ suggestion: (name: String, icon: String)) {

@@ -106,10 +106,12 @@ final class EpisodeCatalog {
 
     private func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name)
-        guard force || shouldRefresh(previousMetadata) else { return }
+        let hasCachedEntries = cacheStore.loadRemoteCache(universeName: source.name)?.isEmpty == false
+        guard force || !hasCachedEntries || shouldRefresh(previousMetadata) else { return }
 
         do {
-            let result = try await remoteDataSource.fetch(from: source, metadata: previousMetadata)
+            let requestMetadata = hasCachedEntries ? previousMetadata : nil
+            let result = try await remoteDataSource.fetch(from: source, metadata: requestMetadata)
             var metadata = previousMetadata ?? RemoteCatalogMetadata()
 
             switch result {
