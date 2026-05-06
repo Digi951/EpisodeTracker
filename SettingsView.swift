@@ -10,10 +10,6 @@ struct SettingsView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
 
-    @State private var newUniverseName: String = ""
-    @State private var newMoodName: String = ""
-    @State private var newMoodIcon: String = ""
-    @State private var validationMessage: String?
     @State private var backupStatusMessage: String?
     @State private var backupStatusIsError = false
     @State private var showingImporter = false
@@ -21,63 +17,50 @@ struct SettingsView: View {
     @State private var exportDocument: JSONBackupDocument?
     @State private var pendingImportURL: URL?
 
-    private var suggestedMoods: [(name: String, icon: String)] {
-        Mood.defaultSuggestions.filter { suggestion in
-            !moods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
-        }
-    }
     var body: some View {
         List {
-            Section("Allgemein") {
+            Section("Mediathek") {
                 TextField("Sammlungsname", text: $libraryTitle)
-                Button("Auf Standard zurücksetzen") {
-                    libraryTitle = "Meine Hörspiele"
-                    appearanceModeRawValue = AppearanceMode.system.rawValue
+                Picker("Darstellung", selection: $appearanceModeRawValue) {
+                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                        Text(mode.title).tag(mode.rawValue)
+                    }
                 }
             }
 
-            Section("Kataloge") {
-                NavigationLink("Kataloge verwalten") {
+            Section("Verwalten") {
+                NavigationLink {
                     CatalogManagementView()
+                } label: {
+                    SettingsNavigationRow(
+                        title: "Kataloge",
+                        subtitle: "\(universes.count) aktiv",
+                        systemImage: "books.vertical"
+                    )
+                }
+
+                NavigationLink {
+                    MoodManagementView()
+                } label: {
+                    SettingsNavigationRow(
+                        title: "Stimmungen",
+                        subtitle: "\(moods.count) gespeichert",
+                        systemImage: "tag"
+                    )
                 }
             }
 
-            Section("Meine Kataloge") {
-                ForEach(universes) { universe in
-                    HStack {
-                        Text(universe.name)
-                        Spacer()
-                        Text("\(universe.episodes.count)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .onDelete(perform: deleteUniverses)
-            }
-
-            Section("Eigener Katalog") {
-                HStack {
-                    TextField("Neuer Katalog", text: $newUniverseName)
-                    Button("Hinzufügen") {
-                        addCustomUniverse()
-                    }
-                    .disabled(newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-
-                if let validationMessage {
-                    Text(validationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-            }
-
-            Section("Backup") {
-                Button("Backup exportieren") {
+            Section("Daten") {
+                Button {
                     exportBackup()
+                } label: {
+                    Label("Backup exportieren", systemImage: "square.and.arrow.up")
                 }
 
-                Button("Backup importieren") {
+                Button {
                     showingImporter = true
+                } label: {
+                    Label("Backup importieren", systemImage: "square.and.arrow.down")
                 }
 
                 if let backupStatusMessage {
@@ -87,62 +70,10 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Stimmung hinzufügen") {
-                HStack {
-                    TextField("Name", text: $newMoodName)
-                    TextField("Icon", text: $newMoodIcon)
-                        .frame(width: 56)
-                        .multilineTextAlignment(.center)
-                    Button("Hinzufügen") {
-                        addMood(name: newMoodName, icon: newMoodIcon)
-                    }
-                    .disabled(newMoodName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                if let validationMessage {
-                    Text(validationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-            }
-
-            if !suggestedMoods.isEmpty {
-                Section("Standard-Vorschläge") {
-                    ForEach(suggestedMoods, id: \.name) { suggestion in
-                        Button {
-                            addMood(name: suggestion.name, icon: suggestion.icon)
-                        } label: {
-                            HStack {
-                                Text("\(suggestion.icon) \(suggestion.name)")
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Image(systemName: "plus.circle")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Section("Vorhandene Stimmungen") {
-                ForEach(moods) { mood in
-                    HStack {
-                        Text("\(mood.iconName ?? "") \(mood.name)")
-                        Spacer()
-                        if !mood.episodes.isEmpty {
-                            Text("\(mood.episodes.count)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .onDelete(perform: deleteMoods)
-            }
-
-            Section("Darstellung") {
-                Picker("Modus", selection: $appearanceModeRawValue) {
-                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                        Text(mode.title).tag(mode.rawValue)
-                    }
+            Section {
+                Button("Auf Standard zurücksetzen") {
+                    libraryTitle = "Meine Hörspiele"
+                    appearanceModeRawValue = AppearanceMode.system.rawValue
                 }
             }
         }
@@ -204,71 +135,6 @@ struct SettingsView: View {
                 Button("Fertig") {
                     dismissKeyboard()
                 }
-            }
-        }
-    }
-
-    private func addMood(name: String, icon: String) {
-        validationMessage = nil
-
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            validationMessage = "Bitte gib einen Namen ein."
-            return
-        }
-
-        if moods.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
-            validationMessage = "Diese Stimmung existiert bereits."
-            return
-        }
-
-        let trimmedIcon = icon.trimmingCharacters(in: .whitespacesAndNewlines)
-        let mood = Mood(
-            name: trimmedName,
-            iconName: trimmedIcon.isEmpty ? nil : String(trimmedIcon.prefix(2))
-        )
-        modelContext.insert(mood)
-
-        newMoodName = ""
-        newMoodIcon = ""
-    }
-
-    private func addCustomUniverse() {
-        validationMessage = nil
-
-        let trimmedName = newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            validationMessage = "Bitte gib einen Namen für den Katalog ein."
-            return
-        }
-
-        if universes.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
-            validationMessage = "Dieser Katalog existiert bereits."
-            return
-        }
-
-        modelContext.insert(Universe(name: trimmedName))
-        newUniverseName = ""
-    }
-
-    private func deleteUniverses(at offsets: IndexSet) {
-        for index in offsets {
-            let universe = universes[index]
-            if universe.episodes.isEmpty {
-                modelContext.delete(universe)
-            } else {
-                validationMessage = "Nur leere Kataloge können gelöscht werden."
-            }
-        }
-    }
-
-    private func deleteMoods(at offsets: IndexSet) {
-        for index in offsets {
-            let mood = moods[index]
-            if mood.episodes.isEmpty {
-                modelContext.delete(mood)
-            } else {
-                validationMessage = "Nur ungenutzte Stimmungen können gelöscht werden."
             }
         }
     }
@@ -418,11 +284,33 @@ struct SettingsView: View {
     }
 }
 
+private struct SettingsNavigationRow: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.tint)
+        }
+    }
+}
+
 private struct CatalogManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Universe.name) private var universes: [Universe]
 
     @State private var selectedManagedCatalogName: String = CatalogSourceRegistry.managedSources.first?.name ?? ""
+    @State private var newUniverseName: String = ""
+    @State private var validationMessage: String?
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
 
@@ -440,6 +328,35 @@ private struct CatalogManagementView: View {
 
     var body: some View {
         List {
+            Section("Meine Kataloge") {
+                ForEach(universes) { universe in
+                    HStack {
+                        Text(universe.name)
+                        Spacer()
+                        Text("\(universe.episodes.count)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .onDelete(perform: deleteUniverses)
+
+                if let validationMessage {
+                    Text(validationMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            Section("Eigener Katalog") {
+                HStack {
+                    TextField("Neuer Katalog", text: $newUniverseName)
+                    Button("Hinzufügen") {
+                        addCustomUniverse()
+                    }
+                    .disabled(newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+
             Section("Vordefinierte Kataloge") {
                 ForEach(predefinedUniverseNames, id: \.self) { universeName in
                     let isAdded = existingUniverseNameKeys.contains(universeName.lowercased())
@@ -500,6 +417,37 @@ private struct CatalogManagementView: View {
         modelContext.insert(Universe(name: universeName))
     }
 
+    private func addCustomUniverse() {
+        validationMessage = nil
+
+        let trimmedName = newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            validationMessage = "Bitte gib einen Namen für den Katalog ein."
+            return
+        }
+
+        if universes.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            validationMessage = "Dieser Katalog existiert bereits."
+            return
+        }
+
+        modelContext.insert(Universe(name: trimmedName))
+        newUniverseName = ""
+    }
+
+    private func deleteUniverses(at offsets: IndexSet) {
+        validationMessage = nil
+
+        for index in offsets {
+            let universe = universes[index]
+            if universe.episodes.isEmpty {
+                modelContext.delete(universe)
+            } else {
+                validationMessage = "Nur leere Kataloge können gelöscht werden."
+            }
+        }
+    }
+
     private func refreshManagedCatalog(named universeName: String) {
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalog(universeName: universeName, force: true)
@@ -516,6 +464,116 @@ private struct CatalogManagementView: View {
             await MainActor.run {
                 catalogStatusIsError = false
                 catalogStatusMessage = "Alle vordefinierten Kataloge wurden aktualisiert."
+            }
+        }
+    }
+}
+
+private struct MoodManagementView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Mood.name) private var moods: [Mood]
+
+    @State private var newMoodName: String = ""
+    @State private var newMoodIcon: String = ""
+    @State private var validationMessage: String?
+
+    private var suggestedMoods: [(name: String, icon: String)] {
+        Mood.defaultSuggestions.filter { suggestion in
+            !moods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
+        }
+    }
+
+    var body: some View {
+        List {
+            Section("Neue Stimmung") {
+                HStack {
+                    TextField("Name", text: $newMoodName)
+                    TextField("Icon", text: $newMoodIcon)
+                        .frame(width: 56)
+                        .multilineTextAlignment(.center)
+                    Button("Hinzufügen") {
+                        addMood(name: newMoodName, icon: newMoodIcon)
+                    }
+                    .disabled(newMoodName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                if let validationMessage {
+                    Text(validationMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            if !suggestedMoods.isEmpty {
+                Section("Standard-Vorschläge") {
+                    ForEach(suggestedMoods, id: \.name) { suggestion in
+                        Button {
+                            addMood(name: suggestion.name, icon: suggestion.icon)
+                        } label: {
+                            HStack {
+                                Text("\(suggestion.icon) \(suggestion.name)")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "plus.circle")
+                                    .foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section("Vorhandene Stimmungen") {
+                ForEach(moods) { mood in
+                    HStack {
+                        Text("\(mood.iconName ?? "") \(mood.name)")
+                        Spacer()
+                        if !mood.episodes.isEmpty {
+                            Text("\(mood.episodes.count)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .onDelete(perform: deleteMoods)
+            }
+        }
+        .navigationTitle("Stimmungen")
+    }
+
+    private func addMood(name: String, icon: String) {
+        validationMessage = nil
+
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            validationMessage = "Bitte gib einen Namen ein."
+            return
+        }
+
+        if moods.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            validationMessage = "Diese Stimmung existiert bereits."
+            return
+        }
+
+        let trimmedIcon = icon.trimmingCharacters(in: .whitespacesAndNewlines)
+        let mood = Mood(
+            name: trimmedName,
+            iconName: trimmedIcon.isEmpty ? nil : String(trimmedIcon.prefix(2))
+        )
+        modelContext.insert(mood)
+
+        newMoodName = ""
+        newMoodIcon = ""
+    }
+
+    private func deleteMoods(at offsets: IndexSet) {
+        validationMessage = nil
+
+        for index in offsets {
+            let mood = moods[index]
+            if mood.episodes.isEmpty {
+                modelContext.delete(mood)
+            } else {
+                validationMessage = "Nur ungenutzte Stimmungen können gelöscht werden."
             }
         }
     }
