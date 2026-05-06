@@ -19,13 +19,17 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            Section("Mediathek") {
+            Section {
                 TextField("Sammlungsname", text: $libraryTitle)
                 Picker("Darstellung", selection: $appearanceModeRawValue) {
                     ForEach(AppearanceMode.allCases, id: \.self) { mode in
                         Text(mode.title).tag(mode.rawValue)
                     }
                 }
+            } header: {
+                Text("Mediathek")
+            } footer: {
+                Text("Der Sammlungsname erscheint oben in deiner Folgenliste.")
             }
 
             Section("Verwalten") {
@@ -34,7 +38,7 @@ struct SettingsView: View {
                 } label: {
                     SettingsNavigationRow(
                         title: "Kataloge",
-                        subtitle: "\(universes.count) aktiv",
+                        subtitle: "\(universes.count) Kataloge aktiv",
                         systemImage: "books.vertical"
                     )
                 }
@@ -44,23 +48,31 @@ struct SettingsView: View {
                 } label: {
                     SettingsNavigationRow(
                         title: "Stimmungen",
-                        subtitle: "\(moods.count) gespeichert",
+                        subtitle: "\(moods.count) Stimmungen gespeichert",
                         systemImage: "tag"
                     )
                 }
             }
 
-            Section("Daten") {
+            Section {
                 Button {
                     exportBackup()
                 } label: {
-                    Label("Backup exportieren", systemImage: "square.and.arrow.up")
+                    SettingsActionRow(
+                        title: "Backup exportieren",
+                        subtitle: "\(episodes.count) Folgen sichern",
+                        systemImage: "square.and.arrow.up"
+                    )
                 }
 
                 Button {
                     showingImporter = true
                 } label: {
-                    Label("Backup importieren", systemImage: "square.and.arrow.down")
+                    SettingsActionRow(
+                        title: "Backup importieren",
+                        subtitle: "Folgen, Kataloge und Stimmungen wiederherstellen",
+                        systemImage: "square.and.arrow.down"
+                    )
                 }
 
                 if let backupStatusMessage {
@@ -68,12 +80,18 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(backupStatusIsError ? .red : .secondary)
                 }
+            } header: {
+                Text("Daten")
+            } footer: {
+                Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
             }
 
-            Section {
-                Button("Auf Standard zurücksetzen") {
+            Section("Zurücksetzen") {
+                Button(role: .destructive) {
                     libraryTitle = "Meine Hörspiele"
                     appearanceModeRawValue = AppearanceMode.system.rawValue
+                } label: {
+                    Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
                 }
             }
         }
@@ -304,6 +322,27 @@ private struct SettingsNavigationRow: View {
     }
 }
 
+private struct SettingsActionRow: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.tint)
+        }
+    }
+}
+
 private struct CatalogManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Universe.name) private var universes: [Universe]
@@ -328,12 +367,12 @@ private struct CatalogManagementView: View {
 
     var body: some View {
         List {
-            Section("Meine Kataloge") {
+            Section {
                 ForEach(universes) { universe in
                     HStack {
                         Text(universe.name)
                         Spacer()
-                        Text("\(universe.episodes.count)")
+                        Text("\(universe.episodes.count) Folgen")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -345,11 +384,15 @@ private struct CatalogManagementView: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
+            } header: {
+                Text("Aktive Kataloge")
+            } footer: {
+                Text("Nur leere Kataloge können gelöscht werden.")
             }
 
             Section("Eigener Katalog") {
                 HStack {
-                    TextField("Neuer Katalog", text: $newUniverseName)
+                    TextField("Name des Katalogs", text: $newUniverseName)
                     Button("Hinzufügen") {
                         addCustomUniverse()
                     }
@@ -357,7 +400,7 @@ private struct CatalogManagementView: View {
                 }
             }
 
-            Section("Vordefinierte Kataloge") {
+            Section {
                 ForEach(predefinedUniverseNames, id: \.self) { universeName in
                     let isAdded = existingUniverseNameKeys.contains(universeName.lowercased())
                     Button {
@@ -379,21 +422,29 @@ private struct CatalogManagementView: View {
                     }
                     .disabled(isAdded)
                 }
+            } header: {
+                Text("Vordefinierte Kataloge")
+            } footer: {
+                Text("Vordefinierte Kataloge liefern Titelvorschläge, sobald du eine passende Folgennummer eingibst.")
             }
 
-            Section("Folgenlisten") {
+            Section("Katalog-Updates") {
                 Picker("Vordefinierter Katalog", selection: $selectedManagedCatalogName) {
                     ForEach(predefinedUniverseNames, id: \.self) { name in
                         Text(name).tag(name)
                     }
                 }
 
-                Button("Ausgewählten Katalog aktualisieren") {
+                Button {
                     refreshManagedCatalog(named: selectedManagedCatalogName)
+                } label: {
+                    Label("Ausgewählten Katalog aktualisieren", systemImage: "arrow.clockwise")
                 }
 
-                Button("Alle vordefinierten Kataloge aktualisieren") {
+                Button {
                     refreshAllManagedCatalogs()
+                } label: {
+                    Label("Alle Kataloge aktualisieren", systemImage: "arrow.triangle.2.circlepath")
                 }
 
                 if let catalogStatusMessage {
@@ -488,7 +539,7 @@ private struct MoodManagementView: View {
             Section("Neue Stimmung") {
                 HStack {
                     TextField("Name", text: $newMoodName)
-                    TextField("Icon", text: $newMoodIcon)
+                    TextField("Symbol", text: $newMoodIcon)
                         .frame(width: 56)
                         .multilineTextAlignment(.center)
                     Button("Hinzufügen") {
@@ -522,19 +573,31 @@ private struct MoodManagementView: View {
                 }
             }
 
-            Section("Vorhandene Stimmungen") {
-                ForEach(moods) { mood in
-                    HStack {
-                        Text("\(mood.iconName ?? "") \(mood.name)")
-                        Spacer()
-                        if !mood.episodes.isEmpty {
-                            Text("\(mood.episodes.count)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+            Section {
+                if moods.isEmpty {
+                    ContentUnavailableView {
+                        Label("Noch keine Stimmungen", systemImage: "tag")
+                    } description: {
+                        Text("Lege eigene Stimmungen an oder übernimm Standard-Vorschläge.")
+                    }
+                } else {
+                    ForEach(moods) { mood in
+                        HStack {
+                            Text("\(mood.iconName ?? "") \(mood.name)")
+                            Spacer()
+                            if !mood.episodes.isEmpty {
+                                Text("\(mood.episodes.count) Folgen")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    .onDelete(perform: deleteMoods)
                 }
-                .onDelete(perform: deleteMoods)
+            } header: {
+                Text("Vorhandene Stimmungen")
+            } footer: {
+                Text("Nur ungenutzte Stimmungen können gelöscht werden.")
             }
         }
         .navigationTitle("Stimmungen")
