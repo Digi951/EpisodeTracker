@@ -171,13 +171,19 @@ struct EpisodeListView: View {
         }
         .overlay {
             if filteredEpisodes.isEmpty {
-                ContentUnavailableView {
-                    Label("Keine Folgen", systemImage: "magnifyingglass")
-                } description: {
-                    if episodes.isEmpty {
-                        Text("Tippe auf +, um zu starten.")
-                    } else {
+                if episodes.isEmpty {
+                    EmptyLibraryOnboardingView()
+                } else {
+                    ContentUnavailableView {
+                        Label("Keine Treffer", systemImage: "magnifyingglass")
+                    } description: {
                         Text("Ändere Filter oder Suchbegriff.")
+                    } actions: {
+                        Button("Filter zurücksetzen") {
+                            searchText = ""
+                            filterMood = nil
+                            filterUniverse = nil
+                        }
                     }
                 }
             }
@@ -237,6 +243,95 @@ struct EpisodeListView: View {
                 Image(systemName: "checkmark")
             }
         }
+    }
+}
+
+private struct EmptyLibraryOnboardingView: View {
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Image(systemName: "headphones.circle.fill")
+                    .font(.system(size: 72))
+                    .foregroundStyle(.tint)
+                    .symbolRenderingMode(.hierarchical)
+
+                VStack(spacing: 8) {
+                    Text("Dein HörspielLog wartet")
+                        .font(.title2.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                    Text("Lege deine erste Folge an und übernimm Titel bequem aus einem Katalog.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(spacing: 12) {
+                    OnboardingStepRow(
+                        systemImage: "books.vertical",
+                        title: "Katalog wählen",
+                        detail: "Vordefinierte Kataloge sind vorbereitet."
+                    )
+                    OnboardingStepRow(
+                        systemImage: "number",
+                        title: "Folgennummer eingeben",
+                        detail: "Passende Titel erscheinen automatisch."
+                    )
+                    OnboardingStepRow(
+                        systemImage: "checkmark.circle",
+                        title: "Gehört markieren",
+                        detail: "Bewertung und Notiz kannst du direkt ergänzen."
+                    )
+                }
+                .padding(.vertical, 4)
+
+                NavigationLink(value: NavigationDestination.addEpisode) {
+                    Label("Erste Folge anlegen", systemImage: "plus.circle.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+
+                Text("Kataloge und Stimmungen findest du später in den Einstellungen.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 48)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.hidden)
+        .background(.background)
+    }
+}
+
+private struct OnboardingStepRow: View {
+    let systemImage: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.headline)
+                .foregroundStyle(.tint)
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
