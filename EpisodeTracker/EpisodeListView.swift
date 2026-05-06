@@ -85,8 +85,32 @@ struct EpisodeListView: View {
         filterMood != nil || filterUniverse != nil
     }
 
+    private var listenedCount: Int {
+        episodes.filter(\.isListened).count
+    }
+
+    private var openCount: Int {
+        episodes.count - listenedCount
+    }
+
+    private var totalListens: Int {
+        episodes.reduce(0) { $0 + $1.listenCount }
+    }
+
     var body: some View {
         List {
+            if !episodes.isEmpty {
+                LibrarySnapshotView(
+                    episodeCount: episodes.count,
+                    listenedCount: listenedCount,
+                    openCount: openCount,
+                    totalListens: totalListens
+                )
+                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+
             if !moods.isEmpty {
                 MoodFilterBar(moods: moods, selection: $filterMood)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -243,6 +267,69 @@ struct EpisodeListView: View {
                 Image(systemName: "checkmark")
             }
         }
+    }
+}
+
+private struct LibrarySnapshotView: View {
+    let episodeCount: Int
+    let listenedCount: Int
+    let openCount: Int
+    let totalListens: Int
+
+    private var progress: Double {
+        guard episodeCount > 0 else { return 0 }
+        return Double(listenedCount) / Double(episodeCount)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Dein Hörstand")
+                        .font(.headline)
+                    Text("\(listenedCount) von \(episodeCount) Folgen gehört")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(progress, format: .percent.precision(.fractionLength(0)))
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+
+            ProgressView(value: progress)
+
+            HStack(spacing: 12) {
+                SnapshotMetric(value: "\(episodeCount)", label: "Folgen")
+                Divider()
+                SnapshotMetric(value: "\(openCount)", label: "Offen")
+                Divider()
+                SnapshotMetric(value: "\(totalListens)", label: "Hördurchgänge")
+            }
+            .frame(minHeight: 44)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct SnapshotMetric: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
