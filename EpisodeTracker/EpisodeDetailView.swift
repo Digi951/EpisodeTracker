@@ -18,7 +18,7 @@ struct EpisodeDetailView: View {
                         .foregroundStyle(episode.isListened ? .green : .secondary)
                 }
                 if episode.listenCount > 0 {
-                    LabeledContent("Anzahl gehört", value: "\(episode.listenCount)")
+                    LabeledContent("Hördurchgänge", value: "\(episode.listenCount)")
                 }
                 if let lastListened = episode.lastListenedAt {
                     LabeledContent("Zuletzt gehört", value: lastListened.formatted(date: .abbreviated, time: .omitted))
@@ -62,7 +62,7 @@ struct EpisodeDetailView: View {
                 episode.listenCount += 1
                 episode.lastListenedAt = .now
             } label: {
-                Label("Gehört +1", systemImage: "plus")
+                Label("Hördurchgang zählen", systemImage: "plus")
             }
             Button("Bearbeiten") {
                 showingEdit = true

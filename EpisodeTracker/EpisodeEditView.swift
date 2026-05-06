@@ -55,7 +55,7 @@ struct EpisodeEditView: View {
         List {
             Section("Folge") {
                 Picker("Katalog", selection: $selectedUniverse) {
-                    Text("Bitte wählen").tag(Optional<Universe>.none)
+                    Text("Katalog auswählen").tag(Optional<Universe>.none)
                     ForEach(universes) { universe in
                         Text(universe.name).tag(Optional(universe))
                     }
@@ -72,13 +72,13 @@ struct EpisodeEditView: View {
                         releaseYearText = String(catalogMatch.releaseYear)
                     } label: {
                         Label(
-                            "Übernehmen: \(catalogMatch.title) (\(String(catalogMatch.releaseYear)))",
+                            "Titel übernehmen: \(catalogMatch.title) (\(String(catalogMatch.releaseYear)))",
                             systemImage: "text.badge.checkmark"
                         )
                         .font(.subheadline)
                     }
                 }
-                TextField("Titel", text: $title)
+                TextField("Titel der Folge", text: $title)
                 LabeledContent("Erscheinungsjahr") {
                     TextField("Jahr", text: $releaseYearText)
                         .multilineTextAlignment(.trailing)
@@ -92,7 +92,7 @@ struct EpisodeEditView: View {
             }
 
             Section("Status") {
-                Toggle("Gehört", isOn: $isListened)
+                Toggle("Bereits gehört", isOn: $isListened)
                 RatingPicker(rating: $rating)
             }
 
@@ -124,7 +124,7 @@ struct EpisodeEditView: View {
 
                 HStack {
                     TextField("Neue Stimmung", text: $newMoodName)
-                    TextField("Icon", text: $newMoodIcon)
+                    TextField("Symbol", text: $newMoodIcon)
                         .frame(width: 56)
                         .multilineTextAlignment(.center)
                     Button("Hinzufügen") {
@@ -161,7 +161,7 @@ struct EpisodeEditView: View {
             }
 
             Section("Persönliche Notiz") {
-                TextField("Deine Notiz…", text: $personalNote, axis: .vertical)
+                TextField("Was möchtest du dir merken?", text: $personalNote, axis: .vertical)
                     .lineLimit(3...6)
             }
         }
@@ -255,7 +255,7 @@ struct EpisodeEditView: View {
 
         formValidationMessage = nil
         if hasDuplicateEpisodeNumber(in: selectedUniverse, episodeNumber: episodeNumber) {
-            formValidationMessage = "In diesem Katalog gibt es bereits eine Folge mit dieser Nummer."
+            formValidationMessage = "Diese Folgennummer ist in diesem Katalog schon vorhanden."
             return false
         }
 
@@ -356,7 +356,7 @@ struct EpisodeEditView: View {
 
         if let existingMood = allMoods.first(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
             selectedMoods.insert(existingMood)
-            moodValidationMessage = "Stimmung existiert bereits und wurde ausgewählt."
+            moodValidationMessage = "Diese Stimmung gibt es schon. Ich habe sie ausgewählt."
             return
         }
 

@@ -162,7 +162,7 @@ struct EpisodeListView: View {
                         }
                     }
                 } label: {
-                    Label("Sortierung", systemImage: "arrow.up.arrow.down")
+                    Label("Sortieren und filtern", systemImage: "arrow.up.arrow.down")
                 }
                 NavigationLink(value: NavigationDestination.addEpisode) {
                     Label("Neue Folge", systemImage: "plus")
@@ -175,11 +175,11 @@ struct EpisodeListView: View {
                     EmptyLibraryOnboardingView()
                 } else {
                     ContentUnavailableView {
-                        Label("Keine Treffer", systemImage: "magnifyingglass")
+                        Label("Nichts gefunden", systemImage: "magnifyingglass")
                     } description: {
-                        Text("Ändere Filter oder Suchbegriff.")
+                        Text("Passe Suche oder Filter an.")
                     } actions: {
-                        Button("Filter zurücksetzen") {
+                        Button("Suche und Filter zurücksetzen") {
                             searchText = ""
                             filterMood = nil
                             filterUniverse = nil
@@ -216,7 +216,7 @@ struct EpisodeListView: View {
                 episode.listenCount += 1
                 episode.lastListenedAt = .now
             } label: {
-                Label("Nochmal gehört", systemImage: "plus")
+                Label("Hördurchgang zählen", systemImage: "plus")
             }
             .tint(.blue)
 
@@ -256,10 +256,10 @@ private struct EmptyLibraryOnboardingView: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(spacing: 8) {
-                    Text("Dein HörspielLog wartet")
+                    Text("Dein HörspielLog ist bereit")
                         .font(.title2.weight(.semibold))
                         .multilineTextAlignment(.center)
-                    Text("Lege deine erste Folge an und übernimm Titel bequem aus einem Katalog.")
+                    Text("Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen.")
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -270,12 +270,12 @@ private struct EmptyLibraryOnboardingView: View {
                     OnboardingStepRow(
                         systemImage: "books.vertical",
                         title: "Katalog wählen",
-                        detail: "Vordefinierte Kataloge sind vorbereitet."
+                        detail: "Wähle die Reihe, zu der deine Folge gehört."
                     )
                     OnboardingStepRow(
                         systemImage: "number",
                         title: "Folgennummer eingeben",
-                        detail: "Passende Titel erscheinen automatisch."
+                        detail: "Passende Titel erscheinen als Vorschlag."
                     )
                     OnboardingStepRow(
                         systemImage: "checkmark.circle",
@@ -293,7 +293,7 @@ private struct EmptyLibraryOnboardingView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
 
-                Text("Kataloge und Stimmungen findest du später in den Einstellungen.")
+                Text("Kataloge, Stimmungen und Darstellung kannst du später in den Einstellungen anpassen.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

@@ -42,40 +42,48 @@ struct StatisticsView: View {
 
     var body: some View {
         List {
-            Section("Übersicht") {
-                StatRow(label: "Folgen gesamt", value: "\(episodes.count)")
-                StatRow(label: "Gehört", value: "\(listenedCount)")
-                StatRow(label: "Nicht gehört", value: "\(unlistenedCount)")
-                StatRow(label: "Gesamte Hördurchgänge", value: "\(totalListens)")
-                if let avg = averageRating {
-                    StatRow(label: "Durchschnittliche Bewertung", value: String(format: "%.1f ⭐", avg))
+            if episodes.isEmpty {
+                ContentUnavailableView {
+                    Label("Noch keine Statistik", systemImage: "chart.bar")
+                } description: {
+                    Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
                 }
-            }
+            } else {
+                Section("Übersicht") {
+                    StatRow(label: "Folgen insgesamt", value: "\(episodes.count)")
+                    StatRow(label: "Gehört", value: "\(listenedCount)")
+                    StatRow(label: "Offen", value: "\(unlistenedCount)")
+                    StatRow(label: "Hördurchgänge", value: "\(totalListens)")
+                    if let avg = averageRating {
+                        StatRow(label: "Bewertung im Schnitt", value: String(format: "%.1f ⭐", avg))
+                    }
+                }
 
-            if !topRated.isEmpty {
-                Section("Top-bewertete Folgen") {
-                    ForEach(topRated) { episode in
-                        HStack {
-                            Text("\(episode.episodeNumber). \(episode.title)")
-                                .lineLimit(1)
-                            Spacer()
-                            if let rating = episode.rating {
-                                Text("\(rating) ⭐")
-                                    .foregroundStyle(.secondary)
+                if !topRated.isEmpty {
+                    Section("Beste Bewertungen") {
+                        ForEach(topRated) { episode in
+                            HStack {
+                                Text("\(episode.episodeNumber). \(episode.title)")
+                                    .lineLimit(1)
+                                Spacer()
+                                if let rating = episode.rating {
+                                    Text("\(rating) ⭐")
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if !moodDistribution.isEmpty {
-                Section("Stimmungen") {
-                    ForEach(moodDistribution, id: \.0.id) { mood, count in
-                        HStack {
-                            Text("\(mood.iconName ?? "") \(mood.name)")
-                            Spacer()
-                            Text("\(count) Folgen")
-                                .foregroundStyle(.secondary)
+                if !moodDistribution.isEmpty {
+                    Section("Stimmungen") {
+                        ForEach(moodDistribution, id: \.0.id) { mood, count in
+                            HStack {
+                                Text("\(mood.iconName ?? "") \(mood.name)")
+                                Spacer()
+                                Text("\(count) Folgen")
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
