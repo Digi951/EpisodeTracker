@@ -208,10 +208,10 @@
 				};
 			};
 			buildConfigurationList = FA49EC9A2F85085600521E9B /* Build configuration list for PBXProject "EpisodeTracker" */;
-			developmentRegion = en;
+			developmentRegion = de;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
+				de,
 				Base,
 			);
 			mainGroup = FA49EC962F85085600521E9B;
