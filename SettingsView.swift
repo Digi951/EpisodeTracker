@@ -7,7 +7,6 @@ struct SettingsView: View {
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
-    @AppStorage(FreemiumAccess.unlockStorageKey) private var isPlusUnlocked = false
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
@@ -33,21 +32,6 @@ struct SettingsView: View {
                 Text("Mediathek")
             } footer: {
                 Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest.")
-            }
-
-            Section {
-                LabeledContent("Aktueller Plan", value: FreemiumAccess.planName(isPlusUnlocked: isPlusUnlocked))
-                LabeledContent(
-                    "Free-Kontingent",
-                    value: FreemiumAccess.freePlanUsageText(
-                        currentEpisodeCount: episodes.count,
-                        isPlusUnlocked: isPlusUnlocked
-                    )
-                )
-            } header: {
-                Text("Plan")
-            } footer: {
-                Text("Freemium ist technisch vorbereitet. Aktuell werden keine Funktionen gesperrt; die echte Freischaltung kann später über StoreKit angeschlossen werden.")
             }
 
             Section("Verwalten") {

@@ -70,6 +70,21 @@ Pro:
 
 HörspielLog is a private tracking app for audio drama episodes. User-created episodes, notes, ratings, moods, and backups remain on device unless the user manually exports a backup. The app can fetch public remote catalog JSON files over HTTPS to keep episode lists current without requiring an app update. The app does not provide audio content and is not affiliated with any audio drama publisher or trademark owner.
 
+### Guideline 2.1(b) Business Model Reply
+
+Thank you for reviewing HörspielLog.
+
+HörspielLog does not currently offer paid subscriptions, paid digital content, or externally unlocked paid features. Version 1.0 is a free private tracking app for audio drama episodes. Users can manually create and manage their own episode entries, ratings, notes, moods, and local backup files.
+
+The app can access public catalog JSON files over HTTPS. These catalogs contain metadata only, such as episode titles and ordering information, so users can add entries more conveniently. The app does not provide audio playback, audio files, publisher subscriptions, streaming access, or any paid media content.
+
+Answers to the requested questions:
+
+1. No users can use paid subscriptions in the app because HörspielLog does not currently include any paid subscriptions.
+2. Users cannot purchase subscriptions for this app at this time. There is no external purchase flow and no active In-App Purchase in version 1.0.
+3. Users cannot access any previously purchased subscriptions in HörspielLog.
+4. No paid content, subscriptions, or paid features are unlocked outside In-App Purchase. All current version 1.0 functionality is available for free.
+
 ## Upload Checklist
 
 - [x] App icon is configured.
