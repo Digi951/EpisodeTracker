@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct StatisticsView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var episodes: [Episode]
 
     private var listenedCount: Int {
@@ -40,7 +41,39 @@ struct StatisticsView: View {
         return counts.sorted { $0.value > $1.value }
     }
 
+    private var overviewStats: [StatSummary] {
+        var stats = [
+            StatSummary(title: "Folgen", value: "\(episodes.count)", systemImage: "list.number"),
+            StatSummary(title: "Gehört", value: "\(listenedCount)", systemImage: "checkmark.circle"),
+            StatSummary(title: "Offen", value: "\(unlistenedCount)", systemImage: "circle"),
+            StatSummary(title: "Hördurchgänge", value: "\(totalListens)", systemImage: "ear")
+        ]
+
+        if let avg = averageRating {
+            stats.append(
+                StatSummary(
+                    title: "Schnitt",
+                    value: String(format: "%.1f ⭐", avg),
+                    systemImage: "star"
+                )
+            )
+        }
+
+        return stats
+    }
+
     var body: some View {
+        Group {
+            if horizontalSizeClass == .regular {
+                iPadBody
+            } else {
+                iPhoneBody
+            }
+        }
+        .navigationTitle("Statistiken")
+    }
+
+    private var iPhoneBody: some View {
         List {
             if episodes.isEmpty {
                 ContentUnavailableView {
@@ -50,12 +83,8 @@ struct StatisticsView: View {
                 }
             } else {
                 Section("Übersicht") {
-                    StatRow(label: "Folgen insgesamt", value: "\(episodes.count)")
-                    StatRow(label: "Gehört", value: "\(listenedCount)")
-                    StatRow(label: "Offen", value: "\(unlistenedCount)")
-                    StatRow(label: "Hördurchgänge", value: "\(totalListens)")
-                    if let avg = averageRating {
-                        StatRow(label: "Bewertung im Schnitt", value: String(format: "%.1f ⭐", avg))
+                    ForEach(overviewStats) { stat in
+                        StatRow(label: stat.title, value: stat.value)
                     }
                 }
 
@@ -101,8 +130,94 @@ struct StatisticsView: View {
                 }
             }
         }
-        .navigationTitle("Statistiken")
     }
+
+    private var iPadBody: some View {
+        ScrollView {
+            if episodes.isEmpty {
+                ContentUnavailableView {
+                    Label("Noch keine Statistik", systemImage: "chart.bar")
+                } description: {
+                    Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
+                }
+                .frame(maxWidth: .infinity, minHeight: 360)
+            } else {
+                VStack(alignment: .leading, spacing: 24) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 180), spacing: 16)],
+                        spacing: 16
+                    ) {
+                        ForEach(overviewStats) { stat in
+                            StatSummaryTile(stat: stat)
+                        }
+                    }
+
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 320), spacing: 16)],
+                        alignment: .leading,
+                        spacing: 16
+                    ) {
+                        StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
+                            if topRated.isEmpty {
+                                EmptyStatisticRow(
+                                    systemImage: "star",
+                                    title: "Noch keine Bewertungen",
+                                    detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+                                )
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(topRated) { episode in
+                                        HStack {
+                                            Text("\(episode.episodeNumber). \(episode.title)")
+                                                .lineLimit(1)
+                                            Spacer()
+                                            if let rating = episode.rating {
+                                                Text("\(rating) ⭐")
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        StatisticPanel(title: "Stimmungen", systemImage: "tag") {
+                            if moodDistribution.isEmpty {
+                                EmptyStatisticRow(
+                                    systemImage: "tag",
+                                    title: "Noch keine Stimmungen",
+                                    detail: "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken."
+                                )
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(moodDistribution, id: \.0.id) { mood, count in
+                                        HStack {
+                                            Text("\(mood.iconName ?? "") \(mood.name)")
+                                            Spacer()
+                                            Text("\(count) Folgen")
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: 900, alignment: .leading)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 24)
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+private struct StatSummary: Identifiable {
+    let title: String
+    let value: String
+    let systemImage: String
+
+    var id: String { title }
 }
 
 private struct StatRow: View {
@@ -111,6 +226,43 @@ private struct StatRow: View {
 
     var body: some View {
         LabeledContent(label, value: value)
+    }
+}
+
+private struct StatSummaryTile: View {
+    let stat: StatSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: stat.systemImage)
+                .font(.title3)
+                .foregroundStyle(.tint)
+            Text(stat.value)
+                .font(.title2.weight(.semibold))
+            Text(stat.title)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct StatisticPanel<Content: View>: View {
+    let title: String
+    let systemImage: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

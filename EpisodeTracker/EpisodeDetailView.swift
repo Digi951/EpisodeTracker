@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct EpisodeDetailView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let episode: Episode
     @State private var showingEdit = false
 
@@ -61,6 +62,8 @@ struct EpisodeDetailView: View {
             }
         }
         .navigationTitle("Folge \(episode.episodeNumber)")
+        .listStyle(.insetGrouped)
+        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 72 : 0, for: .scrollContent)
         .toolbar {
             Button {
                 episode.isListened = true

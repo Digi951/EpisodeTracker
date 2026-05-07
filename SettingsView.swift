@@ -3,6 +3,7 @@ import SwiftData
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
@@ -99,6 +100,8 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Einstellungen")
+        .listStyle(.insetGrouped)
+        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 72 : 0, for: .scrollContent)
         .fileExporter(
             isPresented: $showingExporter,
             document: exportDocument,
