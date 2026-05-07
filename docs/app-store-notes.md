@@ -66,6 +66,15 @@ Pro:
 - Backup export/import
 - Extended statistics
 
+## Version 1.1
+
+Initial focus:
+
+- Enable native iPad distribution.
+- Keep the existing iPhone-first navigation and data model stable.
+- Review iPad screenshots in TestFlight before adding larger split-view navigation.
+- Avoid adding paid features until the free 1.0 review concern is fully resolved.
+
 ## Review Notes Draft
 
 HörspielLog is a private tracking app for audio drama episodes. User-created episodes, notes, ratings, moods, and backups remain on device unless the user manually exports a backup. The app can fetch public remote catalog JSON files over HTTPS to keep episode lists current without requiring an app update. The app does not provide audio content and is not affiliated with any audio drama publisher or trademark owner.
