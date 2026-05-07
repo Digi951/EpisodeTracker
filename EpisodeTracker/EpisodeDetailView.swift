@@ -32,6 +32,8 @@ struct EpisodeDetailView: View {
                             }
                         }
                     }
+                } else {
+                    LabeledContent("Bewertung", value: "Noch nicht bewertet")
                 }
             }
 
@@ -49,9 +51,12 @@ struct EpisodeDetailView: View {
                 }
             }
 
-            if let note = episode.personalNote, !note.isEmpty {
-                Section("Persönliche Notiz") {
+            Section("Persönliche Notiz") {
+                if let note = episode.personalNote, !note.isEmpty {
                     Text(note)
+                } else {
+                    Text("Noch keine Notiz hinterlegt.")
+                        .foregroundStyle(.secondary)
                 }
             }
         }

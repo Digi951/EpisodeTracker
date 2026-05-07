@@ -59,8 +59,14 @@ struct StatisticsView: View {
                     }
                 }
 
-                if !topRated.isEmpty {
-                    Section("Beste Bewertungen") {
+                Section("Beste Bewertungen") {
+                    if topRated.isEmpty {
+                        EmptyStatisticRow(
+                            systemImage: "star",
+                            title: "Noch keine Bewertungen",
+                            detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+                        )
+                    } else {
                         ForEach(topRated) { episode in
                             HStack {
                                 Text("\(episode.episodeNumber). \(episode.title)")
@@ -75,8 +81,14 @@ struct StatisticsView: View {
                     }
                 }
 
-                if !moodDistribution.isEmpty {
-                    Section("Stimmungen") {
+                Section("Stimmungen") {
+                    if moodDistribution.isEmpty {
+                        EmptyStatisticRow(
+                            systemImage: "tag",
+                            title: "Noch keine Stimmungen",
+                            detail: "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken."
+                        )
+                    } else {
                         ForEach(moodDistribution, id: \.0.id) { mood, count in
                             HStack {
                                 Text("\(mood.iconName ?? "") \(mood.name)")
@@ -99,5 +111,27 @@ private struct StatRow: View {
 
     var body: some View {
         LabeledContent(label, value: value)
+    }
+}
+
+private struct EmptyStatisticRow: View {
+    let systemImage: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
