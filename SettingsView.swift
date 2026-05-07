@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
+    @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
@@ -26,10 +27,11 @@ struct SettingsView: View {
                         Text(mode.title).tag(mode.rawValue)
                     }
                 }
+                Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
             } header: {
                 Text("Mediathek")
             } footer: {
-                Text("Der Sammlungsname erscheint oben in deiner Folgenliste.")
+                Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest.")
             }
 
             Section("Verwalten") {
@@ -90,6 +92,7 @@ struct SettingsView: View {
                 Button(role: .destructive) {
                     libraryTitle = "Meine Hörspiele"
                     appearanceModeRawValue = AppearanceMode.system.rawValue
+                    showsLibrarySnapshot = true
                 } label: {
                     Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
                 }

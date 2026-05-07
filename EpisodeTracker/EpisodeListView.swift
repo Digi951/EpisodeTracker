@@ -6,6 +6,7 @@ struct EpisodeListView: View {
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Universe.name) private var universes: [Universe]
+    @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
 
     @State private var searchText = ""
     @State private var filterMood: Mood?
@@ -99,7 +100,7 @@ struct EpisodeListView: View {
 
     var body: some View {
         List {
-            if !episodes.isEmpty {
+            if showsLibrarySnapshot && !episodes.isEmpty {
                 LibrarySnapshotView(
                     episodeCount: episodes.count,
                     listenedCount: listenedCount,
