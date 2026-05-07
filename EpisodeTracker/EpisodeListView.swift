@@ -12,6 +12,8 @@ struct EpisodeListView: View {
     @State private var filterMood: Mood?
     @State private var filterUniverse: Universe?
     @State private var sortOrder: SortOrder = .number
+    @State private var pendingDeleteEpisodes: [Episode] = []
+    @State private var showingDeleteConfirmation = false
 
     enum SortOrder: String, CaseIterable {
         case recentlyPlayed = "Zuletzt gespielt"
@@ -126,7 +128,7 @@ struct EpisodeListView: View {
                             episodeRow(episode)
                         }
                         .onDelete { offsets in
-                            deleteEpisodes(group.episodes, at: offsets)
+                            requestDeleteEpisodes(group.episodes, at: offsets)
                         }
                     }
                 }
@@ -135,7 +137,7 @@ struct EpisodeListView: View {
                     episodeRow(episode)
                 }
                 .onDelete { offsets in
-                    deleteEpisodes(filteredEpisodes, at: offsets)
+                    requestDeleteEpisodes(filteredEpisodes, at: offsets)
                 }
             }
         }
@@ -213,6 +215,20 @@ struct EpisodeListView: View {
                 }
             }
         }
+        .confirmationDialog(
+            deleteConfirmationTitle,
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Löschen", role: .destructive) {
+                confirmDeleteEpisodes()
+            }
+            Button("Abbrechen", role: .cancel) {
+                pendingDeleteEpisodes = []
+            }
+        } message: {
+            Text(deleteConfirmationMessage)
+        }
     }
 
     @ViewBuilder
@@ -246,18 +262,40 @@ struct EpisodeListView: View {
             .tint(.blue)
 
             Button(role: .destructive) {
-                modelContext.delete(episode)
+                requestDeleteEpisode(episode)
             } label: {
                 Label("Löschen", systemImage: "trash")
             }
         }
     }
 
-    private func deleteEpisodes(_ list: [Episode], at offsets: IndexSet) {
-        for index in offsets {
-            let episode = list[index]
+    private var deleteConfirmationTitle: String {
+        pendingDeleteEpisodes.count == 1 ? "Folge löschen?" : "\(pendingDeleteEpisodes.count) Folgen löschen?"
+    }
+
+    private var deleteConfirmationMessage: String {
+        guard pendingDeleteEpisodes.count == 1, let episode = pendingDeleteEpisodes.first else {
+            return "Diese Aktion kann nicht rückgängig gemacht werden."
+        }
+
+        return "„\(episode.title)“ wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+    }
+
+    private func requestDeleteEpisode(_ episode: Episode) {
+        pendingDeleteEpisodes = [episode]
+        showingDeleteConfirmation = true
+    }
+
+    private func requestDeleteEpisodes(_ list: [Episode], at offsets: IndexSet) {
+        pendingDeleteEpisodes = offsets.map { list[$0] }
+        showingDeleteConfirmation = !pendingDeleteEpisodes.isEmpty
+    }
+
+    private func confirmDeleteEpisodes() {
+        for episode in pendingDeleteEpisodes {
             modelContext.delete(episode)
         }
+        pendingDeleteEpisodes = []
     }
 
     private func sortingLabel(_ text: String, isSelected: Bool) -> some View {
