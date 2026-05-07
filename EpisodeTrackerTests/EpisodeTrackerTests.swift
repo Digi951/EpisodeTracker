@@ -72,4 +72,25 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(manifest.catalogs.count, 1)
         XCTAssertEqual(manifest.catalogs[0].url.absoluteString, "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_questionmarks.json")
     }
+
+    func testFreemiumPreparationDoesNotBlockCreationYet() {
+        XCTAssertFalse(FreemiumAccess.isEnforcementEnabled)
+        XCTAssertTrue(
+            FreemiumAccess.canCreateEpisode(
+                currentEpisodeCount: FreemiumAccess.freeEpisodeLimit,
+                isPlusUnlocked: false
+            )
+        )
+    }
+
+    func testFreemiumUsageTextShowsFreeLimitAndPlusState() {
+        XCTAssertEqual(
+            FreemiumAccess.freePlanUsageText(currentEpisodeCount: 12, isPlusUnlocked: false),
+            "12 von \(FreemiumAccess.freeEpisodeLimit)"
+        )
+        XCTAssertEqual(
+            FreemiumAccess.freePlanUsageText(currentEpisodeCount: 99, isPlusUnlocked: true),
+            "Unbegrenzt"
+        )
+    }
 }

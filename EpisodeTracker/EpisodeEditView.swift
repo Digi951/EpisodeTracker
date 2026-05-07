@@ -7,6 +7,7 @@ struct EpisodeEditView: View {
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Episode.episodeNumber) private var allEpisodes: [Episode]
     @Query(sort: \Mood.name) private var allMoods: [Mood]
+    @AppStorage(FreemiumAccess.unlockStorageKey) private var isPlusUnlocked = false
 
     var episode: Episode?
 
@@ -32,6 +33,19 @@ struct EpisodeEditView: View {
     }
     private var parsedReleaseYear: Int? {
         Int(releaseYearText.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    private var canCreateEpisodeUnderCurrentPlan: Bool {
+        !isNew || FreemiumAccess.canCreateEpisode(
+            currentEpisodeCount: allEpisodes.count,
+            isPlusUnlocked: isPlusUnlocked
+        )
+    }
+    private var canSave: Bool {
+        !title.isEmpty
+        && parsedEpisodeNumber != nil
+        && parsedReleaseYear != nil
+        && selectedUniverse != nil
+        && canCreateEpisodeUnderCurrentPlan
     }
     private var suggestedMoods: [(name: String, icon: String)] {
         Mood.defaultSuggestions.filter { suggestion in
@@ -88,6 +102,11 @@ struct EpisodeEditView: View {
                     Text(formValidationMessage)
                         .font(.footnote)
                         .foregroundStyle(.red)
+                }
+                if isNew && !canCreateEpisodeUnderCurrentPlan {
+                    Text(FreemiumAccess.limitReachedMessage())
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -179,7 +198,7 @@ struct EpisodeEditView: View {
                         dismiss()
                     }
                 }
-                .disabled(title.isEmpty || parsedEpisodeNumber == nil || parsedReleaseYear == nil || selectedUniverse == nil)
+                .disabled(!canSave)
             }
             if !isNew {
                 ToolbarItem(placement: .bottomBar) {
@@ -254,6 +273,11 @@ struct EpisodeEditView: View {
         guard let selectedUniverse else { return false }
 
         formValidationMessage = nil
+        guard canCreateEpisodeUnderCurrentPlan else {
+            formValidationMessage = FreemiumAccess.limitReachedMessage()
+            return false
+        }
+
         if hasDuplicateEpisodeNumber(in: selectedUniverse, episodeNumber: episodeNumber) {
             formValidationMessage = "Diese Folgennummer ist in diesem Katalog schon vorhanden."
             return false
