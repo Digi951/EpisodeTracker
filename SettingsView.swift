@@ -179,7 +179,7 @@ struct SettingsView: View {
     private var backupFileName: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        return "EpisodeTracker-Backup-\(formatter.string(from: .now))"
+        return "HoerspielTracker-Backup-\(formatter.string(from: .now))"
     }
 
     private func exportBackup() {

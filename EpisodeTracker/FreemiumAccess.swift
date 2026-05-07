@@ -4,7 +4,7 @@ enum FreemiumAccess {
     static let unlockStorageKey = "freemium.isPlusUnlocked"
     static let freeEpisodeLimit = 25
     static let isEnforcementEnabled = false
-    static let productDisplayName = "HörspielLog Plus"
+    static let productDisplayName = "HörspielTracker Pro"
 
     static func planName(isPlusUnlocked: Bool) -> String {
         isPlusUnlocked ? productDisplayName : "Free"
