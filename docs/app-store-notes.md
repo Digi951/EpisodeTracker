@@ -71,7 +71,8 @@ Pro:
 Initial focus:
 
 - Enable native iPad distribution.
-- Keep the existing iPhone-first navigation and data model stable.
+- Add a native iPad split view for the episode list and detail screen.
+- Keep the existing iPhone navigation and data model stable.
 - Review iPad screenshots in TestFlight before adding larger split-view navigation.
 - Avoid adding paid features until the free 1.0 review concern is fully resolved.
 
