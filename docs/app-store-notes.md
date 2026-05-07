@@ -4,7 +4,7 @@
 
 - Name: HörspielLog
 - Subtitle: Hörspiele einfach merken
-- Bundle ID: `de.digi951.hoerspieltracker`
+- Bundle ID: `com.Digi.EpisodeTracker`
 - Primary category: Entertainment
 - Age rating target: 4+
 - Initial availability: Germany
@@ -12,12 +12,13 @@
 
 ## Privacy
 
-- Privacy Policy URL: `https://digi951.github.io/EpisodeTracker/privacy.html`
-- Support URL: `https://digi951.github.io/EpisodeTracker/support.html`
+- Marketing URL: `https://digi951.github.io/hoerspiellog-site/`
+- Privacy Policy URL: `https://digi951.github.io/hoerspiellog-site/privacy/`
+- Support URL: `https://digi951.github.io/hoerspiellog-site/support/`
 - App Privacy answer: The app does not collect data.
 - Privacy choices URL: not needed.
 
-GitHub Pages is published from the `docs/` folder of `Digi951/EpisodeTracker`.
+GitHub Pages site lives in the separate `Digi951/hoerspiellog-site` repository.
 
 ## App Store Copy
 
@@ -49,7 +50,7 @@ Recommended In-App Purchase:
 
 - Type: Non-Consumable
 - Reference name: HörspielLog Pro
-- Product ID: `de.digi951.hoerspieltracker.pro`
+- Product ID: `com.Digi.EpisodeTracker.pro`
 
 Free:
 
@@ -73,7 +74,7 @@ HörspielLog is a private tracking app for audio drama episodes. User-created ep
 
 - [x] App icon is configured.
 - [x] Display name is `HörspielLog`.
-- [x] Bundle ID is `de.digi951.hoerspieltracker`.
+- [x] Bundle ID is `com.Digi.EpisodeTracker`.
 - [x] Minimum OS is iOS 17.0.
 - [x] Privacy manifest is present.
 - [x] Privacy, support, website, manifest, and catalog URLs return HTTP 200.
