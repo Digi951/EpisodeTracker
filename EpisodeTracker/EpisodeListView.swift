@@ -382,7 +382,7 @@ private struct EmptyLibraryOnboardingView: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(spacing: 8) {
-                    Text("Dein HörspielTracker ist bereit")
+                    Text("Dein HörspielLog ist bereit")
                         .font(.title2.weight(.semibold))
                         .multilineTextAlignment(.center)
                     Text("Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen.")

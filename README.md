@@ -1,4 +1,4 @@
-# HörspielTracker
+# HörspielLog
 
 A native iOS app for tracking and managing episodes of German audio dramas (*Hörspiele*). Built with SwiftUI and SwiftData, with optional remote catalogs for **Die drei ???** and other series.
 
