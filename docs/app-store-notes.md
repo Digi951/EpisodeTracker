@@ -53,7 +53,7 @@ Recommended In-App Purchase:
 
 Free:
 
-- Up to 30 manually created episodes
+- Up to 25 manually created episodes
 - 1 custom catalog
 - Predefined remote catalogs
 - Basic statistics

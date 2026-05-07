@@ -371,6 +371,7 @@ private struct CatalogManagementView: View {
     @State private var validationMessage: String?
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
+    @State private var catalogStatuses: [String: CatalogCacheStatus] = [:]
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
         CatalogSourceRegistry.managedSources
@@ -420,24 +421,17 @@ private struct CatalogManagementView: View {
             }
 
             Section {
-                ForEach(predefinedUniverseNames, id: \.self) { universeName in
+                ForEach(predefinedCatalogSources, id: \.id) { source in
+                    let universeName = source.name
                     let isAdded = existingUniverseNameKeys.contains(universeName.lowercased())
                     Button {
                         addPredefinedUniverse(named: universeName)
                     } label: {
-                        HStack {
-                            Text(universeName)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if isAdded {
-                                Label("Aktiv", systemImage: "checkmark.circle.fill")
-                                    .labelStyle(.iconOnly)
-                                    .foregroundStyle(.green)
-                            } else {
-                                Image(systemName: "plus.circle")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
+                        CatalogSourceStatusRow(
+                            name: universeName,
+                            isAdded: isAdded,
+                            status: catalogStatuses[universeName]
+                        )
                     }
                     .disabled(isAdded)
                 }
@@ -478,6 +472,7 @@ private struct CatalogManagementView: View {
             if selectedManagedCatalogName.isEmpty {
                 selectedManagedCatalogName = predefinedUniverseNames.first ?? ""
             }
+            reloadCatalogStatuses()
         }
     }
 
@@ -522,6 +517,7 @@ private struct CatalogManagementView: View {
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalog(universeName: universeName, force: true)
             await MainActor.run {
+                reloadCatalogStatuses()
                 catalogStatusIsError = false
                 catalogStatusMessage = "Katalog aktualisiert für \(universeName)."
             }
@@ -532,8 +528,63 @@ private struct CatalogManagementView: View {
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
             await MainActor.run {
+                reloadCatalogStatuses()
                 catalogStatusIsError = false
                 catalogStatusMessage = "Alle vordefinierten Kataloge wurden aktualisiert."
+            }
+        }
+    }
+
+    private func reloadCatalogStatuses() {
+        let store = CatalogCacheStore()
+        catalogStatuses = Dictionary(
+            uniqueKeysWithValues: predefinedUniverseNames.map { universeName in
+                (universeName, store.loadRemoteCatalogStatus(universeName: universeName))
+            }
+        )
+    }
+}
+
+private struct CatalogSourceStatusRow: View {
+    let name: String
+    let isAdded: Bool
+    let status: CatalogCacheStatus?
+
+    private var cacheText: String {
+        guard let status, let cachedEntryCount = status.cachedEntryCount else {
+            return "Noch kein Offline-Cache"
+        }
+
+        return "\(cachedEntryCount) Titel im Offline-Cache"
+    }
+
+    private var checkedText: String? {
+        guard let lastCheckedAt = status?.lastCheckedAt else { return nil }
+        return "Zuletzt geprüft: \(lastCheckedAt.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .foregroundStyle(.primary)
+                Text(cacheText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                if let checkedText {
+                    Text(checkedText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            if isAdded {
+                Label("Aktiv", systemImage: "checkmark.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.green)
+            } else {
+                Image(systemName: "plus.circle")
+                    .foregroundStyle(.tint)
             }
         }
     }

@@ -48,6 +48,15 @@ struct RemoteCatalogMetadata: Codable {
     var lastCheckedAt: Date?
 }
 
+struct CatalogCacheStatus {
+    let cachedEntryCount: Int?
+    let lastCheckedAt: Date?
+
+    var hasCache: Bool {
+        cachedEntryCount != nil
+    }
+}
+
 enum CatalogSourceRegistry {
     static let bundledCollectionName = "Die drei ???"
     static let manifestURL = URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/manifest.json")!

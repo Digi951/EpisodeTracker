@@ -89,6 +89,13 @@ struct CatalogCacheStore {
         try data.write(to: remoteMetadataURL(for: universeName), options: [.atomic])
     }
 
+    func loadRemoteCatalogStatus(universeName: String) -> CatalogCacheStatus {
+        CatalogCacheStatus(
+            cachedEntryCount: loadRemoteCache(universeName: universeName)?.count,
+            lastCheckedAt: loadRemoteMetadata(universeName: universeName)?.lastCheckedAt
+        )
+    }
+
     func loadBundledFallbackEntries() -> [CatalogEntry] {
         guard let url = Bundle.main.url(forResource: "EpisodeCatalog", withExtension: "json"),
               let data = try? Data(contentsOf: url),
