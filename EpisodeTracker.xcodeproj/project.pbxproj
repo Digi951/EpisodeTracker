@@ -33,7 +33,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		FA49EC9F2F85085600521E9B /* EpisodeTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EpisodeTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA49EC9F2F85085600521E9B /* HoerspielLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HoerspielLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA49ECAE2F85085800521E9B /* EpisodeTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EpisodeTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA49ECB82F85085800521E9B /* EpisodeTrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EpisodeTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA54EDA32F858FD900CEDE1A /* CatalogModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogModels.swift; sourceTree = "<group>"; };
@@ -106,7 +106,7 @@
 		FA49ECA02F85085600521E9B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				FA49EC9F2F85085600521E9B /* EpisodeTracker.app */,
+				FA49EC9F2F85085600521E9B /* HoerspielLog.app */,
 				FA49ECAE2F85085800521E9B /* EpisodeTrackerTests.xctest */,
 				FA49ECB82F85085800521E9B /* EpisodeTrackerUITests.xctest */,
 			);
@@ -135,7 +135,7 @@
 			packageProductDependencies = (
 			);
 			productName = EpisodeTracker;
-			productReference = FA49EC9F2F85085600521E9B /* EpisodeTracker.app */;
+			productReference = FA49EC9F2F85085600521E9B /* HoerspielLog.app */;
 			productType = "com.apple.product-type.application";
 		};
 		FA49ECAD2F85085800521E9B /* EpisodeTrackerTests */ = {
@@ -427,8 +427,8 @@
 				DEVELOPMENT_TEAM = 3YVDJZV6GT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleName = "HörspielLog";
 				INFOPLIST_KEY_CFBundleDisplayName = "HörspielLog";
+				INFOPLIST_KEY_CFBundleName = "HörspielLog";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -440,7 +440,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker;
 				PRODUCT_MODULE_NAME = EpisodeTracker;
 				PRODUCT_NAME = HoerspielLog;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -467,8 +467,8 @@
 				DEVELOPMENT_TEAM = 3YVDJZV6GT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleName = "HörspielLog";
 				INFOPLIST_KEY_CFBundleDisplayName = "HörspielLog";
+				INFOPLIST_KEY_CFBundleName = "HörspielLog";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -480,7 +480,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker;
 				PRODUCT_MODULE_NAME = EpisodeTracker;
 				PRODUCT_NAME = HoerspielLog;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -507,7 +507,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -529,7 +529,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -549,7 +549,7 @@
 				DEVELOPMENT_TEAM = 3YVDJZV6GT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -569,7 +569,7 @@
 				DEVELOPMENT_TEAM = 3YVDJZV6GT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.digi951.hoerspieltracker.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
