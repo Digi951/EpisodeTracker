@@ -309,7 +309,7 @@ struct EpisodeListView: View {
     }
 }
 
-private struct LibrarySnapshotView: View {
+struct LibrarySnapshotView: View {
     let episodeCount: Int
     let listenedCount: Int
     let openCount: Int

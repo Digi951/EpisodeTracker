@@ -114,11 +114,13 @@ private struct EpisodeSplitView: View {
     private var iPadEpisodeList: some View {
         IPadEpisodeListView(selection: $selectedEpisode)
             .navigationTitle(libraryTitle)
+            .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 380)
     }
 }
 
 private struct IPadEpisodeListView: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
 
@@ -174,8 +176,32 @@ private struct IPadEpisodeListView: View {
         filterUniverse != nil
     }
 
+    private var listenedCount: Int {
+        episodes.filter(\.isListened).count
+    }
+
+    private var openCount: Int {
+        episodes.count - listenedCount
+    }
+
+    private var totalListens: Int {
+        episodes.reduce(0) { $0 + $1.listenCount }
+    }
+
     var body: some View {
         List(selection: $selection) {
+            if showsLibrarySnapshot && !episodes.isEmpty {
+                LibrarySnapshotView(
+                    episodeCount: episodes.count,
+                    listenedCount: listenedCount,
+                    openCount: openCount,
+                    totalListens: totalListens
+                )
+                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+
             if filteredEpisodes.isEmpty {
                 ContentUnavailableView {
                     Label(episodes.isEmpty ? "Noch keine Folgen" : "Nichts gefunden", systemImage: "magnifyingglass")
