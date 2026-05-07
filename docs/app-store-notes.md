@@ -80,6 +80,12 @@ Initial focus:
 
 HörspielLog is a private tracking app for audio drama episodes. User-created episodes, notes, ratings, moods, and backups remain on device unless the user manually exports a backup. The app can fetch public remote catalog JSON files over HTTPS to keep episode lists current without requiring an app update. The app does not provide audio content and is not affiliated with any audio drama publisher or trademark owner.
 
+### Version 1.1 Review Notes
+
+Version 1.1 adds native iPad support and layout improvements for larger screens. The update introduces an iPad split view for browsing episodes and viewing episode details side by side, while keeping the existing iPhone experience unchanged.
+
+This update does not add subscriptions, paid digital content, external purchase flows, audio playback, audio files, streaming access, or externally unlocked features. HörspielLog remains a free private tracking app. Remote catalog files are public HTTPS JSON metadata only and contain episode titles, ordering information, and related catalog metadata to help users create their own local tracking entries.
+
 ### Guideline 2.1(b) Business Model Reply
 
 Thank you for reviewing HörspielLog.
