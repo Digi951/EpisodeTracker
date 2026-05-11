@@ -22,42 +22,18 @@ struct EpisodeDetailView: View {
     var body: some View {
         List {
             Section {
-                VStack(spacing: 12) {
-                    // Episode number + universe
-                    HStack {
-                        Text(episode.universe?.name ?? "Allgemein")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(String(episode.releaseYear))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                VStack(alignment: .leading, spacing: 16) {
+                    // Katalog + Jahr
+                    Text("\(episode.universe?.name ?? "Allgemein") · \(String(episode.releaseYear))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                    // Big number + title
-                    HStack(alignment: .top, spacing: 12) {
-                        Text("\(episode.episodeNumber)")
-                            .font(.system(size: 40, weight: .bold, design: .rounded))
-                            .foregroundStyle(.tint)
-                            .frame(minWidth: 50, alignment: .trailing)
+                    // Titel
+                    Text(episode.title)
+                        .font(.title2.weight(.bold))
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(episode.title)
-                                .font(.title3.weight(.semibold))
-
-                            // Rating
-                            HStack(spacing: 2) {
-                                ForEach(1...5, id: \.self) { star in
-                                    Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
-                                        .font(.caption)
-                                        .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
-                                }
-                            }
-                        }
-                    }
-
-                    // Status badges
-                    HStack(spacing: 10) {
+                    // Status + Rating Zeile
+                    HStack(spacing: 12) {
                         Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(statusColor)
@@ -65,13 +41,21 @@ struct EpisodeDetailView: View {
                             .padding(.vertical, 5)
                             .background(statusColor.opacity(0.12), in: .capsule)
 
-                        if let lastListened = episode.lastListenedAt {
-                            Text(lastListened.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        HStack(spacing: 2) {
+                            ForEach(1...5, id: \.self) { star in
+                                Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
+                                    .font(.subheadline)
+                                    .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
+                            }
                         }
 
                         Spacer()
+                    }
+
+                    if let lastListened = episode.lastListenedAt {
+                        Text("Zuletzt gehört: \(lastListened.formatted(date: .abbreviated, time: .omitted))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -91,12 +75,9 @@ struct EpisodeDetailView: View {
                 }
             }
 
-            Section("Persönliche Notiz") {
-                if let note = episode.personalNote, !note.isEmpty {
+            if let note = episode.personalNote, !note.isEmpty {
+                Section("Persönliche Notiz") {
                     Text(note)
-                } else {
-                    Text("Noch keine Notiz hinterlegt.")
-                        .foregroundStyle(.secondary)
                 }
             }
         }
