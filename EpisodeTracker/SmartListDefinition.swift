@@ -71,11 +71,61 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     // MARK: - Query Logic (stubs — implemented in Tasks 2-4)
 
     static func continuationEpisodes(from episodes: [Episode]) -> [Episode] {
-        []
+        let withUniverse = episodes.filter { $0.universe != nil }
+        let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
+
+        var results: [(episode: Episode, lastActivity: Date)] = []
+
+        for (_, universeEpisodes) in grouped {
+            let listened = universeEpisodes.filter(\.isListened)
+            guard !listened.isEmpty else { continue }
+
+            let maxListenedNumber = listened.map(\.episodeNumber).max()!
+
+            let nextUnlistened = universeEpisodes
+                .filter { $0.episodeNumber > maxListenedNumber && !$0.isListened }
+                .min(by: { $0.episodeNumber < $1.episodeNumber })
+
+            if let next = nextUnlistened {
+                let lastActivity = listened.compactMap(\.lastListenedAt).max() ?? .distantPast
+                results.append((next, lastActivity))
+            }
+        }
+
+        results.sort { $0.lastActivity > $1.lastActivity }
+        return results.map(\.episode)
     }
 
     static func skippedEpisodes(from episodes: [Episode]) -> [Episode] {
-        []
+        let withUniverse = episodes.filter { $0.universe != nil }
+        let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
+
+        var results: [(universeName: String, episode: Episode)] = []
+
+        for (_, universeEpisodes) in grouped {
+            let listened = universeEpisodes.filter(\.isListened)
+            guard !listened.isEmpty else { continue }
+
+            let maxListenedNumber = listened.map(\.episodeNumber).max()!
+
+            let skipped = universeEpisodes.filter {
+                $0.episodeNumber < maxListenedNumber && !$0.isListened
+            }
+
+            for episode in skipped {
+                let name = episode.universe?.name ?? ""
+                results.append((name, episode))
+            }
+        }
+
+        results.sort {
+            if $0.universeName != $1.universeName {
+                return $0.universeName.localizedCompare($1.universeName) == .orderedAscending
+            }
+            return $0.episode.episodeNumber < $1.episode.episodeNumber
+        }
+
+        return results.map(\.episode)
     }
 
     static func longPauseEpisodes(from episodes: [Episode], referenceDate: Date = .now) -> [Episode] {
