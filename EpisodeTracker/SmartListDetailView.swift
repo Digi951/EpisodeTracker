@@ -9,9 +9,7 @@ struct SmartListDetailView: View {
     @Query private var allEpisodes: [Episode]
     @State private var shuffledEpisodes: [Episode]?
     @State private var episodeFilter: EpisodeFilter = .unlistened
-    @State private var prefillEntry: CatalogEntry?
-    @State private var prefillUniverseName: String?
-    @State private var showingAddSheet = false
+    @State private var catalogAddItem: CatalogAddItem?
 
     private var displayedEpisodes: [Episode] {
         if smartList.isRandomList {
@@ -66,11 +64,11 @@ struct SmartListDetailView: View {
         .onChange(of: episodeFilter) { _, _ in
             reshuffle()
         }
-        .sheet(isPresented: $showingAddSheet) {
+        .sheet(item: $catalogAddItem) { item in
             NavigationStack {
                 EpisodeEditView(
-                    prefillEntry: prefillEntry,
-                    prefillUniverseName: prefillUniverseName
+                    prefillEntry: item.entry,
+                    prefillUniverseName: item.universeName
                 )
             }
         }
@@ -113,9 +111,7 @@ struct SmartListDetailView: View {
                     universeName: suggestion.universeName,
                     entry: suggestion.entry
                 ) {
-                    prefillEntry = suggestion.entry
-                    prefillUniverseName = suggestion.universeName
-                    showingAddSheet = true
+                    catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
                 }
             }
         }
@@ -206,4 +202,10 @@ private struct CatalogEntryRow: View {
         }
         .padding(.vertical, 2)
     }
+}
+
+private struct CatalogAddItem: Identifiable {
+    let id = UUID()
+    let entry: CatalogEntry
+    let universeName: String
 }
