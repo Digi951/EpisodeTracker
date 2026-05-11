@@ -15,6 +15,13 @@ struct UpNextView: View {
 
     var body: some View {
         List {
+            if let error = EpisodeCatalog.shared.lastRefreshError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+                    .listRowSeparator(.hidden)
+            }
+
             ForEach(SmartListDefinition.allCases) { smartList in
                 smartListRow(smartList)
             }

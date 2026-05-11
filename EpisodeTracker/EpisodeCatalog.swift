@@ -1,6 +1,6 @@
 import Foundation
 
-@MainActor
+@MainActor @Observable
 final class EpisodeCatalog {
     static let shared = EpisodeCatalog()
 
@@ -8,6 +8,7 @@ final class EpisodeCatalog {
     private let parser: CatalogParser
     private let cacheStore: CatalogCacheStore
     private let remoteDataSource: CatalogRemoteDataSource
+    private(set) var lastRefreshError: String?
 
     init() {
         parser = CatalogParser()
@@ -58,6 +59,7 @@ final class EpisodeCatalog {
     }
 
     func refreshManagedCatalogsIfNeeded(force: Bool = false) async {
+        lastRefreshError = nil
         await refreshManifestIfNeeded(force: force)
 
         for source in managedSources {
@@ -104,7 +106,7 @@ final class EpisodeCatalog {
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
             }
         } catch {
-            // Keep cached or fallback source list when the manifest refresh fails.
+            lastRefreshError = "Katalogverzeichnis nicht erreichbar."
         }
     }
 
@@ -141,7 +143,7 @@ final class EpisodeCatalog {
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name)
             }
         } catch {
-            // Keep existing cache/fallback data when network refresh fails.
+            lastRefreshError = "Katalog \(source.name) nicht aktualisierbar."
         }
     }
 
