@@ -254,7 +254,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     // MARK: - Catalog Queries
 
-    static func nextFromCatalog(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode]) -> [(universeName: String, entry: CatalogEntry)] {
+    static func nextFromCatalog(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode], perUniverse: Int = 3) -> [(universeName: String, entry: CatalogEntry)] {
         let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { $0.universe!.name.lowercased() }
 
         let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { $0.collectionName!.lowercased() }
@@ -274,6 +274,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             let missing = uniqueEpisodes
                 .filter { !libraryNumbers.contains($0.number) }
                 .sorted(by: { $0.number < $1.number })
+                .prefix(perUniverse)
 
             for entry in missing {
                 results.append((displayName, entry))

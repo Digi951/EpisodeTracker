@@ -557,6 +557,24 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result[0].entry.number, 2)
     }
 
+    func testNextFromCatalogLimitsPerUniverse() {
+        let u1 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+        ]
+        let catalog = (2...10).map {
+            makeCatalogEntry(number: $0, title: "Folge \($0)", collection: "Die drei ???")
+        } + [makeCatalogEntry(number: 1, collection: "Die drei ???")]
+
+        let resultDefault = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+        XCTAssertEqual(resultDefault.count, 3)
+        XCTAssertEqual(resultDefault[0].entry.number, 2)
+        XCTAssertEqual(resultDefault[2].entry.number, 4)
+
+        let resultCustom = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library, perUniverse: 5)
+        XCTAssertEqual(resultCustom.count, 5)
+    }
+
     func testNextFromCatalogMultipleUniversesSortedByName() {
         let u1 = makeUniverse("TKKG")
         let u2 = makeUniverse("Die drei ???")
