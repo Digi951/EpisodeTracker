@@ -414,6 +414,7 @@ struct EpisodeEditView: View {
             $0.universe?.name.lowercased() == key
         }.map(\.episodeNumber))
 
+        var seenNumbers = Set<Int>()
         yearSuggestions = EpisodeCatalog.shared.allEntries
             .filter {
                 $0.releaseYear == year
@@ -421,6 +422,7 @@ struct EpisodeEditView: View {
                 && !libraryNumbers.contains($0.number)
             }
             .sorted { $0.number < $1.number }
+            .filter { seenNumbers.insert($0.number).inserted }
     }
 
     private func addSuggestedMood(_ suggestion: (name: String, icon: String)) {
