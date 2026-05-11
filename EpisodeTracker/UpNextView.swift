@@ -13,6 +13,17 @@ struct UpNextView: View {
         )
     }
 
+    private func count(for smartList: SmartListDefinition) -> Int {
+        switch smartList {
+        case .naechsteAusKatalog:
+            return catalogSuggestions.count
+        case .zufaelligNachStimmung:
+            return SmartListDefinition.availableMoods(from: episodes, allMoods: moods).count
+        default:
+            return smartList.episodes(from: episodes).count
+        }
+    }
+
     var body: some View {
         List {
             if let error = EpisodeCatalog.shared.lastRefreshError {
@@ -33,24 +44,26 @@ struct UpNextView: View {
 
     @ViewBuilder
     private func smartListRow(_ smartList: SmartListDefinition) -> some View {
+        let itemCount = count(for: smartList)
+        let hasItems = itemCount > 0 || smartList == .zufaelligNachStimmung
+
         switch smartList {
         case .naechsteAusKatalog:
             NavigationLink(value: SmartListNavigation.detail(smartList)) {
-                let firstSuggestion = catalogSuggestions.first
                 SmartListRowContent(
-                    icon: smartList.icon,
-                    name: smartList.displayName,
-                    teaser: firstSuggestion.map { SmartListDefinition.catalogTeaserText(for: $0.entry) },
-                    emptyText: smartList.emptyStateMessage,
+                    smartList: smartList,
+                    count: itemCount,
+                    teaser: catalogSuggestions.first.map { SmartListDefinition.catalogTeaserText(for: $0.entry) },
                     onInfoTap: { showingInfo = smartList }
                 )
             }
+            .opacity(hasItems ? 1 : 0.5)
         case .zufaelligNachStimmung:
             NavigationLink(value: SmartListNavigation.moodPicker) {
                 SmartListRowContent(
-                    icon: smartList.icon,
-                    name: smartList.displayName,
-                    teaser: "Stimmung wählen...",
+                    smartList: smartList,
+                    count: itemCount,
+                    teaser: "Stimmung wählen…",
                     onInfoTap: { showingInfo = smartList }
                 )
             }
@@ -58,33 +71,47 @@ struct UpNextView: View {
             NavigationLink(value: SmartListNavigation.detail(smartList)) {
                 let firstEpisode = smartList.episodes(from: episodes).first
                 SmartListRowContent(
-                    icon: smartList.icon,
-                    name: smartList.displayName,
+                    smartList: smartList,
+                    count: itemCount,
                     teaser: firstEpisode.map { SmartListDefinition.teaserText(for: $0) },
-                    emptyText: smartList.emptyStateMessage,
                     onInfoTap: { showingInfo = smartList }
                 )
             }
+            .opacity(hasItems ? 1 : 0.5)
         }
     }
 }
 
 private struct SmartListRowContent: View {
-    let icon: String
-    let name: String
+    let smartList: SmartListDefinition
+    var count: Int = 0
     var teaser: String?
-    var emptyText: String = "Keine Vorschläge"
     var onInfoTap: (() -> Void)?
 
+    private var color: Color {
+        switch smartList.accentColor {
+        case "blue": .blue
+        case "green": .green
+        case "orange": .orange
+        case "red": .red
+        case "yellow": .yellow
+        case "purple": .purple
+        case "pink": .pink
+        default: .accentColor
+        }
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            Text(icon)
-                .font(.title2)
-                .frame(width: 32)
+        HStack(spacing: 14) {
+            Image(systemName: smartList.icon)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(color.gradient, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(name)
+                HStack(spacing: 6) {
+                    Text(smartList.displayName)
                         .font(.body.weight(.semibold))
 
                     if let onInfoTap {
@@ -99,13 +126,21 @@ private struct SmartListRowContent: View {
                     }
                 }
 
-                Text(teaser ?? emptyText)
+                Text(teaser ?? smartList.emptyStateMessage)
                     .font(.caption)
                     .foregroundStyle(teaser != nil ? .secondary : .tertiary)
                     .lineLimit(1)
             }
+
+            Spacer()
+
+            if count > 0 {
+                Text("\(count)")
+                    .font(.subheadline.weight(.medium).monospacedDigit())
+                    .foregroundStyle(color)
+            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 }
 
@@ -114,11 +149,27 @@ private struct SmartListInfoSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    private var color: Color {
+        switch smartList.accentColor {
+        case "blue": .blue
+        case "green": .green
+        case "orange": .orange
+        case "red": .red
+        case "yellow": .yellow
+        case "purple": .purple
+        case "pink": .pink
+        default: .accentColor
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                Text(smartList.icon)
-                    .font(.system(size: 48))
+                Image(systemName: smartList.icon)
+                    .font(.system(size: 36))
+                    .foregroundStyle(.white)
+                    .frame(width: 64, height: 64)
+                    .background(color.gradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 Text(smartList.displayName)
                     .font(.title2.weight(.bold))

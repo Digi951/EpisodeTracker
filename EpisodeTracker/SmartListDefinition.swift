@@ -37,13 +37,25 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var icon: String {
         switch self {
-        case .fortsetzen: "▶️"
-        case .naechsteAusKatalog: "📖"
-        case .langeNichtGehoert: "⏸️"
-        case .uebersprungen: "⏭️"
-        case .topBewertet: "⭐"
-        case .zufaellig: "🎲"
-        case .zufaelligNachStimmung: "😱"
+        case .fortsetzen: "play.circle.fill"
+        case .naechsteAusKatalog: "text.badge.plus"
+        case .langeNichtGehoert: "clock.arrow.circlepath"
+        case .uebersprungen: "arrow.right.to.line"
+        case .topBewertet: "star.fill"
+        case .zufaellig: "dice.fill"
+        case .zufaelligNachStimmung: "theatermasks.fill"
+        }
+    }
+
+    var accentColor: String {
+        switch self {
+        case .fortsetzen: "blue"
+        case .naechsteAusKatalog: "green"
+        case .langeNichtGehoert: "orange"
+        case .uebersprungen: "red"
+        case .topBewertet: "yellow"
+        case .zufaellig: "purple"
+        case .zufaelligNachStimmung: "pink"
         }
     }
 
