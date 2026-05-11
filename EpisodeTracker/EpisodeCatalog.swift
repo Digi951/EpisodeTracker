@@ -20,6 +20,10 @@ final class EpisodeCatalog {
         entries = loadManagedEntriesFromCacheOrFallback() + cacheStore.loadCustomEntries()
     }
 
+    var allEntries: [CatalogEntry] {
+        entries
+    }
+
     var managedSources: [ManagedCatalogSource] {
         CatalogSourceRegistry.managedSources
     }

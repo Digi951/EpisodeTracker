@@ -467,4 +467,95 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result[0].count, 2)
     }
+
+    // MARK: - Nächste aus dem Katalog
+
+    private func makeCatalogEntry(number: Int, title: String = "Folge", collection: String) -> CatalogEntry {
+        CatalogEntry(number: number, title: title, releaseYear: 2020, collectionName: collection)
+    }
+
+    func testNextFromCatalogFindsNextPerUniverse() {
+        let u1 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 3, universe: u1, isListened: true),
+        ]
+        let catalog = [
+            makeCatalogEntry(number: 1, title: "Super-Papagei", collection: "Die drei ???"),
+            makeCatalogEntry(number: 2, title: "Phantominsel", collection: "Die drei ???"),
+            makeCatalogEntry(number: 3, title: "Karpatenhund", collection: "Die drei ???"),
+            makeCatalogEntry(number: 4, title: "Chinesische Vasen", collection: "Die drei ???"),
+            makeCatalogEntry(number: 5, title: "Flüsternde Mumie", collection: "Die drei ???"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].entry.number, 4)
+        XCTAssertEqual(result[0].universeName, "Die drei ???")
+    }
+
+    func testNextFromCatalogSkipsUniverseWithNoLibraryEpisodes() {
+        let catalog = [
+            makeCatalogEntry(number: 1, collection: "TKKG"),
+            makeCatalogEntry(number: 2, collection: "TKKG"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: [])
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testNextFromCatalogSkipsWhenAllCatalogEpisodesInLibrary() {
+        let u1 = makeUniverse("Test")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 2, universe: u1, isListened: true),
+        ]
+        let catalog = [
+            makeCatalogEntry(number: 1, collection: "Test"),
+            makeCatalogEntry(number: 2, collection: "Test"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testNextFromCatalogMatchesCaseInsensitive() {
+        let u1 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+        ]
+        let catalog = [
+            makeCatalogEntry(number: 1, collection: "die drei ???"),
+            makeCatalogEntry(number: 2, title: "Phantominsel", collection: "die drei ???"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].entry.number, 2)
+    }
+
+    func testNextFromCatalogMultipleUniversesSortedByName() {
+        let u1 = makeUniverse("TKKG")
+        let u2 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 1, universe: u2, isListened: true),
+        ]
+        let catalog = [
+            makeCatalogEntry(number: 1, collection: "TKKG"),
+            makeCatalogEntry(number: 2, title: "TKKG 2", collection: "TKKG"),
+            makeCatalogEntry(number: 1, collection: "Die drei ???"),
+            makeCatalogEntry(number: 2, title: "DDF 2", collection: "Die drei ???"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].universeName, "Die drei ???")
+        XCTAssertEqual(result[1].universeName, "TKKG")
+    }
 }

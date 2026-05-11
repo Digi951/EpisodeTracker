@@ -26,6 +26,7 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
 
 enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     case fortsetzen
+    case naechsteAusKatalog
     case langeNichtGehoert
     case uebersprungen
     case topBewertet
@@ -37,6 +38,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     var icon: String {
         switch self {
         case .fortsetzen: "▶️"
+        case .naechsteAusKatalog: "📖"
         case .langeNichtGehoert: "⏸️"
         case .uebersprungen: "⏭️"
         case .topBewertet: "⭐"
@@ -48,6 +50,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     var displayName: String {
         switch self {
         case .fortsetzen: "Fortsetzen"
+        case .naechsteAusKatalog: "Nächste aus dem Katalog"
         case .langeNichtGehoert: "Lange nicht gehört"
         case .uebersprungen: "Übersprungen"
         case .topBewertet: "Top bewertet"
@@ -59,6 +62,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     var emptyStateMessage: String {
         switch self {
         case .fortsetzen: "Du bist überall auf dem neuesten Stand"
+        case .naechsteAusKatalog: "Keine weiteren Katalog-Folgen verfügbar"
         case .langeNichtGehoert: "Keine lang pausierten Serien"
         case .uebersprungen: "Keine übersprungenen Folgen"
         case .topBewertet: "Keine bewerteten ungehörten Folgen"
@@ -71,6 +75,8 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .fortsetzen:
             "Zeigt pro Serie die nächste ungehörte Folge nach der höchsten gehörten. Sortiert nach letzter Aktivität."
+        case .naechsteAusKatalog:
+            "Pro Serie die nächste Folge aus dem Katalog, die du noch nicht in deiner Bibliothek hast. Ideal um neue Folgen zu entdecken."
         case .langeNichtGehoert:
             "Serien, bei denen du seit über 30 Tagen keine Folge mehr gehört hast und noch offene Folgen übrig sind."
         case .uebersprungen:
@@ -92,10 +98,16 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     // MARK: - Query Dispatch
 
+    var needsCatalog: Bool {
+        self == .naechsteAusKatalog
+    }
+
     func episodes(from allEpisodes: [Episode], referenceDate: Date = .now) -> [Episode] {
         switch self {
         case .fortsetzen:
             return Self.continuationEpisodes(from: allEpisodes)
+        case .naechsteAusKatalog:
+            return []
         case .langeNichtGehoert:
             return Self.longPauseEpisodes(from: allEpisodes, referenceDate: referenceDate)
         case .uebersprungen:
@@ -238,6 +250,41 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
         results.sort { $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending }
         return results
+    }
+
+    // MARK: - Catalog Queries
+
+    static func nextFromCatalog(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode]) -> [(universeName: String, entry: CatalogEntry)] {
+        let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { $0.universe!.name.lowercased() }
+
+        let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { $0.collectionName!.lowercased() }
+
+        var results: [(universeName: String, entry: CatalogEntry, maxNumber: Int)] = []
+
+        for (collectionKey, catalogEpisodes) in catalogByCollection {
+            let libraryEps = libraryByUniverse[collectionKey] ?? []
+            guard !libraryEps.isEmpty else { continue }
+
+            let libraryNumbers = Set(libraryEps.map(\.episodeNumber))
+            let maxLibraryNumber = libraryNumbers.max()!
+
+            let nextEntry = catalogEpisodes
+                .filter { $0.number > maxLibraryNumber && !libraryNumbers.contains($0.number) }
+                .min(by: { $0.number < $1.number })
+
+            if let entry = nextEntry {
+                let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
+                results.append((displayName, entry, maxLibraryNumber))
+            }
+        }
+
+        results.sort { $0.universeName.localizedCompare($1.universeName) == .orderedAscending }
+        return results.map { ($0.universeName, $0.entry) }
+    }
+
+    static func catalogTeaserText(for entry: CatalogEntry) -> String {
+        let universeName = entry.collectionName ?? "Allgemein"
+        return "\(universeName): Folge \(entry.number) — \(entry.title)"
     }
 
     // MARK: - Teaser

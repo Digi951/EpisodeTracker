@@ -6,6 +6,13 @@ struct UpNextView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
 
+    private var catalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
+        SmartListDefinition.nextFromCatalog(
+            catalogEntries: EpisodeCatalog.shared.allEntries,
+            libraryEpisodes: episodes
+        )
+    }
+
     var body: some View {
         List {
             ForEach(SmartListDefinition.allCases) { smartList in
@@ -20,6 +27,17 @@ struct UpNextView: View {
     @ViewBuilder
     private func smartListRow(_ smartList: SmartListDefinition) -> some View {
         switch smartList {
+        case .naechsteAusKatalog:
+            NavigationLink(value: SmartListNavigation.detail(smartList)) {
+                let firstSuggestion = catalogSuggestions.first
+                SmartListRowContent(
+                    icon: smartList.icon,
+                    name: smartList.displayName,
+                    teaser: firstSuggestion.map { SmartListDefinition.catalogTeaserText(for: $0.entry) },
+                    emptyText: smartList.emptyStateMessage,
+                    onInfoTap: { showingInfo = smartList }
+                )
+            }
         case .zufaelligNachStimmung:
             NavigationLink(value: SmartListNavigation.moodPicker) {
                 SmartListRowContent(

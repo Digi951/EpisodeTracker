@@ -17,6 +17,13 @@ struct SmartListDetailView: View {
         return smartList.episodes(from: allEpisodes)
     }
 
+    private var catalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
+        SmartListDefinition.nextFromCatalog(
+            catalogEntries: EpisodeCatalog.shared.allEntries,
+            libraryEpisodes: allEpisodes
+        )
+    }
+
     private var navigationTitle: String {
         if smartList == .zufaelligNachStimmung, let mood {
             return "\(mood.iconName ?? "") \(mood.name)"
@@ -73,7 +80,30 @@ struct SmartListDetailView: View {
             }
         }
 
-        episodeContent
+        if smartList.needsCatalog {
+            catalogContent
+        } else {
+            episodeContent
+        }
+    }
+
+    @ViewBuilder
+    private var catalogContent: some View {
+        if catalogSuggestions.isEmpty {
+            ContentUnavailableView {
+                Label(smartList.displayName, systemImage: "tray")
+            } description: {
+                Text(smartList.emptyStateMessage)
+            }
+            .listRowSeparator(.hidden)
+        } else {
+            ForEach(catalogSuggestions, id: \.entry.number) { suggestion in
+                CatalogEntryRow(
+                    universeName: suggestion.universeName,
+                    entry: suggestion.entry
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -114,5 +144,45 @@ struct SmartListDetailView: View {
         } else if smartList == .zufaellig {
             shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes, filter: episodeFilter)
         }
+    }
+}
+
+private struct CatalogEntryRow: View {
+    let universeName: String
+    let entry: CatalogEntry
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(universeName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    Text("\(entry.number)")
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 28, alignment: .trailing)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.title)
+                            .font(.body)
+
+                        if entry.releaseYear > 0 {
+                            Text(String(entry.releaseYear))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "plus.circle")
+                .foregroundStyle(.secondary)
+                .font(.title3)
+        }
+        .padding(.vertical, 2)
     }
 }
