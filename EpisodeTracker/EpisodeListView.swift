@@ -245,8 +245,8 @@ struct EpisodeListView: View {
                 }
             } label: {
                 Label(
-                    episode.isListened ? "Nicht gehört" : "Gehört",
-                    systemImage: episode.isListened ? "ear.fill" : "ear"
+                    episode.isListened ? "Nochmal" : "Gehört",
+                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
                 )
             }
             .tint(episode.isListened ? .gray : .green)
