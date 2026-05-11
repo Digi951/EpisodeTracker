@@ -5,37 +5,76 @@ struct EpisodeDetailView: View {
     let episode: Episode
     @State private var showingEdit = false
 
+    private var statusLabel: String {
+        if episode.isListened {
+            episode.listenCount > 1 ? "Gehört (\(episode.listenCount)×)" : "Gehört"
+        } else if episode.listenCount > 0 {
+            "Nochmal"
+        } else {
+            "Offen"
+        }
+    }
+
+    private var statusColor: Color {
+        episode.isListened ? .green : (episode.listenCount > 0 ? .orange : .secondary)
+    }
+
     var body: some View {
         List {
             Section {
-                LabeledContent("Nummer", value: "\(episode.episodeNumber)")
-                LabeledContent("Titel", value: episode.title)
-                LabeledContent("Erscheinungsjahr", value: "\(episode.releaseYear)")
-            }
+                VStack(spacing: 12) {
+                    // Episode number + universe
+                    HStack {
+                        Text(episode.universe?.name ?? "Allgemein")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(String(episode.releaseYear))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
 
-            Section("Status") {
-                LabeledContent("Gehört") {
-                    Image(systemName: episode.isListened ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(episode.isListened ? .green : .secondary)
-                }
-                if episode.listenCount > 0 {
-                    LabeledContent("Hördurchgänge", value: "\(episode.listenCount)")
-                }
-                if let lastListened = episode.lastListenedAt {
-                    LabeledContent("Zuletzt gehört", value: lastListened.formatted(date: .abbreviated, time: .omitted))
-                }
-                if let rating = episode.rating {
-                    LabeledContent("Bewertung") {
-                        HStack(spacing: 2) {
-                            ForEach(1...5, id: \.self) { star in
-                                Image(systemName: star <= rating ? "star.fill" : "star")
-                                    .foregroundStyle(star <= rating ? .yellow : .gray.opacity(0.3))
+                    // Big number + title
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("\(episode.episodeNumber)")
+                            .font(.system(size: 40, weight: .bold, design: .rounded))
+                            .foregroundStyle(.tint)
+                            .frame(minWidth: 50, alignment: .trailing)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(episode.title)
+                                .font(.title3.weight(.semibold))
+
+                            // Rating
+                            HStack(spacing: 2) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
+                                        .font(.caption)
+                                        .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
+                                }
                             }
                         }
                     }
-                } else {
-                    LabeledContent("Bewertung", value: "Noch nicht bewertet")
+
+                    // Status badges
+                    HStack(spacing: 10) {
+                        Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(statusColor)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(statusColor.opacity(0.12), in: .capsule)
+
+                        if let lastListened = episode.lastListenedAt {
+                            Text(lastListened.formatted(date: .abbreviated, time: .omitted))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+                    }
                 }
+                .listRowSeparator(.hidden)
             }
 
             if !episode.moods.isEmpty {
