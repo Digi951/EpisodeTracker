@@ -353,7 +353,6 @@ private struct CatalogManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Universe.name) private var universes: [Universe]
 
-    @State private var selectedManagedCatalogName: String = CatalogSourceRegistry.managedSources.first?.name ?? ""
     @State private var newUniverseName: String = ""
     @State private var validationMessage: String?
     @State private var catalogStatusMessage: String?
@@ -372,6 +371,12 @@ private struct CatalogManagementView: View {
         Set(universes.map { $0.name.lowercased() })
     }
 
+    private var lastGlobalRefreshText: String? {
+        let dates = catalogStatuses.values.compactMap(\.lastCheckedAt)
+        guard let oldest = dates.min() else { return nil }
+        return "Zuletzt aktualisiert: \(oldest.formatted(date: .abbreviated, time: .shortened))"
+    }
+
     var body: some View {
         List {
             Section {
@@ -386,25 +391,23 @@ private struct CatalogManagementView: View {
                 }
                 .onDelete(perform: deleteUniverses)
 
+                HStack {
+                    TextField("Neuer Katalog", text: $newUniverseName)
+                    Button("Hinzufügen") {
+                        addCustomUniverse()
+                    }
+                    .disabled(newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
                 if let validationMessage {
                     Text(validationMessage)
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
             } header: {
-                Text("Aktive Kataloge")
+                Text("Meine Kataloge")
             } footer: {
                 Text("Nur leere Kataloge können gelöscht werden.")
-            }
-
-            Section("Eigener Katalog") {
-                HStack {
-                    TextField("Name des Katalogs", text: $newUniverseName)
-                    Button("Hinzufügen") {
-                        addCustomUniverse()
-                    }
-                    .disabled(newUniverseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
             }
 
             Section {
@@ -422,29 +425,11 @@ private struct CatalogManagementView: View {
                     }
                     .disabled(isAdded)
                 }
-            } header: {
-                Text("Vordefinierte Kataloge")
-            } footer: {
-                Text("Vordefinierte Kataloge liefern Titelvorschläge, sobald du eine passende Folgennummer eingibst.")
-            }
-
-            Section("Katalog-Updates") {
-                Picker("Vordefinierter Katalog", selection: $selectedManagedCatalogName) {
-                    ForEach(predefinedUniverseNames, id: \.self) { name in
-                        Text(name).tag(name)
-                    }
-                }
-
-                Button {
-                    refreshManagedCatalog(named: selectedManagedCatalogName)
-                } label: {
-                    Label("Ausgewählten Katalog aktualisieren", systemImage: "arrow.clockwise")
-                }
 
                 Button {
                     refreshAllManagedCatalogs()
                 } label: {
-                    Label("Alle Kataloge aktualisieren", systemImage: "arrow.triangle.2.circlepath")
+                    Label("Alle aktualisieren", systemImage: "arrow.triangle.2.circlepath")
                 }
 
                 if let catalogStatusMessage {
@@ -452,13 +437,19 @@ private struct CatalogManagementView: View {
                         .font(.footnote)
                         .foregroundStyle(catalogStatusIsError ? .red : .secondary)
                 }
+            } header: {
+                Text("Verfügbare Kataloge")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Kataloge liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
+                    if let lastGlobalRefreshText {
+                        Text(lastGlobalRefreshText)
+                    }
+                }
             }
         }
         .navigationTitle("Kataloge")
         .onAppear {
-            if selectedManagedCatalogName.isEmpty {
-                selectedManagedCatalogName = predefinedUniverseNames.first ?? ""
-            }
             reloadCatalogStatuses()
         }
     }
@@ -496,17 +487,6 @@ private struct CatalogManagementView: View {
                 modelContext.delete(universe)
             } else {
                 validationMessage = "Nur leere Kataloge können gelöscht werden."
-            }
-        }
-    }
-
-    private func refreshManagedCatalog(named universeName: String) {
-        Task {
-            await EpisodeCatalog.shared.refreshManagedCatalog(universeName: universeName, force: true)
-            await MainActor.run {
-                reloadCatalogStatuses()
-                catalogStatusIsError = false
-                catalogStatusMessage = "Katalog aktualisiert für \(universeName)."
             }
         }
     }
