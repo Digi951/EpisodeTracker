@@ -174,15 +174,28 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func randomEpisodes(from episodes: [Episode], count: Int = 10) -> [Episode] {
-        []
+        let unlistened = episodes.filter { !$0.isListened }
+        return Array(unlistened.shuffled().prefix(count))
     }
 
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], count: Int = 10) -> [Episode] {
-        []
+        let matching = episodes.filter { !$0.isListened && $0.moods.contains(where: { $0 === mood }) }
+        return Array(matching.shuffled().prefix(count))
     }
 
     static func availableMoods(from episodes: [Episode], allMoods: [Mood]) -> [(mood: Mood, count: Int)] {
-        []
+        let unlistened = episodes.filter { !$0.isListened }
+        var results: [(mood: Mood, count: Int)] = []
+
+        for mood in allMoods {
+            let count = unlistened.filter { $0.moods.contains(where: { $0 === mood }) }.count
+            if count > 0 {
+                results.append((mood, count))
+            }
+        }
+
+        results.sort { $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending }
+        return results
     }
 
     // MARK: - Teaser

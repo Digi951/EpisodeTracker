@@ -277,4 +277,132 @@ final class SmartListTests: XCTestCase {
 
         XCTAssertTrue(result.isEmpty)
     }
+
+    // MARK: - Zufaellig (Random)
+
+    func testRandomReturnsOnlyUnlistenedEpisodes() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 2, universe: u1),
+            makeEpisode(number: 3, universe: u1),
+            makeEpisode(number: 4, universe: u1, isListened: true),
+            makeEpisode(number: 5, universe: u1),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 3)
+        for episode in result {
+            XCTAssertFalse(episode.isListened)
+        }
+    }
+
+    func testRandomRespectsCountLimit() {
+        let u1 = makeUniverse("Test")
+        var episodes: [Episode] = []
+        for i in 1...20 {
+            episodes.append(makeEpisode(number: i, universe: u1))
+        }
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, count: 5)
+
+        XCTAssertEqual(result.count, 5)
+    }
+
+    func testRandomReturnsAllWhenFewerThanCount() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1),
+            makeEpisode(number: 2, universe: u1),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, count: 10)
+
+        XCTAssertEqual(result.count, 2)
+    }
+
+    func testRandomReturnsEmptyWhenAllListened() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 2, universe: u1, isListened: true),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    // MARK: - Zufaellig nach Stimmung (Random by Mood)
+
+    func testEpisodesForMoodReturnsOnlyMatchingUnlistened() {
+        let mood1 = Mood(name: "Gruselig", iconName: "😱")
+        let mood2 = Mood(name: "Witzig", iconName: "😄")
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, moods: [mood1]),
+            makeEpisode(number: 2, universe: u1, isListened: true, moods: [mood1]),
+            makeEpisode(number: 3, universe: u1, moods: [mood2]),
+            makeEpisode(number: 4, universe: u1, moods: [mood1, mood2]),
+            makeEpisode(number: 5, universe: u1),
+        ]
+
+        let result = SmartListDefinition.episodesForMood(mood1, from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        for episode in result {
+            XCTAssertFalse(episode.isListened)
+            XCTAssertTrue(episode.moods.contains(where: { $0 === mood1 }))
+        }
+    }
+
+    func testEpisodesForMoodRespectsCountLimit() {
+        let mood = Mood(name: "Test", iconName: "🧪")
+        let u1 = makeUniverse("Test")
+        var episodes: [Episode] = []
+        for i in 1...20 {
+            episodes.append(makeEpisode(number: i, universe: u1, moods: [mood]))
+        }
+
+        let result = SmartListDefinition.episodesForMood(mood, from: episodes, count: 5)
+
+        XCTAssertEqual(result.count, 5)
+    }
+
+    // MARK: - Available Moods
+
+    func testAvailableMoodsReturnsOnlyMoodsWithUnlistenedEpisodes() {
+        let mood1 = Mood(name: "Gruselig", iconName: "😱")
+        let mood2 = Mood(name: "Witzig", iconName: "😄")
+        let mood3 = Mood(name: "Leer", iconName: "🫥")
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, moods: [mood1]),
+            makeEpisode(number: 2, universe: u1, moods: [mood1]),
+            makeEpisode(number: 3, universe: u1, moods: [mood2]),
+            makeEpisode(number: 4, universe: u1, isListened: true, moods: [mood3]),
+        ]
+
+        let result = SmartListDefinition.availableMoods(from: episodes, allMoods: [mood1, mood2, mood3])
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].mood.name, "Gruselig")
+        XCTAssertEqual(result[0].count, 2)
+        XCTAssertEqual(result[1].mood.name, "Witzig")
+        XCTAssertEqual(result[1].count, 1)
+    }
+
+    func testAvailableMoodsReturnsEmptyWhenNoUnlistenedWithMoods() {
+        let mood1 = Mood(name: "Test", iconName: "🧪")
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, moods: [mood1]),
+            makeEpisode(number: 2, universe: u1),
+        ]
+
+        let result = SmartListDefinition.availableMoods(from: episodes, allMoods: [mood1])
+
+        XCTAssertTrue(result.isEmpty)
+    }
 }
