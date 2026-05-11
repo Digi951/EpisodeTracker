@@ -8,6 +8,7 @@ struct SmartListDetailView: View {
 
     @Query private var allEpisodes: [Episode]
     @State private var shuffledEpisodes: [Episode]?
+    @State private var episodeFilter: EpisodeFilter = .unlistened
 
     private var displayedEpisodes: [Episode] {
         if smartList.isRandomList {
@@ -27,11 +28,11 @@ struct SmartListDetailView: View {
         Group {
             if let iPadSelection {
                 List(selection: iPadSelection) {
-                    episodeContent
+                    listContent
                 }
             } else {
                 List {
-                    episodeContent
+                    listContent
                 }
             }
         }
@@ -52,6 +53,27 @@ struct SmartListDetailView: View {
                 reshuffle()
             }
         }
+        .onChange(of: episodeFilter) { _, _ in
+            reshuffle()
+        }
+    }
+
+    @ViewBuilder
+    private var listContent: some View {
+        if smartList.isRandomList {
+            Section {
+                Picker("Filter", selection: $episodeFilter) {
+                    ForEach(EpisodeFilter.allCases) { filter in
+                        Text(filter.displayName).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+        }
+
+        episodeContent
     }
 
     @ViewBuilder
@@ -60,9 +82,7 @@ struct SmartListDetailView: View {
             ContentUnavailableView {
                 Label(smartList.displayName, systemImage: "tray")
             } description: {
-                Text(smartList == .zufaelligNachStimmung
-                     ? "Keine offenen Folgen mit dieser Stimmung"
-                     : smartList.emptyStateMessage)
+                Text(emptyMessage)
             }
             .listRowSeparator(.hidden)
         } else {
@@ -74,11 +94,25 @@ struct SmartListDetailView: View {
         }
     }
 
+    private var emptyMessage: String {
+        if smartList.isRandomList {
+            switch episodeFilter {
+            case .unlistened: "Keine ungehörten Folgen"
+            case .listened: "Keine gehörten Folgen"
+            case .all: "Keine Folgen vorhanden"
+            }
+        } else if smartList == .zufaelligNachStimmung {
+            "Keine offenen Folgen mit dieser Stimmung"
+        } else {
+            smartList.emptyStateMessage
+        }
+    }
+
     private func reshuffle() {
         if smartList == .zufaelligNachStimmung, let mood {
-            shuffledEpisodes = SmartListDefinition.episodesForMood(mood, from: allEpisodes)
+            shuffledEpisodes = SmartListDefinition.episodesForMood(mood, from: allEpisodes, filter: episodeFilter)
         } else if smartList == .zufaellig {
-            shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes)
+            shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes, filter: episodeFilter)
         }
     }
 }

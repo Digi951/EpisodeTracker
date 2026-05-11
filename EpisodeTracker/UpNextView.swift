@@ -4,12 +4,16 @@ import SwiftData
 struct UpNextView: View {
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
+    @State private var showingInfo: SmartListDefinition?
 
     var body: some View {
         List {
             ForEach(SmartListDefinition.allCases) { smartList in
                 smartListRow(smartList)
             }
+        }
+        .sheet(item: $showingInfo) { smartList in
+            SmartListInfoSheet(smartList: smartList)
         }
     }
 
@@ -21,7 +25,8 @@ struct UpNextView: View {
                 SmartListRowContent(
                     icon: smartList.icon,
                     name: smartList.displayName,
-                    teaser: "Stimmung wählen..."
+                    teaser: "Stimmung wählen...",
+                    onInfoTap: { showingInfo = smartList }
                 )
             }
         default:
@@ -31,7 +36,8 @@ struct UpNextView: View {
                     icon: smartList.icon,
                     name: smartList.displayName,
                     teaser: firstEpisode.map { SmartListDefinition.teaserText(for: $0) },
-                    emptyText: smartList.emptyStateMessage
+                    emptyText: smartList.emptyStateMessage,
+                    onInfoTap: { showingInfo = smartList }
                 )
             }
         }
@@ -43,6 +49,7 @@ private struct SmartListRowContent: View {
     let name: String
     var teaser: String?
     var emptyText: String = "Keine Vorschläge"
+    var onInfoTap: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -51,8 +58,21 @@ private struct SmartListRowContent: View {
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .font(.body.weight(.semibold))
+                HStack(spacing: 4) {
+                    Text(name)
+                        .font(.body.weight(.semibold))
+
+                    if let onInfoTap {
+                        Button {
+                            onInfoTap()
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
 
                 Text(teaser ?? emptyText)
                     .font(.caption)
@@ -61,5 +81,38 @@ private struct SmartListRowContent: View {
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+private struct SmartListInfoSheet: View {
+    let smartList: SmartListDefinition
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Text(smartList.icon)
+                    .font(.system(size: 48))
+
+                Text(smartList.displayName)
+                    .font(.title2.weight(.bold))
+
+                Text(smartList.infoText)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                Spacer()
+            }
+            .padding(.top, 32)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }

@@ -1,5 +1,29 @@
 import Foundation
 
+enum EpisodeFilter: String, CaseIterable, Identifiable {
+    case unlistened
+    case listened
+    case all
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .unlistened: "Ungehört"
+        case .listened: "Gehört"
+        case .all: "Alle"
+        }
+    }
+
+    func apply(to episodes: [Episode]) -> [Episode] {
+        switch self {
+        case .unlistened: episodes.filter { !$0.isListened }
+        case .listened: episodes.filter(\.isListened)
+        case .all: episodes
+        }
+    }
+}
+
 enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     case fortsetzen
     case langeNichtGehoert
@@ -40,6 +64,23 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         case .topBewertet: "Keine bewerteten ungehörten Folgen"
         case .zufaellig: "Alles gehört!"
         case .zufaelligNachStimmung: "Keine Stimmungen mit offenen Folgen"
+        }
+    }
+
+    var infoText: String {
+        switch self {
+        case .fortsetzen:
+            "Zeigt pro Serie die nächste ungehörte Folge nach der höchsten gehörten. Sortiert nach letzter Aktivität."
+        case .langeNichtGehoert:
+            "Serien, bei denen du seit über 30 Tagen keine Folge mehr gehört hast und noch offene Folgen übrig sind."
+        case .uebersprungen:
+            "Folgen mit niedrigerer Nummer als eine bereits gehörte — also Lücken in deiner Hörhistorie."
+        case .topBewertet:
+            "Ungehörte Folgen, die bereits eine Bewertung haben. Sortiert nach Sternzahl."
+        case .zufaellig:
+            "Zufällige Auswahl aus deiner Bibliothek. Wähle oben, ob du aus ungehörten, gehörten oder allen Folgen würfeln möchtest."
+        case .zufaelligNachStimmung:
+            "Wähle eine Stimmung und erhalte eine zufällige Auswahl passender Folgen."
         }
     }
 
@@ -173,22 +214,23 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             }
     }
 
-    static func randomEpisodes(from episodes: [Episode], count: Int = 10) -> [Episode] {
-        let unlistened = episodes.filter { !$0.isListened }
-        return Array(unlistened.shuffled().prefix(count))
+    static func randomEpisodes(from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
+        let filtered = filter.apply(to: episodes)
+        return Array(filtered.shuffled().prefix(count))
     }
 
-    static func episodesForMood(_ mood: Mood, from episodes: [Episode], count: Int = 10) -> [Episode] {
-        let matching = episodes.filter { !$0.isListened && $0.moods.contains(where: { $0 === mood }) }
+    static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
+        let filtered = filter.apply(to: episodes)
+        let matching = filtered.filter { $0.moods.contains(where: { $0 === mood }) }
         return Array(matching.shuffled().prefix(count))
     }
 
-    static func availableMoods(from episodes: [Episode], allMoods: [Mood]) -> [(mood: Mood, count: Int)] {
-        let unlistened = episodes.filter { !$0.isListened }
+    static func availableMoods(from episodes: [Episode], filter: EpisodeFilter = .unlistened, allMoods: [Mood]) -> [(mood: Mood, count: Int)] {
+        let filtered = filter.apply(to: episodes)
         var results: [(mood: Mood, count: Int)] = []
 
         for mood in allMoods {
-            let count = unlistened.filter { $0.moods.contains(where: { $0 === mood }) }.count
+            let count = filtered.filter { $0.moods.contains(where: { $0 === mood }) }.count
             if count > 0 {
                 results.append((mood, count))
             }
