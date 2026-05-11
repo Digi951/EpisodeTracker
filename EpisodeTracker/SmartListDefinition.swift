@@ -268,7 +268,10 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             let libraryNumbers = Set(libraryEps.map(\.episodeNumber))
             let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
 
-            let missing = catalogEpisodes
+            var seenNumbers = Set<Int>()
+            let uniqueEpisodes = catalogEpisodes.filter { seenNumbers.insert($0.number).inserted }
+
+            let missing = uniqueEpisodes
                 .filter { !libraryNumbers.contains($0.number) }
                 .sorted(by: { $0.number < $1.number })
 
