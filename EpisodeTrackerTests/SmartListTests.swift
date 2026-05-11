@@ -167,4 +167,114 @@ final class SmartListTests: XCTestCase {
 
         XCTAssertTrue(result.isEmpty)
     }
+
+    // MARK: - Lange nicht gehoert (Long Pause)
+
+    func testLongPauseFindsUniversesPausedOverThreshold() {
+        let u1 = makeUniverse("Paused")
+        let u2 = makeUniverse("Active")
+        let referenceDate = Date()
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(60)),
+            makeEpisode(number: 2, universe: u1),
+            makeEpisode(number: 1, universe: u2, isListened: true, lastListenedAt: date(5)),
+            makeEpisode(number: 2, universe: u2),
+        ]
+
+        let result = SmartListDefinition.longPauseEpisodes(from: episodes, referenceDate: referenceDate)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].universe?.name, "Paused")
+        XCTAssertEqual(result[0].episodeNumber, 2)
+    }
+
+    func testLongPauseSortsByLongestPauseFirst() {
+        let u1 = makeUniverse("Short Pause")
+        let u2 = makeUniverse("Long Pause")
+        let referenceDate = Date()
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(35)),
+            makeEpisode(number: 2, universe: u1),
+            makeEpisode(number: 1, universe: u2, isListened: true, lastListenedAt: date(90)),
+            makeEpisode(number: 2, universe: u2),
+        ]
+
+        let result = SmartListDefinition.longPauseEpisodes(from: episodes, referenceDate: referenceDate)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].universe?.name, "Long Pause")
+        XCTAssertEqual(result[1].universe?.name, "Short Pause")
+    }
+
+    func testLongPauseExcludesFullyListenedUniverses() {
+        let u1 = makeUniverse("Done")
+        let referenceDate = Date()
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(60)),
+            makeEpisode(number: 2, universe: u1, isListened: true, lastListenedAt: date(60)),
+        ]
+
+        let result = SmartListDefinition.longPauseEpisodes(from: episodes, referenceDate: referenceDate)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testLongPauseUsesThresholdBoundary() {
+        let u1 = makeUniverse("Exactly30")
+        let referenceDate = Date()
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(30)),
+            makeEpisode(number: 2, universe: u1),
+        ]
+
+        let result = SmartListDefinition.longPauseEpisodes(from: episodes, referenceDate: referenceDate)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    // MARK: - Top bewertet (Top Rated)
+
+    func testTopRatedReturnsOnlyUnlistenedWithRating() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: false, rating: 5),
+            makeEpisode(number: 2, universe: u1, isListened: true, rating: 5),
+            makeEpisode(number: 3, universe: u1, isListened: false),
+            makeEpisode(number: 4, universe: u1, isListened: false, rating: 3),
+        ]
+
+        let result = SmartListDefinition.topRatedEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 4)
+    }
+
+    func testTopRatedSortsByRatingDescendingThenNumberAscending() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 10, universe: u1, isListened: false, rating: 4),
+            makeEpisode(number: 5, universe: u1, isListened: false, rating: 4),
+            makeEpisode(number: 1, universe: u1, isListened: false, rating: 5),
+        ]
+
+        let result = SmartListDefinition.topRatedEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 3)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 5)
+        XCTAssertEqual(result[2].episodeNumber, 10)
+    }
+
+    func testTopRatedReturnsEmptyWhenNoRatedUnlistened() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, rating: 5),
+            makeEpisode(number: 2, universe: u1, isListened: false),
+        ]
+
+        let result = SmartListDefinition.topRatedEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
+    }
 }

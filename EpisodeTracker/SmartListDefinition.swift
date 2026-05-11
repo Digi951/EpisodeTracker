@@ -129,11 +129,48 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func longPauseEpisodes(from episodes: [Episode], referenceDate: Date = .now) -> [Episode] {
-        []
+        let withUniverse = episodes.filter { $0.universe != nil }
+        let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
+
+        let thresholdDate = Calendar.current.date(
+            byAdding: .day, value: -longPauseDays, to: referenceDate
+        )!
+
+        var results: [(episode: Episode, lastActivity: Date)] = []
+
+        for (_, universeEpisodes) in grouped {
+            let listened = universeEpisodes.filter(\.isListened)
+            guard !listened.isEmpty else { continue }
+
+            let hasUnlistened = universeEpisodes.contains { !$0.isListened }
+            guard hasUnlistened else { continue }
+
+            let lastActivity = listened.compactMap(\.lastListenedAt).max() ?? .distantPast
+            guard lastActivity < thresholdDate else { continue }
+
+            let maxListenedNumber = listened.map(\.episodeNumber).max()!
+            let nextUnlistened = universeEpisodes
+                .filter { $0.episodeNumber > maxListenedNumber && !$0.isListened }
+                .min(by: { $0.episodeNumber < $1.episodeNumber })
+
+            if let next = nextUnlistened {
+                results.append((next, lastActivity))
+            }
+        }
+
+        results.sort { $0.lastActivity < $1.lastActivity }
+        return results.map(\.episode)
     }
 
     static func topRatedEpisodes(from episodes: [Episode]) -> [Episode] {
-        []
+        episodes
+            .filter { !$0.isListened && $0.rating != nil }
+            .sorted {
+                if $0.rating! != $1.rating! {
+                    return $0.rating! > $1.rating!
+                }
+                return $0.episodeNumber < $1.episodeNumber
+            }
     }
 
     static func randomEpisodes(from episodes: [Episode], count: Int = 10) -> [Episode] {
