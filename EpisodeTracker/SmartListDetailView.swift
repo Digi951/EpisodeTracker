@@ -9,6 +9,9 @@ struct SmartListDetailView: View {
     @Query private var allEpisodes: [Episode]
     @State private var shuffledEpisodes: [Episode]?
     @State private var episodeFilter: EpisodeFilter = .unlistened
+    @State private var prefillEntry: CatalogEntry?
+    @State private var prefillUniverseName: String?
+    @State private var showingAddSheet = false
 
     private var displayedEpisodes: [Episode] {
         if smartList.isRandomList {
@@ -63,6 +66,14 @@ struct SmartListDetailView: View {
         .onChange(of: episodeFilter) { _, _ in
             reshuffle()
         }
+        .sheet(isPresented: $showingAddSheet) {
+            NavigationStack {
+                EpisodeEditView(
+                    prefillEntry: prefillEntry,
+                    prefillUniverseName: prefillUniverseName
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -97,11 +108,15 @@ struct SmartListDetailView: View {
             }
             .listRowSeparator(.hidden)
         } else {
-            ForEach(catalogSuggestions, id: \.entry.number) { suggestion in
+            ForEach(Array(catalogSuggestions.enumerated()), id: \.offset) { _, suggestion in
                 CatalogEntryRow(
                     universeName: suggestion.universeName,
                     entry: suggestion.entry
-                )
+                ) {
+                    prefillEntry = suggestion.entry
+                    prefillUniverseName = suggestion.universeName
+                    showingAddSheet = true
+                }
             }
         }
     }
@@ -150,6 +165,7 @@ struct SmartListDetailView: View {
 private struct CatalogEntryRow: View {
     let universeName: String
     let entry: CatalogEntry
+    var onAdd: () -> Void
 
     var body: some View {
         HStack {
@@ -179,9 +195,14 @@ private struct CatalogEntryRow: View {
 
             Spacer()
 
-            Image(systemName: "plus.circle")
-                .foregroundStyle(.secondary)
-                .font(.title3)
+            Button {
+                onAdd()
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(.tint)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
     }

@@ -266,18 +266,23 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             guard !libraryEps.isEmpty else { continue }
 
             let libraryNumbers = Set(libraryEps.map(\.episodeNumber))
+            let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
 
-            let nextEntry = catalogEpisodes
+            let missing = catalogEpisodes
                 .filter { !libraryNumbers.contains($0.number) }
-                .min(by: { $0.number < $1.number })
+                .sorted(by: { $0.number < $1.number })
 
-            if let entry = nextEntry {
-                let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
+            for entry in missing {
                 results.append((displayName, entry))
             }
         }
 
-        results.sort { $0.universeName.localizedCompare($1.universeName) == .orderedAscending }
+        results.sort {
+            if $0.universeName != $1.universeName {
+                return $0.universeName.localizedCompare($1.universeName) == .orderedAscending
+            }
+            return $0.entry.number < $1.entry.number
+        }
         return results
     }
 

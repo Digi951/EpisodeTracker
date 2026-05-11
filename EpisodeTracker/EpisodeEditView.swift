@@ -10,6 +10,8 @@ struct EpisodeEditView: View {
     @AppStorage(FreemiumAccess.unlockStorageKey) private var isPlusUnlocked = false
 
     var episode: Episode?
+    var prefillEntry: CatalogEntry?
+    var prefillUniverseName: String?
 
     @State private var episodeNumberText: String = ""
     @State private var title: String = ""
@@ -259,6 +261,17 @@ struct EpisodeEditView: View {
                 rating = episode.rating
                 selectedMoods = Set(episode.moods)
                 selectedUniverse = episode.universe ?? universes.first
+            } else if let prefillEntry {
+                episodeNumberText = String(prefillEntry.number)
+                title = prefillEntry.title
+                releaseYearText = String(prefillEntry.releaseYear)
+                if let prefillUniverseName {
+                    selectedUniverse = universes.first {
+                        $0.name.caseInsensitiveCompare(prefillUniverseName) == .orderedSame
+                    } ?? universes.first
+                } else {
+                    selectedUniverse = preferredCatalogUniverse ?? universes.first
+                }
             } else if releaseYearText.isEmpty {
                 releaseYearText = "1979"
                 selectedUniverse = preferredCatalogUniverse ?? universes.first
