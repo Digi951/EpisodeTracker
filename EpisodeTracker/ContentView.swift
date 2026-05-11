@@ -55,6 +55,27 @@ struct ContentView: View {
             }
 
             NavigationStack {
+                UpNextView()
+                    .navigationDestination(for: Episode.self) { episode in
+                        EpisodeDetailView(episode: episode)
+                    }
+                    .navigationDestination(for: SmartListNavigation.self) { destination in
+                        switch destination {
+                        case .detail(let smartList):
+                            SmartListDetailView(smartList: smartList)
+                        case .moodPicker:
+                            MoodPickerView()
+                        case .moodDetail(let mood):
+                            SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                        }
+                    }
+                    .navigationTitle("Als nächstes")
+            }
+            .tabItem {
+                Label("Als nächstes", systemImage: "play.circle")
+            }
+
+            NavigationStack {
                 SettingsView()
             }
             .tabItem {
@@ -76,6 +97,11 @@ struct ContentView: View {
             .tabItem {
                 Label("Statistiken", systemImage: "chart.bar")
             }
+
+            UpNextSplitView()
+                .tabItem {
+                    Label("Als nächstes", systemImage: "play.circle")
+                }
 
             NavigationStack {
                 SettingsView()
@@ -386,6 +412,50 @@ private struct IPadEpisodeListView: View {
                 Image(systemName: "checkmark")
             }
         }
+    }
+}
+
+private struct UpNextSplitView: View {
+    @State private var selectedEpisode: Episode?
+
+    var body: some View {
+        NavigationSplitView {
+            NavigationStack {
+                UpNextView()
+                    .navigationDestination(for: SmartListNavigation.self) { destination in
+                        switch destination {
+                        case .detail(let smartList):
+                            SmartListDetailView(
+                                smartList: smartList,
+                                iPadSelection: $selectedEpisode
+                            )
+                        case .moodPicker:
+                            MoodPickerView()
+                        case .moodDetail(let mood):
+                            SmartListDetailView(
+                                smartList: .zufaelligNachStimmung,
+                                mood: mood,
+                                iPadSelection: $selectedEpisode
+                            )
+                        }
+                    }
+                    .navigationTitle("Als nächstes")
+            }
+            .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 380)
+        } detail: {
+            NavigationStack {
+                if let selectedEpisode {
+                    EpisodeDetailView(episode: selectedEpisode)
+                } else {
+                    ContentUnavailableView {
+                        Label("Folge auswählen", systemImage: "list.bullet.rectangle")
+                    } description: {
+                        Text("Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen.")
+                    }
+                }
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
     }
 }
 
