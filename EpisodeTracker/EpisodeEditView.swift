@@ -105,7 +105,7 @@ struct EpisodeEditView: View {
                 }
                 if isNew && !yearSuggestions.isEmpty && episodeNumberText.isEmpty {
                     DisclosureGroup("Folgen aus \(releaseYearText)") {
-                        ForEach(yearSuggestions, id: \.number) { entry in
+                        ForEach(Array(yearSuggestions.enumerated()), id: \.offset) { _, entry in
                             Button {
                                 episodeNumberText = String(entry.number)
                                 title = entry.title
