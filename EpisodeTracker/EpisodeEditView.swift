@@ -71,7 +71,9 @@ struct EpisodeEditView: View {
         List {
             Section("Folge") {
                 Picker("Katalog", selection: $selectedUniverse) {
-                    Text("Katalog auswählen").tag(Optional<Universe>.none)
+                    if selectedUniverse == nil {
+                        Text("Katalog auswählen").tag(Optional<Universe>.none)
+                    }
                     ForEach(universes) { universe in
                         Text(universe.name).tag(Optional(universe))
                     }
