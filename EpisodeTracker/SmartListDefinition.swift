@@ -121,7 +121,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    // MARK: - Query Logic (stubs — implemented in Tasks 2-4)
+    // MARK: - Query Logic
 
     static func continuationEpisodes(from episodes: [Episode]) -> [Episode] {
         let withUniverse = episodes.filter { $0.universe != nil }
