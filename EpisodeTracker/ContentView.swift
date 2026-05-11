@@ -48,13 +48,6 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                StatisticsView()
-            }
-            .tabItem {
-                Label("Statistiken", systemImage: "chart.bar")
-            }
-
-            NavigationStack {
                 UpNextView()
                     .navigationDestination(for: Episode.self) { episode in
                         EpisodeDetailView(episode: episode)
@@ -76,6 +69,13 @@ struct ContentView: View {
             }
 
             NavigationStack {
+                StatisticsView()
+            }
+            .tabItem {
+                Label("Statistiken", systemImage: "chart.bar")
+            }
+
+            NavigationStack {
                 SettingsView()
             }
             .tabItem {
@@ -91,17 +91,17 @@ struct ContentView: View {
                     Label("Folgen", systemImage: "list.number")
                 }
 
+            UpNextSplitView()
+                .tabItem {
+                    Label("Als nächstes", systemImage: "play.circle")
+                }
+
             NavigationStack {
                 StatisticsView()
             }
             .tabItem {
                 Label("Statistiken", systemImage: "chart.bar")
             }
-
-            UpNextSplitView()
-                .tabItem {
-                    Label("Als nächstes", systemImage: "play.circle")
-                }
 
             NavigationStack {
                 SettingsView()
