@@ -259,27 +259,26 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
         let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { $0.collectionName!.lowercased() }
 
-        var results: [(universeName: String, entry: CatalogEntry, maxNumber: Int)] = []
+        var results: [(universeName: String, entry: CatalogEntry)] = []
 
         for (collectionKey, catalogEpisodes) in catalogByCollection {
             let libraryEps = libraryByUniverse[collectionKey] ?? []
             guard !libraryEps.isEmpty else { continue }
 
             let libraryNumbers = Set(libraryEps.map(\.episodeNumber))
-            let maxLibraryNumber = libraryNumbers.max()!
 
             let nextEntry = catalogEpisodes
-                .filter { $0.number > maxLibraryNumber && !libraryNumbers.contains($0.number) }
+                .filter { !libraryNumbers.contains($0.number) }
                 .min(by: { $0.number < $1.number })
 
             if let entry = nextEntry {
                 let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
-                results.append((displayName, entry, maxLibraryNumber))
+                results.append((displayName, entry))
             }
         }
 
         results.sort { $0.universeName.localizedCompare($1.universeName) == .orderedAscending }
-        return results.map { ($0.universeName, $0.entry) }
+        return results
     }
 
     static func catalogTeaserText(for entry: CatalogEntry) -> String {

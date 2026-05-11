@@ -474,7 +474,7 @@ final class SmartListTests: XCTestCase {
         CatalogEntry(number: number, title: title, releaseYear: 2020, collectionName: collection)
     }
 
-    func testNextFromCatalogFindsNextPerUniverse() {
+    func testNextFromCatalogFindsGapFirst() {
         let u1 = makeUniverse("Die drei ???")
         let library = [
             makeEpisode(number: 1, universe: u1, isListened: true),
@@ -491,8 +491,26 @@ final class SmartListTests: XCTestCase {
         let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
 
         XCTAssertEqual(result.count, 1)
-        XCTAssertEqual(result[0].entry.number, 4)
+        XCTAssertEqual(result[0].entry.number, 2)
         XCTAssertEqual(result[0].universeName, "Die drei ???")
+    }
+
+    func testNextFromCatalogFindsNextAfterMaxWhenNoGaps() {
+        let u1 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 2, universe: u1, isListened: true),
+        ]
+        let catalog = [
+            makeCatalogEntry(number: 1, collection: "Die drei ???"),
+            makeCatalogEntry(number: 2, collection: "Die drei ???"),
+            makeCatalogEntry(number: 3, title: "Karpatenhund", collection: "Die drei ???"),
+        ]
+
+        let result = SmartListDefinition.nextFromCatalog(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].entry.number, 3)
     }
 
     func testNextFromCatalogSkipsUniverseWithNoLibraryEpisodes() {
