@@ -193,6 +193,13 @@ private struct IPadEpisodeListView: View {
             result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
         case .rating:
             result.sort { ($0.rating ?? 0) > ($1.rating ?? 0) }
+        case .releaseYear:
+            result.sort {
+                if $0.releaseYear != $1.releaseYear {
+                    return $0.releaseYear > $1.releaseYear
+                }
+                return $0.episodeNumber < $1.episodeNumber
+            }
         }
 
         return result
@@ -344,6 +351,11 @@ private struct IPadEpisodeListView: View {
                 sortOrder = .rating
             } label: {
                 sortingLabel("Bewertung", isSelected: sortOrder == .rating)
+            }
+            Button {
+                sortOrder = .releaseYear
+            } label: {
+                sortingLabel("Erscheinungsjahr", isSelected: sortOrder == .releaseYear)
             }
             Menu("Katalog") {
                 Button {

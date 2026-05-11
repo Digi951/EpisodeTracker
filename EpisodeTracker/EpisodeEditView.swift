@@ -22,6 +22,7 @@ struct EpisodeEditView: View {
     @State private var selectedMoods: Set<Mood> = []
     @State private var selectedUniverse: Universe?
     @State private var catalogMatch: CatalogEntry?
+    @State private var yearSuggestions: [CatalogEntry] = []
     @State private var newMoodName: String = ""
     @State private var newMoodIcon: String = ""
     @State private var formValidationMessage: String?
@@ -101,6 +102,28 @@ struct EpisodeEditView: View {
                     TextField("Jahr", text: $releaseYearText)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.numberPad)
+                }
+                if isNew && !yearSuggestions.isEmpty && episodeNumberText.isEmpty {
+                    DisclosureGroup("Folgen aus \(releaseYearText)") {
+                        ForEach(yearSuggestions, id: \.number) { entry in
+                            Button {
+                                episodeNumberText = String(entry.number)
+                                title = entry.title
+                                releaseYearText = String(entry.releaseYear)
+                            } label: {
+                                HStack {
+                                    Text("\(entry.number)")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 28, alignment: .trailing)
+                                    Text(entry.title)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+                                }
+                            }
+                        }
+                    }
+                    .font(.subheadline)
                 }
                 if let formValidationMessage {
                     Text(formValidationMessage)
@@ -252,6 +275,10 @@ struct EpisodeEditView: View {
             if filtered != releaseYearText {
                 releaseYearText = filtered
             }
+            refreshYearSuggestions()
+        }
+        .onChange(of: selectedUniverse?.name) {
+            refreshYearSuggestions()
         }
         .onAppear {
             if let episode {
@@ -371,6 +398,29 @@ struct EpisodeEditView: View {
                 pendingCatalogRefreshKey = nil
             }
         }
+    }
+
+    private func refreshYearSuggestions() {
+        guard isNew,
+              let year = parsedReleaseYear, year > 1900,
+              let universeName = selectedUniverse?.name, !universeName.isEmpty
+        else {
+            yearSuggestions = []
+            return
+        }
+
+        let key = universeName.lowercased()
+        let libraryNumbers = Set(allEpisodes.filter {
+            $0.universe?.name.lowercased() == key
+        }.map(\.episodeNumber))
+
+        yearSuggestions = EpisodeCatalog.shared.allEntries
+            .filter {
+                $0.releaseYear == year
+                && $0.collectionName?.lowercased() == key
+                && !libraryNumbers.contains($0.number)
+            }
+            .sorted { $0.number < $1.number }
     }
 
     private func addSuggestedMood(_ suggestion: (name: String, icon: String)) {

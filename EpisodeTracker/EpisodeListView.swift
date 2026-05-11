@@ -20,6 +20,7 @@ struct EpisodeListView: View {
         case number = "Nummer"
         case title = "Titel A-Z"
         case rating = "Bewertung"
+        case releaseYear = "Erscheinungsjahr"
     }
 
     private struct EpisodeGroup: Identifiable {
@@ -66,16 +67,33 @@ struct EpisodeListView: View {
             result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
         case .rating:
             result.sort { ($0.rating ?? 0) > ($1.rating ?? 0) }
+        case .releaseYear:
+            result.sort {
+                if $0.releaseYear != $1.releaseYear {
+                    return $0.releaseYear > $1.releaseYear
+                }
+                return $0.episodeNumber < $1.episodeNumber
+            }
         }
 
         return result
     }
 
     private var shouldShowUniverseSections: Bool {
-        filterUniverse == nil && universes.count > 1
+        sortOrder == .releaseYear
+        || (filterUniverse == nil && universes.count > 1)
     }
 
     private var episodeGroups: [EpisodeGroup] {
+        if sortOrder == .releaseYear {
+            let grouped = Dictionary(grouping: filteredEpisodes) { episode in
+                String(episode.releaseYear)
+            }
+            return grouped.keys.sorted(by: >).map { key in
+                EpisodeGroup(title: key, episodes: grouped[key] ?? [])
+            }
+        }
+
         let grouped = Dictionary(grouping: filteredEpisodes) { episode in
             episode.universe?.name ?? "Allgemein"
         }
@@ -164,6 +182,11 @@ struct EpisodeListView: View {
                         sortOrder = .rating
                     } label: {
                         sortingLabel("Bewertung", isSelected: sortOrder == .rating)
+                    }
+                    Button {
+                        sortOrder = .releaseYear
+                    } label: {
+                        sortingLabel("Erscheinungsjahr", isSelected: sortOrder == .releaseYear)
                     }
                     Menu("Katalog") {
                         Button {

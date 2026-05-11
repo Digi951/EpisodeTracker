@@ -6,10 +6,13 @@ struct SmartListDetailView: View {
     var mood: Mood?
     var iPadSelection: Binding<Episode?>?
 
+    @Environment(\.modelContext) private var modelContext
     @Query private var allEpisodes: [Episode]
+    @Query(sort: \Universe.name) private var universes: [Universe]
     @State private var shuffledEpisodes: [Episode]?
     @State private var episodeFilter: EpisodeFilter = .unlistened
     @State private var catalogAddItem: CatalogAddItem?
+    @State private var catalogYearFilter: Int?
 
     private var displayedEpisodes: [Episode] {
         if smartList.isRandomList {
@@ -19,10 +22,23 @@ struct SmartListDetailView: View {
     }
 
     private var catalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
-        SmartListDefinition.nextFromCatalog(
+        let all = SmartListDefinition.nextFromCatalog(
             catalogEntries: EpisodeCatalog.shared.allEntries,
             libraryEpisodes: allEpisodes
         )
+        if let year = catalogYearFilter {
+            return all.filter { $0.entry.releaseYear == year }
+        }
+        return all
+    }
+
+    private var availableCatalogYears: [Int] {
+        let allSuggestions = SmartListDefinition.nextFromCatalog(
+            catalogEntries: EpisodeCatalog.shared.allEntries,
+            libraryEpisodes: allEpisodes
+        )
+        let years = Set(allSuggestions.map(\.entry.releaseYear)).filter { $0 > 0 }
+        return years.sorted()
     }
 
     private var navigationTitle: String {
@@ -98,20 +114,45 @@ struct SmartListDetailView: View {
 
     @ViewBuilder
     private var catalogContent: some View {
+        if !availableCatalogYears.isEmpty {
+            Section {
+                Picker("Jahr", selection: $catalogYearFilter) {
+                    Text("Alle Jahre").tag(Optional<Int>.none)
+                    ForEach(availableCatalogYears, id: \.self) { year in
+                        Text(String(year)).tag(Optional(year))
+                    }
+                }
+            }
+        }
+
         if catalogSuggestions.isEmpty {
             ContentUnavailableView {
                 Label(smartList.displayName, systemImage: "tray")
             } description: {
-                Text(smartList.emptyStateMessage)
+                Text(catalogYearFilter != nil
+                     ? "Keine fehlenden Folgen aus \(String(catalogYearFilter!))"
+                     : smartList.emptyStateMessage)
             }
             .listRowSeparator(.hidden)
         } else {
-            ForEach(Array(catalogSuggestions.enumerated()), id: \.offset) { _, suggestion in
-                CatalogEntryRow(
-                    universeName: suggestion.universeName,
-                    entry: suggestion.entry
-                ) {
-                    catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+            Section {
+                ForEach(Array(catalogSuggestions.enumerated()), id: \.offset) { _, suggestion in
+                    CatalogEntryRow(
+                        universeName: suggestion.universeName,
+                        entry: suggestion.entry
+                    ) {
+                        catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+                    }
+                }
+            } footer: {
+                if catalogSuggestions.count > 1 {
+                    Button {
+                        addAllCatalogSuggestions()
+                    } label: {
+                        Label("Alle \(catalogSuggestions.count) Folgen übernehmen", systemImage: "plus.rectangle.on.rectangle")
+                    }
+                    .font(.footnote)
+                    .padding(.top, 8)
                 }
             }
         }
@@ -146,6 +187,21 @@ struct SmartListDetailView: View {
             "Keine offenen Folgen mit dieser Stimmung"
         } else {
             smartList.emptyStateMessage
+        }
+    }
+
+    private func addAllCatalogSuggestions() {
+        for suggestion in catalogSuggestions {
+            let universe = universes.first {
+                $0.name.caseInsensitiveCompare(suggestion.universeName) == .orderedSame
+            }
+            let episode = Episode(
+                episodeNumber: suggestion.entry.number,
+                title: suggestion.entry.title,
+                releaseYear: suggestion.entry.releaseYear,
+                universe: universe
+            )
+            modelContext.insert(episode)
         }
     }
 
