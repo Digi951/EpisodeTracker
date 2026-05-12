@@ -21,8 +21,17 @@ struct EpisodeListGroup: Identifiable {
         episodes.count - listenedCount
     }
 
+    var progress: Double {
+        guard !episodes.isEmpty else { return 0 }
+        return Double(listenedCount) / Double(episodes.count)
+    }
+
+    var progressText: String {
+        progress.formatted(.percent.precision(.fractionLength(0)))
+    }
+
     var summary: String {
-        "\(episodes.count) Folgen · \(listenedCount) gehört · \(openCount) offen"
+        "\(listenedCount) von \(episodes.count) gehört · \(openCount) offen"
     }
 }
 
@@ -112,9 +121,9 @@ enum EpisodeListOrganizer {
             return episodes.count >= 10
         }
         if filterUniverse == nil && universeCount > 1 {
-            return episodes.count >= 10
+            return episodes.count >= 2
         }
-        return episodes.count >= 30
+        return episodes.count >= 12
     }
 
     private static func sort(_ episodes: inout [Episode], by sortOrder: EpisodeListView.SortOrder) {

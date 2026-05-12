@@ -135,6 +135,25 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertTrue(groups.isEmpty)
     }
 
+    func testMultipleCatalogEpisodesGroupEarlyForOverviewProgress() {
+        let firstUniverse = Universe(name: "Die drei ???")
+        let secondUniverse = Universe(name: "TKKG")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979, universe: firstUniverse),
+            Episode(episodeNumber: 1, title: "Die Jagd nach den Millionendieben", releaseYear: 1981, universe: secondUniverse)
+        ]
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .number,
+            filterUniverse: nil,
+            universeCount: 2
+        )
+
+        XCTAssertEqual(groups.count, 2)
+        XCTAssertEqual(groups.map(\.title), ["Die drei ???", "TKKG"])
+    }
+
     func testStatusFilterKeepsOnlyOpenEpisodes() {
         let episodes = [
             Episode(episodeNumber: 1, title: "Gehört", releaseYear: 1980, isListened: true),
@@ -166,6 +185,7 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(group.listenedCount, 1)
         XCTAssertEqual(group.openCount, 2)
-        XCTAssertEqual(group.summary, "3 Folgen · 1 gehört · 2 offen")
+        XCTAssertEqual(group.summary, "1 von 3 gehört · 2 offen")
+        XCTAssertEqual(group.progress, 1.0 / 3.0, accuracy: 0.0001)
     }
 }

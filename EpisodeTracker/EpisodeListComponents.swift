@@ -50,31 +50,43 @@ struct EpisodeGroupHeader: View {
 
     var body: some View {
         Button(action: toggle) {
-            HStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 12)
+                    .frame(width: 12, height: 20, alignment: .center)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(group.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(group.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        Text(group.progressText)
+                            .font(.caption.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.tint)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.tint.opacity(0.12), in: Capsule())
+                    }
+
                     Text(group.summary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-
-                Spacer(minLength: 0)
             }
+            .padding(.vertical, 2)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .textCase(nil)
-        .accessibilityLabel("\(group.title), \(group.summary)")
+        .accessibilityLabel("\(group.title), \(group.summary), \(group.progressText)")
         .accessibilityHint(isCollapsed ? "Zum Aufklappen tippen" : "Zum Einklappen tippen")
     }
 }
