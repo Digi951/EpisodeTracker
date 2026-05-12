@@ -3,15 +3,27 @@ import SwiftData
 
 enum AppDataBootstrapper {
     @MainActor
-    static func bootstrap(container: ModelContainer) async {
+    static func bootstrap(
+        container: ModelContainer,
+        usesCloudSync: Bool
+    ) async {
         seedMoodsIfNeeded(container: container)
         seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
         assignMissingCollectionsIfNeeded(container: container)
         prepareSyncDataIfNeeded(container: container)
+
+        if usesCloudSync {
+            repairCloudSyncReadinessIfNeeded(container: container)
+        }
+
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
         prepareSyncDataIfNeeded(container: container)
+
+        if usesCloudSync {
+            repairCloudSyncReadinessIfNeeded(container: container)
+        }
     }
 
     @MainActor
@@ -73,6 +85,23 @@ enum AppDataBootstrapper {
     @MainActor
     static func prepareSyncDataIfNeeded(container: ModelContainer) {
         SyncPreparation.prepare(context: container.mainContext)
+    }
+
+    @MainActor
+    static func repairCloudSyncReadinessIfNeeded(container: ModelContainer) {
+        let context = container.mainContext
+        let episodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
+
+        var didChange = false
+        for episode in episodes {
+            let before = episode.resolvedSyncKey
+            episode.refreshSyncKeyIfPossible()
+            didChange = didChange || before != episode.resolvedSyncKey
+        }
+
+        if didChange {
+            try? context.save()
+        }
     }
 
     @MainActor

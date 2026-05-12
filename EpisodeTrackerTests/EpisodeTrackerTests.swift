@@ -88,6 +88,59 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(mode, .localPersistent)
     }
 
+    func testContainerFactoryKeepsCloudModeDisabledWithoutGuard() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defaults.set(true, forKey: AppModelContainerFactory.cloudSyncPreferenceKey)
+
+        let mode = AppModelContainerFactory.resolveMode(
+            environment: [:],
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(mode, .localPersistent)
+    }
+
+    func testContainerFactoryCanResolveCloudModeWithPreferenceAndGuard() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defaults.set(true, forKey: AppModelContainerFactory.cloudSyncPreferenceKey)
+
+        let mode = AppModelContainerFactory.resolveMode(
+            environment: [AppModelContainerFactory.cloudSyncGuardEnvironmentKey: "1"],
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(mode, .cloudPersistent(containerIdentifier: AppModelContainerFactory.cloudContainerIdentifier))
+    }
+
+    func testContainerFactoryParsesCloudGuardEnvironmentValues() {
+        XCTAssertTrue(
+            AppModelContainerFactory.isCloudSyncGuardEnabled(
+                environment: [AppModelContainerFactory.cloudSyncGuardEnvironmentKey: "true"]
+            )
+        )
+        XCTAssertTrue(
+            AppModelContainerFactory.isCloudSyncGuardEnabled(
+                environment: [AppModelContainerFactory.cloudSyncGuardEnvironmentKey: "YES"]
+            )
+        )
+        XCTAssertFalse(
+            AppModelContainerFactory.isCloudSyncGuardEnabled(
+                environment: [AppModelContainerFactory.cloudSyncGuardEnvironmentKey: "0"]
+            )
+        )
+    }
+
+    func testContainerModeProvidesDebugTitles() {
+        XCTAssertEqual(AppModelContainerMode.previewInMemory.debugTitle, "Preview (In-Memory)")
+        XCTAssertEqual(AppModelContainerMode.localPersistent.debugTitle, "Lokal")
+        XCTAssertEqual(
+            AppModelContainerMode.cloudPersistent(containerIdentifier: "iCloud.example").debugTitle,
+            "Cloud PoC"
+        )
+    }
+
     func testContainerFactoryBuildsExpectedPersistentStoreURL() {
         let fileManager = FileManager.default
         let storeURL = AppModelContainerFactory.persistentStoreURL(fileManager: fileManager)
@@ -473,6 +526,33 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(universe?.name, "Allgemein")
         XCTAssertEqual(universe?.resolvedSyncKey, "universe:allgemein")
+    }
+
+    @MainActor
+    func testCloudReadinessRepairRefreshesEpisodeSyncKey() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            syncKey: nil,
+            universe: universe
+        )
+        episode.syncKey = ""
+        context.insert(universe)
+        context.insert(episode)
+
+        AppDataBootstrapper.repairCloudSyncReadinessIfNeeded(container: container)
+
+        XCTAssertEqual(episode.resolvedSyncKey, "episode:universe:die drei ???#1")
+        XCTAssertEqual(episode.syncKey, "episode:universe:die drei ???#1")
     }
 
     func testEpisodeListControlsDetectActiveFiltersAndCanResetThem() {
