@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct UpNextView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
@@ -18,7 +19,7 @@ struct UpNextView: View {
         case .naechsteAusKatalog:
             return catalogSuggestions.count
         case .zufaelligNachStimmung:
-            return SmartListDefinition.availableMoods(from: episodes, allMoods: moods).count
+            return SmartListDefinition.availableMoods(from: episodes, filter: .all, allMoods: moods).count
         default:
             return smartList.episodes(from: episodes).count
         }
@@ -26,6 +27,13 @@ struct UpNextView: View {
 
     var body: some View {
         List {
+            if horizontalSizeClass == .regular {
+                UpNextSidebarIntro()
+                    .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if let error = EpisodeCatalog.shared.lastRefreshError {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(.footnote)
@@ -37,6 +45,8 @@ struct UpNextView: View {
                 smartListRow(smartList)
             }
         }
+        .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
+        .modifier(AdaptiveUpNextListStyle(isRegularWidth: horizontalSizeClass == .regular))
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)
         }
@@ -78,6 +88,33 @@ struct UpNextView: View {
                 )
             }
             .opacity(hasItems ? 1 : 0.5)
+        }
+    }
+}
+
+private struct UpNextSidebarIntro: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Was passt gerade?")
+                .font(.headline)
+            Text("Kurze Wege zu Fortsetzungen, Zufallsfolgen und offenen Katalogtipps.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct AdaptiveUpNextListStyle: ViewModifier {
+    let isRegularWidth: Bool
+
+    func body(content: Content) -> some View {
+        if isRegularWidth {
+            content.listStyle(.sidebar)
+        } else {
+            content.listStyle(.insetGrouped)
         }
     }
 }

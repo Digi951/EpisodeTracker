@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
+    @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
@@ -29,10 +30,11 @@ struct SettingsView: View {
                     }
                 }
                 Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
+                Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
             } header: {
                 Text("Mediathek")
             } footer: {
-                Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest.")
+                Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
             }
 
             Section("Verwalten") {
@@ -94,6 +96,7 @@ struct SettingsView: View {
                     libraryTitle = "Meine Hörspiele"
                     appearanceModeRawValue = AppearanceMode.system.rawValue
                     showsLibrarySnapshot = true
+                    prefersCatalogProgressTotals = true
                 } label: {
                     Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
                 }
@@ -101,7 +104,8 @@ struct SettingsView: View {
         }
         .navigationTitle("Einstellungen")
         .listStyle(.insetGrouped)
-        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 72 : 0, for: .scrollContent)
+        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 104 : 0, for: .scrollContent)
+        .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
         .fileExporter(
             isPresented: $showingExporter,
             document: exportDocument,

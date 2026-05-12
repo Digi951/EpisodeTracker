@@ -5,6 +5,19 @@ struct StatisticsView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var episodes: [Episode]
 
+    private var summaryColumns: [GridItem] {
+        [
+            GridItem(.adaptive(minimum: 180, maximum: 220), spacing: 16)
+        ]
+    }
+
+    private var detailColumns: [GridItem] {
+        [
+            GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16),
+            GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16)
+        ]
+    }
+
     private var listenedCount: Int {
         episodes.filter(\.isListened).count
     }
@@ -143,8 +156,16 @@ struct StatisticsView: View {
                 .frame(maxWidth: .infinity, minHeight: 360)
             } else {
                 VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Dein Hörstand auf einen Blick")
+                            .font(.title3.weight(.semibold))
+                        Text("Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 180), spacing: 16)],
+                        columns: summaryColumns,
                         spacing: 16
                     ) {
                         ForEach(overviewStats) { stat in
@@ -153,7 +174,7 @@ struct StatisticsView: View {
                     }
 
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 320), spacing: 16)],
+                        columns: detailColumns,
                         alignment: .leading,
                         spacing: 16
                     ) {
@@ -203,8 +224,8 @@ struct StatisticsView: View {
                         }
                     }
                 }
-                .frame(maxWidth: 900, alignment: .leading)
-                .padding(.horizontal, 32)
+                .frame(maxWidth: 1100, alignment: .leading)
+                .padding(.horizontal, 40)
                 .padding(.vertical, 24)
             }
         }
@@ -244,6 +265,7 @@ private struct StatSummaryTile: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 120, alignment: .topLeading)
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
@@ -261,6 +283,7 @@ private struct StatisticPanel<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(minHeight: 220, alignment: .topLeading)
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }

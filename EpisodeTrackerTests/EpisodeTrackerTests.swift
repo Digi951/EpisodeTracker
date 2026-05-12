@@ -180,12 +180,60 @@ final class EpisodeTrackerTests: XCTestCase {
                 Episode(episodeNumber: 1, title: "Gehört", releaseYear: 1980, isListened: true),
                 Episode(episodeNumber: 2, title: "Offen", releaseYear: 1981, isListened: false),
                 Episode(episodeNumber: 3, title: "Auch offen", releaseYear: 1982, isListened: false)
-            ]
+            ],
+            progressTotalOverride: nil
         )
 
         XCTAssertEqual(group.listenedCount, 1)
         XCTAssertEqual(group.openCount, 2)
         XCTAssertEqual(group.summary, "1 von 3 gehört · 2 offen")
         XCTAssertEqual(group.progress, 1.0 / 3.0, accuracy: 0.0001)
+    }
+
+    func testUniverseGroupsCanUseCatalogTotalForProgress() {
+        let universe = Universe(name: "Die drei ???")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1980, isListened: true, universe: universe),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1981, isListened: true, universe: universe),
+            Episode(episodeNumber: 3, title: "C", releaseYear: 1982, isListened: false, universe: universe)
+        ]
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .number,
+            filterUniverse: nil,
+            universeCount: 2,
+            catalogTotalsByUniverse: ["die drei ???": 7],
+            preferCatalogTotals: true
+        )
+
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(groups[0].summary, "2 von 7 gehört · 5 offen")
+        XCTAssertEqual(groups[0].progress, 2.0 / 7.0, accuracy: 0.0001)
+    }
+
+    func testAvailableMoodsAndMoodEpisodesMatchByNameWhenInstancesDiffer() {
+        let libraryMood = Mood(name: "Gruselig", iconName: "😱")
+        let pickerMood = Mood(name: "Gruselig", iconName: "😱")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1980, moods: [libraryMood]),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1981, moods: [libraryMood], isListened: true)
+        ]
+
+        let available = SmartListDefinition.availableMoods(
+            from: episodes,
+            filter: .all,
+            allMoods: [pickerMood]
+        )
+        let matching = SmartListDefinition.episodesForMood(
+            pickerMood,
+            from: episodes,
+            filter: .all,
+            count: 10
+        )
+
+        XCTAssertEqual(available.count, 1)
+        XCTAssertEqual(available.first?.count, 2)
+        XCTAssertEqual(matching.count, 2)
     }
 }

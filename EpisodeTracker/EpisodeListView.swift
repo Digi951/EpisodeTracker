@@ -8,6 +8,7 @@ struct EpisodeListView: View {
     @Query(sort: \Universe.name) private var universes: [Universe]
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
+    @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
 
     @State private var searchText = ""
     @State private var filterMood: Mood?
@@ -45,7 +46,20 @@ struct EpisodeListView: View {
             for: filteredEpisodes,
             sortOrder: sortOrder,
             filterUniverse: filterUniverse,
-            universeCount: universes.count
+            universeCount: universes.count,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: prefersCatalogProgressTotals
+        )
+    }
+
+    private var catalogTotalsByUniverse: [String: Int] {
+        Dictionary(
+            uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
+                ($0.collectionName ?? "Allgemein").lowercased()
+            }.map { key, entries in
+                let uniqueNumbers = Set(entries.map(\.number))
+                return (key, uniqueNumbers.count)
+            }
         )
     }
 

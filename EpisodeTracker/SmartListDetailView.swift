@@ -6,11 +6,12 @@ struct SmartListDetailView: View {
     var mood: Mood?
     var iPadSelection: Binding<Episode?>?
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
     @Query private var allEpisodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
     @State private var shuffledEpisodes: [Episode]?
-    @State private var episodeFilter: EpisodeFilter = .unlistened
+    @State private var episodeFilter: EpisodeFilter = .all
     @State private var catalogAddItem: CatalogAddItem?
     @State private var catalogYearFilter: Int?
 
@@ -61,6 +62,8 @@ struct SmartListDetailView: View {
             }
         }
         .navigationTitle(navigationTitle)
+        .listStyle(.insetGrouped)
+        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 32 : 0, for: .scrollContent)
         .toolbar {
             if smartList.isRandomList {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -184,7 +187,7 @@ struct SmartListDetailView: View {
             case .all: "Keine Folgen vorhanden"
             }
         } else if smartList == .zufaelligNachStimmung {
-            "Keine offenen Folgen mit dieser Stimmung"
+            "Keine Folgen mit dieser Stimmung"
         } else {
             smartList.emptyStateMessage
         }

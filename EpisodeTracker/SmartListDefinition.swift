@@ -245,7 +245,9 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
         let filtered = filter.apply(to: episodes)
-        let matching = filtered.filter { $0.moods.contains(where: { $0 === mood }) }
+        let matching = filtered.filter { episode in
+            episode.moods.contains(where: { matches($0, to: mood) })
+        }
         return Array(matching.shuffled().prefix(count))
     }
 
@@ -254,7 +256,9 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         var results: [(mood: Mood, count: Int)] = []
 
         for mood in allMoods {
-            let count = filtered.filter { $0.moods.contains(where: { $0 === mood }) }.count
+            let count = filtered.filter { episode in
+                episode.moods.contains(where: { matches($0, to: mood) })
+            }.count
             if count > 0 {
                 results.append((mood, count))
             }
@@ -312,5 +316,14 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     static func teaserText(for episode: Episode) -> String {
         let universeName = episode.universe?.name ?? "Allgemein"
         return "\(universeName): Folge \(episode.episodeNumber) — \(episode.title)"
+    }
+
+    private static func matches(_ lhs: Mood, to rhs: Mood) -> Bool {
+        if lhs.id == rhs.id {
+            return true
+        }
+
+        return lhs.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            .caseInsensitiveCompare(rhs.name.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
     }
 }

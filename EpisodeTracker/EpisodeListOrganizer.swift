@@ -12,18 +12,23 @@ struct EpisodeListGroup: Identifiable {
     let id: String
     let title: String
     let episodes: [Episode]
+    let progressTotalOverride: Int?
 
     var listenedCount: Int {
         episodes.filter(\.isListened).count
     }
 
+    var progressTotal: Int {
+        max(progressTotalOverride ?? episodes.count, listenedCount)
+    }
+
     var openCount: Int {
-        episodes.count - listenedCount
+        max(progressTotal - listenedCount, 0)
     }
 
     var progress: Double {
-        guard !episodes.isEmpty else { return 0 }
-        return Double(listenedCount) / Double(episodes.count)
+        guard progressTotal > 0 else { return 0 }
+        return Double(listenedCount) / Double(progressTotal)
     }
 
     var progressText: String {
@@ -31,7 +36,7 @@ struct EpisodeListGroup: Identifiable {
     }
 
     var summary: String {
-        "\(listenedCount) von \(episodes.count) gehört · \(openCount) offen"
+        "\(listenedCount) von \(progressTotal) gehört · \(openCount) offen"
     }
 }
 
@@ -87,7 +92,9 @@ enum EpisodeListOrganizer {
         for episodes: [Episode],
         sortOrder: EpisodeListView.SortOrder,
         filterUniverse: Universe?,
-        universeCount: Int
+        universeCount: Int,
+        catalogTotalsByUniverse: [String: Int] = [:],
+        preferCatalogTotals: Bool = true
     ) -> [EpisodeListGroup] {
         guard shouldGroup(episodes: episodes, sortOrder: sortOrder, filterUniverse: filterUniverse, universeCount: universeCount) else {
             return []
@@ -98,7 +105,11 @@ enum EpisodeListOrganizer {
             return listenedStateGroups(for: episodes)
         case .number:
             if filterUniverse == nil && universeCount > 1 {
-                return universeGroups(for: episodes)
+                return universeGroups(
+                    for: episodes,
+                    catalogTotalsByUniverse: catalogTotalsByUniverse,
+                    preferCatalogTotals: preferCatalogTotals
+                )
             }
             return numberRangeGroups(for: episodes)
         case .title:
@@ -164,12 +175,22 @@ enum EpisodeListOrganizer {
         }
     }
 
-    private static func universeGroups(for episodes: [Episode]) -> [EpisodeListGroup] {
+    private static func universeGroups(
+        for episodes: [Episode],
+        catalogTotalsByUniverse: [String: Int],
+        preferCatalogTotals: Bool
+    ) -> [EpisodeListGroup] {
         let grouped = Dictionary(grouping: episodes) { episode in
             episode.universe?.name ?? "Allgemein"
         }
         return grouped.keys.sorted().map { key in
-            EpisodeListGroup(id: "universe:\(key)", title: key, episodes: grouped[key] ?? [])
+            let totalOverride = preferCatalogTotals ? catalogTotalsByUniverse[key.lowercased()] : nil
+            return EpisodeListGroup(
+                id: "universe:\(key)",
+                title: key,
+                episodes: grouped[key] ?? [],
+                progressTotalOverride: totalOverride
+            )
         }
     }
 
@@ -182,7 +203,8 @@ enum EpisodeListOrganizer {
             return EpisodeListGroup(
                 id: "number:\(start)",
                 title: "\(start)-\(end)",
-                episodes: grouped[start] ?? []
+                episodes: grouped[start] ?? [],
+                progressTotalOverride: nil
             )
         }
     }
@@ -193,7 +215,7 @@ enum EpisodeListOrganizer {
             return trimmed.first.map { String($0).uppercased() } ?? "#"
         }
         return grouped.keys.sorted().map { key in
-            EpisodeListGroup(id: "title:\(key)", title: key, episodes: grouped[key] ?? [])
+            EpisodeListGroup(id: "title:\(key)", title: key, episodes: grouped[key] ?? [], progressTotalOverride: nil)
         }
     }
 
@@ -203,7 +225,7 @@ enum EpisodeListOrganizer {
         }
         return grouped.keys.sorted(by: >).map { rating in
             let title = rating == 0 ? "Ohne Bewertung" : "\(rating) Sterne"
-            return EpisodeListGroup(id: "rating:\(rating)", title: title, episodes: grouped[rating] ?? [])
+            return EpisodeListGroup(id: "rating:\(rating)", title: title, episodes: grouped[rating] ?? [], progressTotalOverride: nil)
         }
     }
 
@@ -212,7 +234,7 @@ enum EpisodeListOrganizer {
             episode.releaseYear
         }
         return grouped.keys.sorted(by: >).map { year in
-            EpisodeListGroup(id: "year:\(year)", title: String(year), episodes: grouped[year] ?? [])
+            EpisodeListGroup(id: "year:\(year)", title: String(year), episodes: grouped[year] ?? [], progressTotalOverride: nil)
         }
     }
 
@@ -220,8 +242,8 @@ enum EpisodeListOrganizer {
         let listened = episodes.filter(\.isListened)
         let open = episodes.filter { !$0.isListened }
         return [
-            EpisodeListGroup(id: "recent:listened", title: "Gehört", episodes: listened),
-            EpisodeListGroup(id: "recent:open", title: "Noch offen", episodes: open)
+            EpisodeListGroup(id: "recent:listened", title: "Gehört", episodes: listened, progressTotalOverride: nil),
+            EpisodeListGroup(id: "recent:open", title: "Noch offen", episodes: open, progressTotalOverride: nil)
         ]
         .filter { !$0.episodes.isEmpty }
     }

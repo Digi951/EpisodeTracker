@@ -357,7 +357,14 @@ struct EpisodeEditView: View {
             }
             modelContext.insert(newEpisode)
         }
-        return true
+
+        do {
+            try modelContext.save()
+            return true
+        } catch {
+            formValidationMessage = "Speichern fehlgeschlagen. Bitte versuche es erneut."
+            return false
+        }
     }
 
     private func hasDuplicateEpisodeNumber(in universe: Universe, episodeNumber: Int) -> Bool {
@@ -434,6 +441,7 @@ struct EpisodeEditView: View {
         let mood = Mood(name: suggestion.name, iconName: suggestion.icon)
         modelContext.insert(mood)
         selectedMoods.insert(mood)
+        try? modelContext.save()
     }
 
     private func addMood() {
@@ -458,6 +466,7 @@ struct EpisodeEditView: View {
         )
         modelContext.insert(mood)
         selectedMoods.insert(mood)
+        try? modelContext.save()
         newMoodName = ""
         newMoodIcon = ""
     }

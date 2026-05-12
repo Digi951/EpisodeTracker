@@ -6,7 +6,7 @@ struct MoodPickerView: View {
     @Query(sort: \Mood.name) private var allMoods: [Mood]
 
     private var moodsWithCounts: [(mood: Mood, count: Int)] {
-        SmartListDefinition.availableMoods(from: episodes, allMoods: allMoods)
+        SmartListDefinition.availableMoods(from: episodes, filter: .all, allMoods: allMoods)
     }
 
     var body: some View {
@@ -15,7 +15,7 @@ struct MoodPickerView: View {
                 ContentUnavailableView {
                     Label("Keine Stimmungen", systemImage: "tray")
                 } description: {
-                    Text("Keine Stimmungen mit offenen Folgen")
+                    Text("Noch keine Stimmungen in deiner Bibliothek")
                 }
                 .listRowSeparator(.hidden)
             } else {

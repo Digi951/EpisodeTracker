@@ -11,8 +11,8 @@ final class Episode {
     var rating: Int?
     var listenCount: Int
     var lastListenedAt: Date?
-    var universe: Universe?
-    var moods: [Mood]
+    @Relationship(inverse: \Universe.episodes) var universe: Universe?
+    @Relationship(inverse: \Mood.episodes) var moods: [Mood]
 
     init(
         episodeNumber: Int,

@@ -145,9 +145,11 @@ private struct EpisodeSplitView: View {
 }
 
 private struct IPadEpisodeListView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
+    @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
 
@@ -177,7 +179,20 @@ private struct IPadEpisodeListView: View {
             for: filteredEpisodes,
             sortOrder: sortOrder,
             filterUniverse: filterUniverse,
-            universeCount: universes.count
+            universeCount: universes.count,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: prefersCatalogProgressTotals
+        )
+    }
+
+    private var catalogTotalsByUniverse: [String: Int] {
+        Dictionary(
+            uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
+                ($0.collectionName ?? "Allgemein").lowercased()
+            }.map { key, entries in
+                let uniqueNumbers = Set(entries.map(\.number))
+                return (key, uniqueNumbers.count)
+            }
         )
     }
 
@@ -204,13 +219,13 @@ private struct IPadEpisodeListView: View {
     var body: some View {
         List(selection: $selection) {
             if showsLibrarySnapshot && !episodes.isEmpty {
-                LibrarySnapshotView(
+                CompactLibrarySnapshotView(
                     episodeCount: episodes.count,
                     listenedCount: listenedCount,
                     openCount: openCount,
                     totalListens: totalListens
                 )
-                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
             }
@@ -221,6 +236,8 @@ private struct IPadEpisodeListView: View {
                 } description: {
                     Text(episodes.isEmpty ? "Lege deine erste Folge an." : "Passe Suche oder Filter an.")
                 }
+                .listRowInsets(EdgeInsets(top: 18, leading: 10, bottom: 12, trailing: 10))
+                .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             } else if !episodeGroups.isEmpty {
                 ForEach(episodeGroups) { group in
@@ -251,7 +268,9 @@ private struct IPadEpisodeListView: View {
                 }
             }
         }
+        .listStyle(.sidebar)
         .searchable(text: $searchText, prompt: "Folge suchen…")
+        .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 sortAndFilterMenu
@@ -496,6 +515,59 @@ private struct UpNextSplitView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+    }
+}
+
+private struct CompactLibrarySnapshotView: View {
+    let episodeCount: Int
+    let listenedCount: Int
+    let openCount: Int
+    let totalListens: Int
+
+    private var progress: Double {
+        guard episodeCount > 0 else { return 0 }
+        return Double(listenedCount) / Double(episodeCount)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Hörstand")
+                    .font(.headline)
+                Spacer()
+                Text(progress, format: .percent.precision(.fractionLength(0)))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+
+            ProgressView(value: progress)
+
+            HStack(spacing: 10) {
+                CompactSidebarMetric(value: "\(episodeCount)", label: "Folgen")
+                CompactSidebarMetric(value: "\(openCount)", label: "Offen")
+                CompactSidebarMetric(value: "\(totalListens)", label: "Hörgänge")
+            }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct CompactSidebarMetric: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .lineLimit(1)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
