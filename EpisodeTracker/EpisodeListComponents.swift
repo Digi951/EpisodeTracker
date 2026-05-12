@@ -94,3 +94,93 @@ struct EpisodeGroupHeader: View {
         .accessibilityHint(isCollapsed ? "Zum Aufklappen tippen" : "Zum Einklappen tippen")
     }
 }
+
+struct EpisodeListSortFilterMenu: View {
+    @Binding var controls: EpisodeListControlsState
+    let universes: [Universe]
+    var resetsMoodFilter = true
+
+    var body: some View {
+        Menu {
+            sortButtons
+            universeMenu
+            statusMenu
+
+            if controls.hasActiveFilter {
+                Button("Filter zurücksetzen", role: .destructive) {
+                    controls.resetFilters(resetMood: resetsMoodFilter)
+                }
+            }
+        } label: {
+            Label("Sortieren und filtern", systemImage: "arrow.up.arrow.down")
+        }
+    }
+
+    @ViewBuilder
+    private var sortButtons: some View {
+        ForEach(EpisodeSortOrder.allCases, id: \.self) { sortOrder in
+            Button {
+                controls.sortOrder = sortOrder
+            } label: {
+                EpisodeListMenuLabel(
+                    text: sortOrder.rawValue,
+                    isSelected: controls.sortOrder == sortOrder
+                )
+            }
+        }
+    }
+
+    private var universeMenu: some View {
+        Menu("Katalog") {
+            Button {
+                controls.filterUniverse = nil
+            } label: {
+                EpisodeListMenuLabel(
+                    text: "Alle",
+                    isSelected: controls.filterUniverse == nil
+                )
+            }
+
+            ForEach(universes) { universe in
+                Button {
+                    controls.filterUniverse = universe
+                } label: {
+                    EpisodeListMenuLabel(
+                        text: universe.name,
+                        isSelected: controls.filterUniverse?.id == universe.id
+                    )
+                }
+            }
+        }
+    }
+
+    private var statusMenu: some View {
+        Menu("Status") {
+            ForEach(EpisodeStatusFilter.allCases, id: \.self) { filter in
+                Button {
+                    controls.statusFilter = filter
+                } label: {
+                    EpisodeListMenuLabel(
+                        text: filter.rawValue,
+                        isSelected: controls.statusFilter == filter
+                    )
+                }
+            }
+        }
+    }
+}
+
+private struct EpisodeListMenuLabel: View {
+    let text: String
+    let isSelected: Bool
+
+    var body: some View {
+        HStack {
+            Text(text)
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark")
+            }
+        }
+    }
+}

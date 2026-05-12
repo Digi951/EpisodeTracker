@@ -287,6 +287,49 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertNotEqual(byNumber, byRating)
     }
 
+    func testCollapseStoreCanToggleGroupInScopedRawValue() {
+        let scopeKey = EpisodeGroupCollapseStore.scopeKey(
+            sortOrder: "Nummer",
+            filterUniverseName: nil,
+            statusFilter: .all,
+            isMultiUniverse: true
+        )
+
+        let encoded = EpisodeGroupCollapseStore.toggle(
+            groupID: "universe:Die drei ???",
+            in: "",
+            scopeKey: scopeKey
+        )
+        let collapsed = EpisodeGroupCollapseStore.collapsedIDs(from: encoded, scopeKey: scopeKey)
+
+        XCTAssertEqual(collapsed, ["universe:Die drei ???"])
+    }
+
+    func testEpisodeDeleteStateBuildsSingleEpisodeConfirmation() {
+        var deleteState = EpisodeDeleteState()
+        let episode = Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979)
+
+        deleteState.request(episode)
+
+        XCTAssertTrue(deleteState.isActive)
+        XCTAssertEqual(deleteState.title, "Folge löschen?")
+        XCTAssertTrue(deleteState.message.contains("Super-Papagei"))
+    }
+
+    func testEpisodeDeleteStateCanCollectMultipleEpisodesFromOffsets() {
+        var deleteState = EpisodeDeleteState()
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1980),
+            Episode(episodeNumber: 3, title: "C", releaseYear: 1981)
+        ]
+
+        deleteState.request(from: episodes, at: IndexSet([0, 2]))
+
+        XCTAssertEqual(deleteState.pendingEpisodes.map(\.title), ["A", "C"])
+        XCTAssertEqual(deleteState.title, "2 Folgen löschen?")
+    }
+
     func testStatisticsOverviewPreferencesRestoreDefaultOrderWhenEmpty() {
         let sections = StatisticsOverviewPreferences.orderedItems(
             from: "",
@@ -312,6 +355,38 @@ final class EpisodeTrackerTests: XCTestCase {
         )
 
         XCTAssertEqual(hidden, [.episodes, .averageRating])
+    }
+
+    func testEpisodeListControlsDetectActiveFiltersAndCanResetThem() {
+        let mood = Mood(name: "Gruselig", iconName: "😱")
+        let universe = Universe(name: "Die drei ???")
+        var controls = EpisodeListControlsState(
+            searchText: "Papagei",
+            filterMood: mood,
+            filterUniverse: universe,
+            statusFilter: .rated,
+            sortOrder: .title
+        )
+
+        XCTAssertTrue(controls.hasActiveFilter)
+
+        controls.resetFilters()
+
+        XCTAssertNil(controls.filterMood)
+        XCTAssertNil(controls.filterUniverse)
+        XCTAssertEqual(controls.statusFilter, .all)
+        XCTAssertEqual(controls.searchText, "Papagei")
+        XCTAssertEqual(controls.sortOrder, .title)
+    }
+
+    func testEpisodeListControlsCanKeepMoodFilterWhenResettingForIPad() {
+        let mood = Mood(name: "Abenteuer", iconName: "🧭")
+        var controls = EpisodeListControlsState(filterMood: mood, statusFilter: .listened)
+
+        controls.resetFilters(resetMood: false)
+
+        XCTAssertEqual(controls.filterMood?.name, "Abenteuer")
+        XCTAssertEqual(controls.statusFilter, .all)
     }
 
     func testSplitLayoutDeciderUsesRegularSizeClassEvenBelowThreshold() {

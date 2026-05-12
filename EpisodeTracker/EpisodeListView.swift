@@ -10,30 +10,18 @@ struct EpisodeListView: View {
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
 
-    @State private var searchText = ""
-    @State private var filterMood: Mood?
-    @State private var filterUniverse: Universe?
-    @State private var statusFilter: EpisodeStatusFilter = .all
-    @State private var sortOrder: SortOrder = .number
-    @State private var pendingDeleteEpisodes: [Episode] = []
+    @State private var controls = EpisodeListControlsState()
+    @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
-
-    enum SortOrder: String, CaseIterable {
-        case recentlyPlayed = "Zuletzt gespielt"
-        case number = "Nummer"
-        case title = "Titel A-Z"
-        case rating = "Bewertung"
-        case releaseYear = "Erscheinungsjahr"
-    }
 
     private var filteredEpisodes: [Episode] {
         EpisodeListOrganizer.filteredAndSortedEpisodes(
             episodes: episodes,
-            searchText: searchText,
-            filterUniverse: filterUniverse,
-            filterMood: filterMood,
-            statusFilter: statusFilter,
-            sortOrder: sortOrder
+            searchText: controls.searchText,
+            filterUniverse: controls.filterUniverse,
+            filterMood: controls.filterMood,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
         )
     }
 
@@ -44,8 +32,8 @@ struct EpisodeListView: View {
     private var episodeGroups: [EpisodeListGroup] {
         EpisodeListOrganizer.groups(
             for: filteredEpisodes,
-            sortOrder: sortOrder,
-            filterUniverse: filterUniverse,
+            sortOrder: controls.sortOrder,
+            filterUniverse: controls.filterUniverse,
             universeCount: universes.count,
             catalogTotalsByUniverse: catalogTotalsByUniverse,
             preferCatalogTotals: prefersCatalogProgressTotals
@@ -63,10 +51,6 @@ struct EpisodeListView: View {
         )
     }
 
-    private var hasActiveFilter: Bool {
-        filterMood != nil || filterUniverse != nil || statusFilter != .all
-    }
-
     private var availableMoodFilters: [Mood] {
         moods.filter { mood in
             episodes.contains { episode in
@@ -76,20 +60,14 @@ struct EpisodeListView: View {
     }
 
     private var groupCollapseScopeKey: String {
-        EpisodeGroupCollapseStore.scopeKey(
-            sortOrder: sortOrder.rawValue,
-            filterUniverseName: filterUniverse?.name,
-            statusFilter: statusFilter,
-            isMultiUniverse: filterUniverse == nil && universes.count > 1
-        )
-    }
-
-    private var collapsedGroupState: [String: Set<String>] {
-        EpisodeGroupCollapseStore.decode(collapsedGroupIDsRaw)
+        controls.collapseScopeKey(universeCount: universes.count)
     }
 
     private var collapsedGroupIDs: Set<String> {
-        collapsedGroupState[groupCollapseScopeKey] ?? []
+        EpisodeGroupCollapseStore.collapsedIDs(
+            from: collapsedGroupIDsRaw,
+            scopeKey: groupCollapseScopeKey
+        )
     }
 
     private var listenedCount: Int {
@@ -118,8 +96,8 @@ struct EpisodeListView: View {
                 .listRowBackground(Color.clear)
             }
 
-            if !availableMoodFilters.isEmpty || filterMood != nil {
-                MoodFilterBar(moods: availableMoodFilters, selection: $filterMood)
+            if !availableMoodFilters.isEmpty || controls.filterMood != nil {
+                MoodFilterBar(moods: availableMoodFilters, selection: $controls.filterMood)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
@@ -137,10 +115,8 @@ struct EpisodeListView: View {
                     Text("Passe Suche oder Filter an.")
                 } actions: {
                     Button("Suche und Filter zurücksetzen") {
-                        searchText = ""
-                        filterMood = nil
-                        filterUniverse = nil
-                        statusFilter = .all
+                        controls.searchText = ""
+                        controls.resetFilters()
                     }
                 }
                 .padding(.vertical, 36)
@@ -176,78 +152,20 @@ struct EpisodeListView: View {
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Folge suchen…")
+        .searchable(text: $controls.searchText, prompt: "Folge suchen…")
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        sortOrder = .recentlyPlayed
-                    } label: {
-                        sortingLabel("Zuletzt gespielt", isSelected: sortOrder == .recentlyPlayed)
-                    }
-                    Button {
-                        sortOrder = .title
-                    } label: {
-                        sortingLabel("Titel A-Z", isSelected: sortOrder == .title)
-                    }
-                    Button {
-                        sortOrder = .number
-                    } label: {
-                        sortingLabel("Nummer", isSelected: sortOrder == .number)
-                    }
-                    Button {
-                        sortOrder = .rating
-                    } label: {
-                        sortingLabel("Bewertung", isSelected: sortOrder == .rating)
-                    }
-                    Button {
-                        sortOrder = .releaseYear
-                    } label: {
-                        sortingLabel("Erscheinungsjahr", isSelected: sortOrder == .releaseYear)
-                    }
-                    Menu("Katalog") {
-                        Button {
-                            filterUniverse = nil
-                        } label: {
-                            sortingLabel("Alle", isSelected: filterUniverse == nil)
-                        }
-                        ForEach(universes) { universe in
-                            Button {
-                                filterUniverse = universe
-                            } label: {
-                                sortingLabel(
-                                    universe.name,
-                                    isSelected: filterUniverse?.id == universe.id
-                                )
-                            }
-                        }
-                    }
-                    Menu("Status") {
-                        ForEach(EpisodeStatusFilter.allCases, id: \.self) { filter in
-                            Button {
-                                statusFilter = filter
-                            } label: {
-                                sortingLabel(filter.rawValue, isSelected: statusFilter == filter)
-                            }
-                        }
-                    }
-                    if hasActiveFilter {
-                        Button("Filter zurücksetzen", role: .destructive) {
-                            filterMood = nil
-                            filterUniverse = nil
-                            statusFilter = .all
-                        }
-                    }
-                } label: {
-                    Label("Sortieren und filtern", systemImage: "arrow.up.arrow.down")
-                }
+                EpisodeListSortFilterMenu(
+                    controls: $controls,
+                    universes: universes
+                )
                 NavigationLink(value: NavigationDestination.addEpisode) {
                     Label("Neue Folge", systemImage: "plus")
                 }
             }
         }
         .confirmationDialog(
-            deleteConfirmationTitle,
+            deleteState.title,
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
@@ -255,10 +173,10 @@ struct EpisodeListView: View {
                 confirmDeleteEpisodes()
             }
             Button("Abbrechen", role: .cancel) {
-                pendingDeleteEpisodes = []
+                deleteState.clear()
             }
         } message: {
-            Text(deleteConfirmationMessage)
+            Text(deleteState.message)
         }
     }
 
@@ -300,33 +218,21 @@ struct EpisodeListView: View {
         }
     }
 
-    private var deleteConfirmationTitle: String {
-        pendingDeleteEpisodes.count == 1 ? "Folge löschen?" : "\(pendingDeleteEpisodes.count) Folgen löschen?"
-    }
-
-    private var deleteConfirmationMessage: String {
-        guard pendingDeleteEpisodes.count == 1, let episode = pendingDeleteEpisodes.first else {
-            return "Diese Aktion kann nicht rückgängig gemacht werden."
-        }
-
-        return "„\(episode.title)“ wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
-    }
-
     private func requestDeleteEpisode(_ episode: Episode) {
-        pendingDeleteEpisodes = [episode]
+        deleteState.request(episode)
         showingDeleteConfirmation = true
     }
 
     private func requestDeleteEpisodes(_ list: [Episode], at offsets: IndexSet) {
-        pendingDeleteEpisodes = offsets.map { list[$0] }
-        showingDeleteConfirmation = !pendingDeleteEpisodes.isEmpty
+        deleteState.request(from: list, at: offsets)
+        showingDeleteConfirmation = deleteState.isActive
     }
 
     private func confirmDeleteEpisodes() {
-        for episode in pendingDeleteEpisodes {
+        for episode in deleteState.pendingEpisodes {
             modelContext.delete(episode)
         }
-        pendingDeleteEpisodes = []
+        deleteState.clear()
     }
 
     private func isCollapsed(_ group: EpisodeListGroup) -> Bool {
@@ -334,25 +240,11 @@ struct EpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        var state = collapsedGroupState
-        var ids = state[groupCollapseScopeKey] ?? []
-        if ids.contains(group.id) {
-            ids.remove(group.id)
-        } else {
-            ids.insert(group.id)
-        }
-        state[groupCollapseScopeKey] = ids
-        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.encode(state)
-    }
-
-    private func sortingLabel(_ text: String, isSelected: Bool) -> some View {
-        HStack {
-            Text(text)
-            Spacer()
-            if isSelected {
-                Image(systemName: "checkmark")
-            }
-        }
+        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
+            groupID: group.id,
+            in: collapsedGroupIDsRaw,
+            scopeKey: groupCollapseScopeKey
+        )
     }
 }
 

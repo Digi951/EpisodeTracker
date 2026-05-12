@@ -1,11 +1,80 @@
 import Foundation
 
+enum EpisodeSortOrder: String, CaseIterable {
+    case recentlyPlayed = "Zuletzt gespielt"
+    case number = "Nummer"
+    case title = "Titel A-Z"
+    case rating = "Bewertung"
+    case releaseYear = "Erscheinungsjahr"
+}
+
 enum EpisodeStatusFilter: String, CaseIterable {
     case all = "Alle"
     case open = "Offen"
     case listened = "Gehört"
     case rated = "Bewertet"
     case noted = "Mit Notiz"
+}
+
+struct EpisodeListControlsState {
+    var searchText = ""
+    var filterMood: Mood?
+    var filterUniverse: Universe?
+    var statusFilter: EpisodeStatusFilter = .all
+    var sortOrder: EpisodeSortOrder = .number
+
+    var hasActiveFilter: Bool {
+        filterMood != nil || filterUniverse != nil || statusFilter != .all
+    }
+
+    func collapseScopeKey(universeCount: Int) -> String {
+        EpisodeGroupCollapseStore.scopeKey(
+            sortOrder: sortOrder.rawValue,
+            filterUniverseName: filterUniverse?.name,
+            statusFilter: statusFilter,
+            isMultiUniverse: filterUniverse == nil && universeCount > 1
+        )
+    }
+
+    mutating func resetFilters(resetMood: Bool = true) {
+        if resetMood {
+            filterMood = nil
+        }
+        filterUniverse = nil
+        statusFilter = .all
+    }
+}
+
+struct EpisodeDeleteState {
+    var pendingEpisodes: [Episode] = []
+
+    var title: String {
+        pendingEpisodes.count == 1 ? "Folge löschen?" : "\(pendingEpisodes.count) Folgen löschen?"
+    }
+
+    var message: String {
+        guard pendingEpisodes.count == 1, let episode = pendingEpisodes.first else {
+            return "Diese Aktion kann nicht rückgängig gemacht werden."
+        }
+
+        return "„\(episode.title)“ wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+    }
+
+    mutating func request(_ episode: Episode) {
+        pendingEpisodes = [episode]
+    }
+
+    mutating func request(from episodes: [Episode], at offsets: IndexSet) {
+        pendingEpisodes = offsets.map { episodes[$0] }
+    }
+
+    mutating func clear() {
+        pendingEpisodes = []
+    }
+
+    var isActive: Bool {
+        !pendingEpisodes.isEmpty
+    }
 }
 
 enum EpisodeGroupCollapseStore {
@@ -42,6 +111,29 @@ enum EpisodeGroupCollapseStore {
             .lowercased() ?? "__all__"
         let universeMode = isMultiUniverse ? "multi" : "single"
         return [sortOrder, universeKey, statusFilter.rawValue, universeMode].joined(separator: "|")
+    }
+
+    static func collapsedIDs(
+        from rawValue: String,
+        scopeKey: String
+    ) -> Set<String> {
+        decode(rawValue)[scopeKey] ?? []
+    }
+
+    static func toggle(
+        groupID: String,
+        in rawValue: String,
+        scopeKey: String
+    ) -> String {
+        var state = decode(rawValue)
+        var ids = state[scopeKey] ?? []
+        if ids.contains(groupID) {
+            ids.remove(groupID)
+        } else {
+            ids.insert(groupID)
+        }
+        state[scopeKey] = ids
+        return encode(state)
     }
 }
 
@@ -84,7 +176,7 @@ enum EpisodeListOrganizer {
         filterUniverse: Universe?,
         filterMood: Mood?,
         statusFilter: EpisodeStatusFilter,
-        sortOrder: EpisodeListView.SortOrder
+        sortOrder: EpisodeSortOrder
     ) -> [Episode] {
         var result = episodes
 
@@ -129,7 +221,7 @@ enum EpisodeListOrganizer {
 
     static func groups(
         for episodes: [Episode],
-        sortOrder: EpisodeListView.SortOrder,
+        sortOrder: EpisodeSortOrder,
         filterUniverse: Universe?,
         universeCount: Int,
         catalogTotalsByUniverse: [String: Int] = [:],
@@ -162,7 +254,7 @@ enum EpisodeListOrganizer {
 
     static func shouldGroup(
         episodes: [Episode],
-        sortOrder: EpisodeListView.SortOrder,
+        sortOrder: EpisodeSortOrder,
         filterUniverse: Universe?,
         universeCount: Int
     ) -> Bool {
@@ -176,7 +268,7 @@ enum EpisodeListOrganizer {
         return episodes.count >= 12
     }
 
-    private static func sort(_ episodes: inout [Episode], by sortOrder: EpisodeListView.SortOrder) {
+    private static func sort(_ episodes: inout [Episode], by sortOrder: EpisodeSortOrder) {
         switch sortOrder {
         case .recentlyPlayed:
             episodes.sort {
