@@ -42,6 +42,16 @@ struct SmartListDetailView: View {
         return years.sorted()
     }
 
+    private var catalogGroups: [CatalogSuggestionGroup] {
+        let grouped = Dictionary(grouping: catalogSuggestions, by: \.universeName)
+        return grouped.keys.sorted().map { universeName in
+            CatalogSuggestionGroup(
+                universeName: universeName,
+                suggestions: grouped[universeName] ?? []
+            )
+        }
+    }
+
     private var navigationTitle: String {
         if smartList == .zufaelligNachStimmung, let mood {
             return "\(mood.iconName ?? "") \(mood.name)"
@@ -139,23 +149,38 @@ struct SmartListDetailView: View {
             .listRowSeparator(.hidden)
         } else {
             Section {
-                ForEach(Array(catalogSuggestions.enumerated()), id: \.offset) { _, suggestion in
-                    CatalogEntryRow(
-                        universeName: suggestion.universeName,
-                        entry: suggestion.entry
-                    ) {
-                        catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
-                    }
+                CatalogBulkImportCard(
+                    suggestionCount: catalogSuggestions.count,
+                    universeCount: catalogGroups.count
+                ) {
+                    addCatalogSuggestions(catalogSuggestions)
                 }
-            } footer: {
-                if catalogSuggestions.count > 1 {
-                    Button {
-                        addAllCatalogSuggestions()
-                    } label: {
-                        Label("Alle \(catalogSuggestions.count) Folgen übernehmen", systemImage: "plus.rectangle.on.rectangle")
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+            ForEach(catalogGroups) { group in
+                Section {
+                    ForEach(Array(group.suggestions.enumerated()), id: \.offset) { _, suggestion in
+                        CatalogEntryRow(
+                            universeName: suggestion.universeName,
+                            entry: suggestion.entry
+                        ) {
+                            catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+                        }
                     }
-                    .font(.footnote)
-                    .padding(.top, 8)
+                } header: {
+                    CatalogGroupHeader(
+                        title: group.universeName,
+                        count: group.suggestions.count
+                    ) {
+                        addCatalogSuggestions(group.suggestions)
+                    }
+                } footer: {
+                    if group.suggestions.count > 1 {
+                        Text("Die Vorschläge werden direkt im Katalog „\(group.universeName)“ angelegt.")
+                    }
                 }
             }
         }
@@ -193,8 +218,8 @@ struct SmartListDetailView: View {
         }
     }
 
-    private func addAllCatalogSuggestions() {
-        for suggestion in catalogSuggestions {
+    private func addCatalogSuggestions(_ suggestions: [(universeName: String, entry: CatalogEntry)]) {
+        for suggestion in suggestions {
             let universe = universes.first {
                 $0.name.caseInsensitiveCompare(suggestion.universeName) == .orderedSame
             }
@@ -206,6 +231,8 @@ struct SmartListDetailView: View {
             )
             modelContext.insert(episode)
         }
+
+        try? modelContext.save()
     }
 
     private func reshuffle() {
@@ -214,6 +241,80 @@ struct SmartListDetailView: View {
         } else if smartList == .zufaellig {
             shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes, filter: episodeFilter)
         }
+    }
+}
+
+private struct CatalogSuggestionGroup: Identifiable {
+    let universeName: String
+    let suggestions: [(universeName: String, entry: CatalogEntry)]
+
+    var id: String { universeName }
+}
+
+private struct CatalogBulkImportCard: View {
+    let suggestionCount: Int
+    let universeCount: Int
+    let action: () -> Void
+
+    private var detailText: String {
+        if universeCount == 1 {
+            return "\(suggestionCount) fehlende Folgen in 1 Katalog"
+        }
+        return "\(suggestionCount) fehlende Folgen in \(universeCount) Katalogen"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Katalog übernehmen")
+                    .font(.headline)
+                Spacer()
+                Text("\(suggestionCount)")
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(.tint)
+            }
+
+            Text(detailText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Button(action: action) {
+                Label("Alle sichtbaren Vorschläge übernehmen", systemImage: "plus.rectangle.on.rectangle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+private struct CatalogGroupHeader: View {
+    let title: String
+    let count: Int
+    let action: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(count == 1 ? "1 fehlende Folge" : "\(count) fehlende Folgen")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button(action: action) {
+                Label("Alle", systemImage: "plus")
+                    .labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.borderless)
+            .font(.subheadline.weight(.semibold))
+        }
+        .textCase(nil)
     }
 }
 
