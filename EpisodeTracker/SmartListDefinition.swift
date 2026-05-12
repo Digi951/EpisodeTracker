@@ -79,7 +79,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         case .uebersprungen: "Keine übersprungenen Folgen"
         case .topBewertet: "Keine bewerteten ungehörten Folgen"
         case .zufaellig: "Alles gehört!"
-        case .zufaelligNachStimmung: "Keine Stimmungen mit offenen Folgen"
+        case .zufaelligNachStimmung: "Keine Stimmungen in deiner Bibliothek"
         }
     }
 
@@ -98,7 +98,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         case .zufaellig:
             "Zufällige Auswahl aus deiner Bibliothek. Wähle oben, ob du aus ungehörten, gehörten oder allen Folgen würfeln möchtest."
         case .zufaelligNachStimmung:
-            "Wähle eine Stimmung und erhalte eine zufällige Auswahl passender Folgen."
+            "Wähle eine Stimmung und erhalte eine zufällige Auswahl passender Folgen. Danach kannst du auf ungehörte, gehörte oder alle Folgen eingrenzen."
         }
     }
 
@@ -246,7 +246,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
         let filtered = filter.apply(to: episodes)
         let matching = filtered.filter { episode in
-            episode.moods.contains(where: { matches($0, to: mood) })
+            episode.moods.contains(where: { $0.matches(mood) })
         }
         return Array(matching.shuffled().prefix(count))
     }
@@ -257,7 +257,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
         for mood in allMoods {
             let count = filtered.filter { episode in
-                episode.moods.contains(where: { matches($0, to: mood) })
+                episode.moods.contains(where: { $0.matches(mood) })
             }.count
             if count > 0 {
                 results.append((mood, count))
@@ -316,14 +316,5 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     static func teaserText(for episode: Episode) -> String {
         let universeName = episode.universe?.name ?? "Allgemein"
         return "\(universeName): Folge \(episode.episodeNumber) — \(episode.title)"
-    }
-
-    private static func matches(_ lhs: Mood, to rhs: Mood) -> Bool {
-        if lhs.id == rhs.id {
-            return true
-        }
-
-        return lhs.name.trimmingCharacters(in: .whitespacesAndNewlines)
-            .caseInsensitiveCompare(rhs.name.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
     }
 }

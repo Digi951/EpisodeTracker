@@ -79,6 +79,10 @@ struct EpisodeGroupHeader: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+
+                    ProgressView(value: group.progress)
+                        .tint(Color.accentColor.opacity(0.75))
+                        .scaleEffect(y: 0.6, anchor: .center)
                 }
             }
             .padding(.vertical, 2)

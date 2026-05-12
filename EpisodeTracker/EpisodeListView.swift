@@ -70,13 +70,26 @@ struct EpisodeListView: View {
     private var availableMoodFilters: [Mood] {
         moods.filter { mood in
             episodes.contains { episode in
-                episode.moods.contains { $0.id == mood.id }
+                episode.moods.contains { $0.matches(mood) }
             }
         }
     }
 
+    private var groupCollapseScopeKey: String {
+        EpisodeGroupCollapseStore.scopeKey(
+            sortOrder: sortOrder.rawValue,
+            filterUniverseName: filterUniverse?.name,
+            statusFilter: statusFilter,
+            isMultiUniverse: filterUniverse == nil && universes.count > 1
+        )
+    }
+
+    private var collapsedGroupState: [String: Set<String>] {
+        EpisodeGroupCollapseStore.decode(collapsedGroupIDsRaw)
+    }
+
     private var collapsedGroupIDs: Set<String> {
-        Set(collapsedGroupIDsRaw.split(separator: "\n").map(String.init))
+        collapsedGroupState[groupCollapseScopeKey] ?? []
     }
 
     private var listenedCount: Int {
@@ -321,13 +334,15 @@ struct EpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        var ids = collapsedGroupIDs
+        var state = collapsedGroupState
+        var ids = state[groupCollapseScopeKey] ?? []
         if ids.contains(group.id) {
             ids.remove(group.id)
         } else {
             ids.insert(group.id)
         }
-        collapsedGroupIDsRaw = ids.sorted().joined(separator: "\n")
+        state[groupCollapseScopeKey] = ids
+        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.encode(state)
     }
 
     private func sortingLabel(_ text: String, isSelected: Bool) -> some View {

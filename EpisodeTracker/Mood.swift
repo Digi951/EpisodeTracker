@@ -23,4 +23,12 @@ extension Mood {
         ("Klassiker", "⭐"),
         ("Abenteuer", "🧭")
     ]
+
+    var normalizedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    func matches(_ other: Mood) -> Bool {
+        id == other.id || normalizedName == other.normalizedName
+    }
 }

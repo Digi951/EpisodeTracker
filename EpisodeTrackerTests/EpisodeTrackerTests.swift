@@ -172,6 +172,26 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(result.map(\.title), ["Offen"])
     }
 
+    func testMoodFilterMatchesEquivalentMoodByName() {
+        let assignedMood = Mood(name: "Gruselig", iconName: "😱")
+        let selectedMood = Mood(name: "Gruselig", iconName: "😱")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1980, moods: [assignedMood]),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1981)
+        ]
+
+        let result = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: selectedMood,
+            statusFilter: .all,
+            sortOrder: .number
+        )
+
+        XCTAssertEqual(result.map(\.title), ["A"])
+    }
+
     func testGroupSummaryCountsListenedAndOpenEpisodes() {
         let group = EpisodeListGroup(
             id: "test",
@@ -235,5 +255,62 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(available.count, 1)
         XCTAssertEqual(available.first?.count, 2)
         XCTAssertEqual(matching.count, 2)
+    }
+
+    func testCollapseStoreRoundTripsScopedState() {
+        let state: [String: Set<String>] = [
+            "Nummer|__all__|Alle|multi": ["universe:Die drei ???", "universe:TKKG"],
+            "Bewertung|__all__|Alle|multi": ["rating:5"]
+        ]
+
+        let encoded = EpisodeGroupCollapseStore.encode(state)
+        let decoded = EpisodeGroupCollapseStore.decode(encoded)
+
+        XCTAssertEqual(decoded["Nummer|__all__|Alle|multi"] ?? [], ["universe:Die drei ???", "universe:TKKG"])
+        XCTAssertEqual(decoded["Bewertung|__all__|Alle|multi"] ?? [], ["rating:5"])
+    }
+
+    func testCollapseStoreScopeKeySeparatesDifferentContexts() {
+        let byNumber = EpisodeGroupCollapseStore.scopeKey(
+            sortOrder: "Nummer",
+            filterUniverseName: nil,
+            statusFilter: .all,
+            isMultiUniverse: true
+        )
+        let byRating = EpisodeGroupCollapseStore.scopeKey(
+            sortOrder: "Bewertung",
+            filterUniverseName: nil,
+            statusFilter: .all,
+            isMultiUniverse: true
+        )
+
+        XCTAssertNotEqual(byNumber, byRating)
+    }
+
+    func testStatisticsOverviewPreferencesRestoreDefaultOrderWhenEmpty() {
+        let sections = StatisticsOverviewPreferences.orderedItems(
+            from: "",
+            availableKinds: Set(StatisticsOverviewKind.allCases)
+        )
+
+        XCTAssertEqual(sections, StatisticsOverviewKind.allCases)
+    }
+
+    func testStatisticsOverviewPreferencesKeepSavedOrderAndAppendMissingItems() {
+        let sections = StatisticsOverviewPreferences.orderedItems(
+            from: "averageRating,episodes",
+            availableKinds: Set(StatisticsOverviewKind.allCases)
+        )
+
+        XCTAssertEqual(sections, [.averageRating, .episodes, .listened, .open, .totalListens])
+    }
+
+    func testStatisticsOverviewPreferencesDecodeHiddenItems() {
+        let hidden = StatisticsOverviewPreferences.hiddenItems(
+            from: "episodes,averageRating",
+            availableKinds: Set(StatisticsOverviewKind.allCases)
+        )
+
+        XCTAssertEqual(hidden, [.episodes, .averageRating])
     }
 }

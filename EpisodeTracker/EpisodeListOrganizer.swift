@@ -8,6 +8,43 @@ enum EpisodeStatusFilter: String, CaseIterable {
     case noted = "Mit Notiz"
 }
 
+enum EpisodeGroupCollapseStore {
+    static func decode(_ rawValue: String) -> [String: Set<String>] {
+        guard !rawValue.isEmpty,
+              let data = rawValue.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)
+        else {
+            return [:]
+        }
+
+        return decoded.mapValues(Set.init)
+    }
+
+    static func encode(_ state: [String: Set<String>]) -> String {
+        let encoded = state.mapValues { Array($0).sorted() }
+        guard let data = try? JSONEncoder().encode(encoded),
+              let string = String(data: data, encoding: .utf8)
+        else {
+            return ""
+        }
+
+        return string
+    }
+
+    static func scopeKey(
+        sortOrder: String,
+        filterUniverseName: String?,
+        statusFilter: EpisodeStatusFilter,
+        isMultiUniverse: Bool
+    ) -> String {
+        let universeKey = filterUniverseName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? "__all__"
+        let universeMode = isMultiUniverse ? "multi" : "single"
+        return [sortOrder, universeKey, statusFilter.rawValue, universeMode].joined(separator: "|")
+    }
+}
+
 struct EpisodeListGroup: Identifiable {
     let id: String
     let title: String
@@ -63,7 +100,9 @@ enum EpisodeListOrganizer {
         }
 
         if let filterMood {
-            result = result.filter { $0.moods.contains(filterMood) }
+            result = result.filter { episode in
+                episode.moods.contains(where: { $0.matches(filterMood) })
+            }
         }
 
         switch statusFilter {

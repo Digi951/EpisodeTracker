@@ -73,7 +73,11 @@ struct UpNextView: View {
                 SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
-                    teaser: "Stimmung wählen…",
+                    teaser: itemCount == 0
+                        ? "Stimmung wählen…"
+                        : itemCount == 1
+                            ? "1 Stimmung verfügbar"
+                            : "\(itemCount) Stimmungen verfügbar",
                     onInfoTap: { showingInfo = smartList }
                 )
             }
