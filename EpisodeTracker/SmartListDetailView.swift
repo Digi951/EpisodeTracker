@@ -74,6 +74,7 @@ struct SmartListDetailView: View {
         .navigationTitle(navigationTitle)
         .listStyle(.insetGrouped)
         .contentMargins(.horizontal, horizontalSizeClass == .regular ? 32 : 0, for: .scrollContent)
+        .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
         .toolbar {
             if smartList.isRandomList {
                 ToolbarItem(placement: .topBarTrailing) {

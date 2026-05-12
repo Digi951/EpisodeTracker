@@ -6,6 +6,8 @@ struct ContentView: View {
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
 
+    private let splitLayoutWidthThreshold = SplitLayoutDecider.defaultWidthThreshold
+
     private var effectiveLibraryTitle: String {
         let trimmed = libraryTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "Meine Hörspiele" : trimmed
@@ -16,14 +18,26 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                iPadBody
-            } else {
-                iPhoneBody
+        GeometryReader { geometry in
+            let usesSplitLayout = shouldUseSplitLayout(for: geometry.size.width)
+
+            Group {
+                if usesSplitLayout {
+                    iPadBody
+                } else {
+                    iPhoneBody
+                }
             }
         }
         .preferredColorScheme(appearanceMode.colorScheme)
+    }
+
+    private func shouldUseSplitLayout(for width: CGFloat) -> Bool {
+        SplitLayoutDecider.shouldUseSplitLayout(
+            horizontalSizeClass: horizontalSizeClass,
+            width: width,
+            threshold: splitLayoutWidthThreshold
+        )
     }
 
     private var iPhoneBody: some View {
@@ -126,11 +140,11 @@ private struct EpisodeSplitView: View {
                 if let selectedEpisode {
                     EpisodeDetailView(episode: selectedEpisode)
                 } else {
-                    ContentUnavailableView {
-                        Label("Folge auswählen", systemImage: "list.bullet.rectangle")
-                    } description: {
-                        Text("Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen.")
-                    }
+                    SplitSelectionPlaceholder(
+                        title: "Folge auswählen",
+                        systemImage: "list.bullet.rectangle",
+                        message: "Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen."
+                    )
                 }
             }
         }
@@ -521,11 +535,11 @@ private struct UpNextSplitView: View {
                 if let selectedEpisode {
                     EpisodeDetailView(episode: selectedEpisode)
                 } else {
-                    ContentUnavailableView {
-                        Label("Folge auswählen", systemImage: "list.bullet.rectangle")
-                    } description: {
-                        Text("Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen.")
-                    }
+                    SplitSelectionPlaceholder(
+                        title: "Folge auswählen",
+                        systemImage: "list.bullet.rectangle",
+                        message: "Wähle links eine Liste oder Folge aus, um Details, Bewertung und Notizen zu sehen."
+                    )
                 }
             }
         }
@@ -583,6 +597,34 @@ private struct CompactSidebarMetric: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct SplitSelectionPlaceholder: View {
+    let title: String
+    let systemImage: String
+    let message: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(title, systemImage: systemImage)
+        } description: {
+            Text(message)
+        }
+        .frame(maxWidth: .infinity, minHeight: 320, alignment: .center)
+        .padding(.horizontal, 32)
+    }
+}
+
+enum SplitLayoutDecider {
+    static let defaultWidthThreshold: CGFloat = 780
+
+    static func shouldUseSplitLayout(
+        horizontalSizeClass: UserInterfaceSizeClass?,
+        width: CGFloat,
+        threshold: CGFloat = defaultWidthThreshold
+    ) -> Bool {
+        horizontalSizeClass == .regular || width >= threshold
     }
 }
 

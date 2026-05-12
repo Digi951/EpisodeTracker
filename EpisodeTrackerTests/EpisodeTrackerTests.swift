@@ -313,4 +313,45 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(hidden, [.episodes, .averageRating])
     }
+
+    func testSplitLayoutDeciderUsesRegularSizeClassEvenBelowThreshold() {
+        XCTAssertTrue(
+            SplitLayoutDecider.shouldUseSplitLayout(
+                horizontalSizeClass: .regular,
+                width: 700
+            )
+        )
+    }
+
+    func testSplitLayoutDeciderUsesWidthThresholdForCompactSizeClass() {
+        XCTAssertFalse(
+            SplitLayoutDecider.shouldUseSplitLayout(
+                horizontalSizeClass: .compact,
+                width: 760
+            )
+        )
+
+        XCTAssertTrue(
+            SplitLayoutDecider.shouldUseSplitLayout(
+                horizontalSizeClass: .compact,
+                width: 800
+            )
+        )
+    }
+
+    func testStatisticsRegularLayoutUsesSingleDetailColumnForPortraitLikeWidths() {
+        let layout = StatisticsRegularLayout(containerWidth: 820)
+
+        XCTAssertEqual(layout.detailColumns.count, 1)
+        XCTAssertLessThanOrEqual(layout.contentWidth, 760)
+        XCTAssertGreaterThanOrEqual(layout.horizontalPadding, 24)
+    }
+
+    func testStatisticsRegularLayoutUsesTwoDetailColumnsForWideWidths() {
+        let layout = StatisticsRegularLayout(containerWidth: 1180)
+
+        XCTAssertEqual(layout.detailColumns.count, 2)
+        XCTAssertLessThanOrEqual(layout.contentWidth, 1100)
+        XCTAssertGreaterThan(layout.horizontalPadding, 24)
+    }
 }

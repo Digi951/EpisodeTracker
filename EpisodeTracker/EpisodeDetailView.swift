@@ -84,6 +84,7 @@ struct EpisodeDetailView: View {
         .navigationTitle("Folge \(episode.episodeNumber)")
         .listStyle(.insetGrouped)
         .contentMargins(.horizontal, horizontalSizeClass == .regular ? 48 : 0, for: .scrollContent)
+        .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
         .toolbar {
             Button {
                 episode.isListened = true

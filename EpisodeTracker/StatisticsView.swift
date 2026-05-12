@@ -8,19 +8,6 @@ struct StatisticsView: View {
     @Query private var episodes: [Episode]
     @State private var showingCustomization = false
 
-    private var summaryColumns: [GridItem] {
-        [
-            GridItem(.adaptive(minimum: 180, maximum: 220), spacing: 16)
-        ]
-    }
-
-    private var detailColumns: [GridItem] {
-        [
-            GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16),
-            GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16)
-        ]
-    }
-
     private var listenedCount: Int {
         episodes.filter(\.isListened).count
     }
@@ -198,70 +185,74 @@ struct StatisticsView: View {
     }
 
     private var iPadBody: some View {
-        ScrollView {
-            if episodes.isEmpty {
-                ContentUnavailableView {
-                    Label("Noch keine Statistik", systemImage: "chart.bar")
-                } description: {
-                    Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
-                }
-                .frame(maxWidth: .infinity, minHeight: 360)
-            } else {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Dein Hörstand auf einen Blick")
-                            .font(.title3.weight(.semibold))
-                        Text("Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+        GeometryReader { geometry in
+            let layout = StatisticsRegularLayout(containerWidth: geometry.size.width)
 
-                    LazyVGrid(
-                        columns: summaryColumns,
-                        spacing: 16
-                    ) {
-                        ForEach(visibleOverviewStats) { stat in
-                            StatSummaryTile(stat: stat)
+            ScrollView {
+                if episodes.isEmpty {
+                    ContentUnavailableView {
+                        Label("Noch keine Statistik", systemImage: "chart.bar")
+                    } description: {
+                        Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 360)
+                } else {
+                    VStack(alignment: .leading, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Dein Hörstand auf einen Blick")
+                                .font(.title3.weight(.semibold))
+                            Text("Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                    }
 
-                    LazyVGrid(
-                        columns: detailColumns,
-                        alignment: .leading,
-                        spacing: 16
-                    ) {
-                        StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
-                            if topRated.isEmpty {
-                                EmptyStatisticRow(
-                                    systemImage: "star",
-                                    title: "Noch keine Bewertungen",
-                                    detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
-                                )
-                            } else {
-                                VStack(spacing: 12) {
-                                    ForEach(topRated) { episode in
-                                        TopRatedStatisticRow(episode: episode)
+                        LazyVGrid(
+                            columns: layout.summaryColumns,
+                            spacing: 16
+                        ) {
+                            ForEach(visibleOverviewStats) { stat in
+                                StatSummaryTile(stat: stat)
+                            }
+                        }
+
+                        LazyVGrid(
+                            columns: layout.detailColumns,
+                            alignment: .leading,
+                            spacing: 16
+                        ) {
+                            StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
+                                if topRated.isEmpty {
+                                    EmptyStatisticRow(
+                                        systemImage: "star",
+                                        title: "Noch keine Bewertungen",
+                                        detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+                                    )
+                                } else {
+                                    VStack(spacing: 12) {
+                                        ForEach(topRated) { episode in
+                                            TopRatedStatisticRow(episode: episode)
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        StatisticPanel(title: "Stimmungen", systemImage: "tag") {
-                            NavigationLink {
-                                MoodStatisticsDetailView(moodDistribution: moodDistribution)
-                            } label: {
-                                StatisticNavigationRow(
-                                    title: "Stimmungen ansehen",
-                                    detail: moodSummaryText
-                                )
+                            StatisticPanel(title: "Stimmungen", systemImage: "tag") {
+                                NavigationLink {
+                                    MoodStatisticsDetailView(moodDistribution: moodDistribution)
+                                } label: {
+                                    StatisticNavigationRow(
+                                        title: "Stimmungen ansehen",
+                                        detail: moodSummaryText
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
+                    .frame(maxWidth: layout.contentWidth, alignment: .leading)
+                    .padding(.horizontal, layout.horizontalPadding)
+                    .padding(.vertical, 24)
                 }
-                .frame(maxWidth: 1100, alignment: .leading)
-                .padding(.horizontal, 40)
-                .padding(.vertical, 24)
             }
         }
         .background(Color(.systemGroupedBackground))
@@ -344,6 +335,39 @@ private struct StatisticsOverviewItem: Identifiable {
     let value: String
 
     var id: StatisticsOverviewKind { kind }
+}
+
+struct StatisticsRegularLayout {
+    let contentWidth: CGFloat
+    let horizontalPadding: CGFloat
+    let summaryColumns: [GridItem]
+    let detailColumns: [GridItem]
+
+    init(containerWidth: CGFloat) {
+        let safeWidth = max(containerWidth, 320)
+        let usesTwoDetailColumns = safeWidth >= 920
+
+        if usesTwoDetailColumns {
+            contentWidth = min(1100, safeWidth - 64)
+            summaryColumns = [
+                GridItem(.adaptive(minimum: 180, maximum: 220), spacing: 16)
+            ]
+            detailColumns = [
+                GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16),
+                GridItem(.flexible(minimum: 320, maximum: 520), spacing: 16)
+            ]
+        } else {
+            contentWidth = min(760, safeWidth - 48)
+            summaryColumns = [
+                GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 16)
+            ]
+            detailColumns = [
+                GridItem(.flexible(minimum: 320, maximum: 760), spacing: 16)
+            ]
+        }
+
+        horizontalPadding = max(24, (safeWidth - contentWidth) / 2)
+    }
 }
 
 private struct StatRow: View {
