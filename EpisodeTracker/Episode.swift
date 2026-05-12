@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class Episode {
+    var syncKey: String?
     var episodeNumber: Int
     var title: String
     var releaseYear: Int
@@ -18,6 +19,7 @@ final class Episode {
         episodeNumber: Int,
         title: String,
         releaseYear: Int,
+        syncKey: String? = nil,
         personalNote: String? = nil,
         isListened: Bool = false,
         rating: Int? = nil,
@@ -26,6 +28,10 @@ final class Episode {
         universe: Universe? = nil,
         moods: [Mood] = []
     ) {
+        self.syncKey = syncKey ?? Episode.makeSyncKey(
+            universeSyncKey: universe?.resolvedSyncKey,
+            episodeNumber: episodeNumber
+        )
         self.episodeNumber = episodeNumber
         self.title = title
         self.releaseYear = releaseYear
@@ -36,5 +42,49 @@ final class Episode {
         self.lastListenedAt = lastListenedAt
         self.universe = universe
         self.moods = moods
+    }
+}
+
+extension Episode {
+    static func makeSyncKey(
+        universeSyncKey: String?,
+        episodeNumber: Int
+    ) -> String {
+        guard let universeSyncKey,
+              !universeSyncKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return "episode:pending:\(UUID().uuidString.lowercased())"
+        }
+
+        return "episode:\(universeSyncKey)#\(episodeNumber)"
+    }
+
+    var resolvedSyncKey: String {
+        let trimmed = syncKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+
+        return Self.makeSyncKey(
+            universeSyncKey: universe?.resolvedSyncKey,
+            episodeNumber: episodeNumber
+        )
+    }
+
+    func refreshSyncKeyIfPossible() {
+        if let universe {
+            syncKey = Self.makeSyncKey(
+                universeSyncKey: universe.resolvedSyncKey,
+                episodeNumber: episodeNumber
+            )
+        } else {
+            let trimmed = syncKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if trimmed.isEmpty {
+            syncKey = Self.makeSyncKey(
+                universeSyncKey: nil,
+                episodeNumber: episodeNumber
+            )
+            }
+        }
     }
 }

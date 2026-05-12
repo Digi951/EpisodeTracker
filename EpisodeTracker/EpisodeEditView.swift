@@ -335,6 +335,7 @@ struct EpisodeEditView: View {
             episode.rating = rating
             episode.universe = selectedUniverse
             episode.moods = Array(selectedMoods)
+            episode.refreshSyncKeyIfPossible()
 
             if isListened && !wasListened {
                 episode.listenCount += 1

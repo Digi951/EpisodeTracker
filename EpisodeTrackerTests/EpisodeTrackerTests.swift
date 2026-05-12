@@ -1,4 +1,5 @@
 import XCTest
+import SwiftData
 @testable import EpisodeTracker
 
 final class EpisodeTrackerTests: XCTestCase {
@@ -71,6 +72,68 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(manifest.schemaVersion, 1)
         XCTAssertEqual(manifest.catalogs.count, 1)
         XCTAssertEqual(manifest.catalogs[0].url.absoluteString, "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_questionmarks.json")
+    }
+
+    func testContainerFactoryUsesPreviewModeForPreviewEnvironment() {
+        let mode = AppModelContainerFactory.resolveMode(
+            environment: ["XCODE_RUNNING_FOR_PREVIEWS": "1"]
+        )
+
+        XCTAssertEqual(mode, .previewInMemory)
+    }
+
+    func testContainerFactoryDefaultsToPersistentMode() {
+        let mode = AppModelContainerFactory.resolveMode(environment: [:])
+
+        XCTAssertEqual(mode, .localPersistent)
+    }
+
+    func testContainerFactoryBuildsExpectedPersistentStoreURL() {
+        let fileManager = FileManager.default
+        let storeURL = AppModelContainerFactory.persistentStoreURL(fileManager: fileManager)
+
+        XCTAssertEqual(storeURL.lastPathComponent, "EpisodeTracker.store")
+        XCTAssertEqual(storeURL.deletingLastPathComponent().lastPathComponent, "EpisodeTracker")
+    }
+
+    @MainActor
+    func testUniverseAndMoodDefaultToDeterministicSyncKeys() {
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Gruselig", iconName: "😱")
+
+        XCTAssertEqual(universe.resolvedSyncKey, "universe:die drei ???")
+        XCTAssertEqual(mood.resolvedSyncKey, "mood:gruselig")
+    }
+
+    @MainActor
+    func testEpisodeSyncKeyUsesUniverseSyncKeyAndNumber() {
+        let universe = Universe(name: "Die drei ???")
+        let episode = Episode(
+            episodeNumber: 7,
+            title: "und der unheimliche Drache",
+            releaseYear: 1979,
+            universe: universe
+        )
+
+        XCTAssertEqual(episode.resolvedSyncKey, "episode:universe:die drei ???#7")
+    }
+
+    @MainActor
+    func testEpisodeRefreshesSyncKeyAfterUniverseAssignment() {
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: nil
+        )
+        let originalSyncKey = episode.resolvedSyncKey
+        let universe = Universe(name: "Die drei ???")
+
+        episode.universe = universe
+        episode.refreshSyncKeyIfPossible()
+
+        XCTAssertNotEqual(episode.resolvedSyncKey, originalSyncKey)
+        XCTAssertEqual(episode.resolvedSyncKey, "episode:universe:die drei ???#1")
     }
 
     func testFreemiumPreparationDoesNotBlockCreationYet() {
@@ -355,6 +418,61 @@ final class EpisodeTrackerTests: XCTestCase {
         )
 
         XCTAssertEqual(hidden, [.episodes, .averageRating])
+    }
+
+    @MainActor
+    func testSyncPreparationDeduplicatesReferenceDataBySyncKey() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let keeperUniverse = Universe(name: "Die drei ???")
+        let duplicateUniverse = Universe(name: "Die drei ???", syncKey: "universe:die drei ???")
+        let keeperMood = Mood(name: "Gruselig", iconName: "😱")
+        let duplicateMood = Mood(name: "Gruselig", iconName: nil, syncKey: "mood:gruselig")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: duplicateUniverse,
+            moods: [duplicateMood]
+        )
+
+        context.insert(keeperUniverse)
+        context.insert(duplicateUniverse)
+        context.insert(keeperMood)
+        context.insert(duplicateMood)
+        context.insert(episode)
+
+        SyncPreparation.prepare(context: context)
+
+        let universes = try context.fetch(FetchDescriptor<Universe>())
+        let moods = try context.fetch(FetchDescriptor<Mood>())
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+
+        XCTAssertEqual(universes.count, 1)
+        XCTAssertEqual(moods.count, 1)
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].universe?.resolvedSyncKey, "universe:die drei ???")
+        XCTAssertEqual(episodes[0].moods.map(\.resolvedSyncKey), ["mood:gruselig"])
+        XCTAssertEqual(episodes[0].resolvedSyncKey, "episode:universe:die drei ???#1")
+    }
+
+    @MainActor
+    func testBootstrapperProvidesDefaultUniverseWhenMissing() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+
+        let universe = AppDataBootstrapper.ensureDefaultUniverse(in: container.mainContext)
+
+        XCTAssertEqual(universe?.name, "Allgemein")
+        XCTAssertEqual(universe?.resolvedSyncKey, "universe:allgemein")
     }
 
     func testEpisodeListControlsDetectActiveFiltersAndCanResetThem() {
