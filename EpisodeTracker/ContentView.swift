@@ -147,6 +147,7 @@ private struct EpisodeSplitView: View {
 private struct IPadEpisodeListView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
+    @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
 
@@ -154,59 +155,38 @@ private struct IPadEpisodeListView: View {
 
     @State private var searchText = ""
     @State private var filterUniverse: Universe?
+    @State private var statusFilter: EpisodeStatusFilter = .all
     @State private var sortOrder: EpisodeListView.SortOrder = .number
     @State private var pendingDeleteEpisodes: [Episode] = []
     @State private var showingDeleteConfirmation = false
     @State private var showingAddEpisode = false
 
     private var filteredEpisodes: [Episode] {
-        var result = episodes
+        EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: searchText,
+            filterUniverse: filterUniverse,
+            filterMood: nil,
+            statusFilter: statusFilter,
+            sortOrder: sortOrder
+        )
+    }
 
-        if !searchText.isEmpty {
-            result = result.filter { episode in
-                episode.title.localizedCaseInsensitiveContains(searchText)
-                || String(episode.episodeNumber).contains(searchText)
-            }
-        }
-
-        if let filterUniverse {
-            result = result.filter { $0.universe == filterUniverse }
-        }
-
-        switch sortOrder {
-        case .recentlyPlayed:
-            result.sort {
-                switch ($0.lastListenedAt, $1.lastListenedAt) {
-                case let (left?, right?):
-                    return left > right
-                case (.some, .none):
-                    return true
-                case (.none, .some):
-                    return false
-                case (.none, .none):
-                    return $0.episodeNumber < $1.episodeNumber
-                }
-            }
-        case .number:
-            result.sort { $0.episodeNumber < $1.episodeNumber }
-        case .title:
-            result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
-        case .rating:
-            result.sort { ($0.rating ?? 0) > ($1.rating ?? 0) }
-        case .releaseYear:
-            result.sort {
-                if $0.releaseYear != $1.releaseYear {
-                    return $0.releaseYear > $1.releaseYear
-                }
-                return $0.episodeNumber < $1.episodeNumber
-            }
-        }
-
-        return result
+    private var episodeGroups: [EpisodeListGroup] {
+        EpisodeListOrganizer.groups(
+            for: filteredEpisodes,
+            sortOrder: sortOrder,
+            filterUniverse: filterUniverse,
+            universeCount: universes.count
+        )
     }
 
     private var hasActiveFilter: Bool {
-        filterUniverse != nil
+        filterUniverse != nil || statusFilter != .all
+    }
+
+    private var collapsedGroupIDs: Set<String> {
+        Set(collapsedGroupIDsRaw.split(separator: "\n").map(String.init))
     }
 
     private var listenedCount: Int {
@@ -242,42 +222,29 @@ private struct IPadEpisodeListView: View {
                     Text(episodes.isEmpty ? "Lege deine erste Folge an." : "Passe Suche oder Filter an.")
                 }
                 .listRowSeparator(.hidden)
+            } else if !episodeGroups.isEmpty {
+                ForEach(episodeGroups) { group in
+                    Section {
+                        if !isCollapsed(group) {
+                            ForEach(group.episodes) { episode in
+                                episodeNavigationLink(episode)
+                            }
+                            .onDelete { offsets in
+                                requestDeleteEpisodes(group.episodes, at: offsets)
+                            }
+                        }
+                    } header: {
+                        EpisodeGroupHeader(
+                            group: group,
+                            isCollapsed: isCollapsed(group)
+                        ) {
+                            toggleGroup(group)
+                        }
+                    }
+                }
             } else {
                 ForEach(filteredEpisodes) { episode in
-                    NavigationLink(value: episode) {
-                        EpisodeRowView(episode: episode)
-                    }
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            episode.isListened.toggle()
-                            if episode.isListened {
-                                episode.listenCount += 1
-                                episode.lastListenedAt = .now
-                            }
-                        } label: {
-                            Label(
-                                episode.isListened ? "Nochmal" : "Gehört",
-                                systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
-                            )
-                        }
-                        .tint(episode.isListened ? .gray : .green)
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button {
-                            episode.isListened = true
-                            episode.listenCount += 1
-                            episode.lastListenedAt = .now
-                        } label: {
-                            Label("Hördurchgang zählen", systemImage: "plus")
-                        }
-                        .tint(.blue)
-
-                        Button(role: .destructive) {
-                            requestDeleteEpisode(episode)
-                        } label: {
-                            Label("Löschen", systemImage: "trash")
-                        }
-                    }
+                    episodeNavigationLink(episode)
                 }
                 .onDelete { offsets in
                     requestDeleteEpisodes(filteredEpisodes, at: offsets)
@@ -374,13 +341,60 @@ private struct IPadEpisodeListView: View {
                     }
                 }
             }
+            Menu("Status") {
+                ForEach(EpisodeStatusFilter.allCases, id: \.self) { filter in
+                    Button {
+                        statusFilter = filter
+                    } label: {
+                        sortingLabel(filter.rawValue, isSelected: statusFilter == filter)
+                    }
+                }
+            }
             if hasActiveFilter {
                 Button("Filter zurücksetzen", role: .destructive) {
                     filterUniverse = nil
+                    statusFilter = .all
                 }
             }
         } label: {
             Label("Sortieren und filtern", systemImage: "arrow.up.arrow.down")
+        }
+    }
+
+    private func episodeNavigationLink(_ episode: Episode) -> some View {
+        NavigationLink(value: episode) {
+            EpisodeRowView(episode: episode)
+        }
+        .swipeActions(edge: .leading) {
+            Button {
+                episode.isListened.toggle()
+                if episode.isListened {
+                    episode.listenCount += 1
+                    episode.lastListenedAt = .now
+                }
+            } label: {
+                Label(
+                    episode.isListened ? "Nochmal" : "Gehört",
+                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+                )
+            }
+            .tint(episode.isListened ? .gray : .green)
+        }
+        .swipeActions(edge: .trailing) {
+            Button {
+                episode.isListened = true
+                episode.listenCount += 1
+                episode.lastListenedAt = .now
+            } label: {
+                Label("Hördurchgang zählen", systemImage: "plus")
+            }
+            .tint(.blue)
+
+            Button(role: .destructive) {
+                requestDeleteEpisode(episode)
+            } label: {
+                Label("Löschen", systemImage: "trash")
+            }
         }
     }
 
@@ -414,6 +428,20 @@ private struct IPadEpisodeListView: View {
             modelContext.delete(episode)
         }
         pendingDeleteEpisodes = []
+    }
+
+    private func isCollapsed(_ group: EpisodeListGroup) -> Bool {
+        collapsedGroupIDs.contains(group.id)
+    }
+
+    private func toggleGroup(_ group: EpisodeListGroup) {
+        var ids = collapsedGroupIDs
+        if ids.contains(group.id) {
+            ids.remove(group.id)
+        } else {
+            ids.insert(group.id)
+        }
+        collapsedGroupIDsRaw = ids.sorted().joined(separator: "\n")
     }
 
     private func sortingLabel(_ text: String, isSelected: Bool) -> some View {

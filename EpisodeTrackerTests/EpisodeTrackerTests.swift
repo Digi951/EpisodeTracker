@@ -93,4 +93,79 @@ final class EpisodeTrackerTests: XCTestCase {
             "Unbegrenzt"
         )
     }
+
+    func testLargeNumberSortedLibraryGroupsIntoEpisodeRanges() {
+        let universe = Universe(name: "Die drei ???")
+        let episodes = (1...55).map { number in
+            Episode(episodeNumber: number, title: "Folge \(number)", releaseYear: 1980, universe: universe)
+        }
+
+        let sorted = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: "",
+            filterUniverse: universe,
+            filterMood: nil,
+            statusFilter: .all,
+            sortOrder: .number
+        )
+        let groups = EpisodeListOrganizer.groups(
+            for: sorted,
+            sortOrder: .number,
+            filterUniverse: universe,
+            universeCount: 1
+        )
+
+        XCTAssertEqual(groups.map(\.title), ["1-25", "26-50", "51-75"])
+        XCTAssertEqual(groups.map(\.episodes.count), [25, 25, 5])
+    }
+
+    func testSmallLibrariesStayUngroupedByDefault() {
+        let universe = Universe(name: "Die drei ???")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979, universe: universe)
+        ]
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .number,
+            filterUniverse: nil,
+            universeCount: 2
+        )
+
+        XCTAssertTrue(groups.isEmpty)
+    }
+
+    func testStatusFilterKeepsOnlyOpenEpisodes() {
+        let episodes = [
+            Episode(episodeNumber: 1, title: "Gehört", releaseYear: 1980, isListened: true),
+            Episode(episodeNumber: 2, title: "Offen", releaseYear: 1981, isListened: false)
+        ]
+
+        let result = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: .open,
+            sortOrder: .number
+        )
+
+        XCTAssertEqual(result.map(\.title), ["Offen"])
+    }
+
+    func testGroupSummaryCountsListenedAndOpenEpisodes() {
+        let group = EpisodeListGroup(
+            id: "test",
+            title: "Test",
+            episodes: [
+                Episode(episodeNumber: 1, title: "Gehört", releaseYear: 1980, isListened: true),
+                Episode(episodeNumber: 2, title: "Offen", releaseYear: 1981, isListened: false),
+                Episode(episodeNumber: 3, title: "Auch offen", releaseYear: 1982, isListened: false)
+            ]
+        )
+
+        XCTAssertEqual(group.listenedCount, 1)
+        XCTAssertEqual(group.openCount, 2)
+        XCTAssertEqual(group.summary, "3 Folgen · 1 gehört · 2 offen")
+    }
 }

@@ -7,10 +7,12 @@ struct EpisodeListView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Universe.name) private var universes: [Universe]
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
+    @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
 
     @State private var searchText = ""
     @State private var filterMood: Mood?
     @State private var filterUniverse: Universe?
+    @State private var statusFilter: EpisodeStatusFilter = .all
     @State private var sortOrder: SortOrder = .number
     @State private var pendingDeleteEpisodes: [Episode] = []
     @State private var showingDeleteConfirmation = false
@@ -23,87 +25,44 @@ struct EpisodeListView: View {
         case releaseYear = "Erscheinungsjahr"
     }
 
-    private struct EpisodeGroup: Identifiable {
-        let title: String
-        let episodes: [Episode]
-        var id: String { title }
-    }
-
     private var filteredEpisodes: [Episode] {
-        var result = episodes
-
-        if !searchText.isEmpty {
-            result = result.filter { episode in
-                episode.title.localizedCaseInsensitiveContains(searchText)
-                || String(episode.episodeNumber).contains(searchText)
-            }
-        }
-
-        if let filterUniverse {
-            result = result.filter { $0.universe == filterUniverse }
-        }
-
-        if let filterMood {
-            result = result.filter { $0.moods.contains(filterMood) }
-        }
-
-        switch sortOrder {
-        case .recentlyPlayed:
-            result.sort {
-                switch ($0.lastListenedAt, $1.lastListenedAt) {
-                case let (left?, right?):
-                    return left > right
-                case (.some, .none):
-                    return true
-                case (.none, .some):
-                    return false
-                case (.none, .none):
-                    return $0.episodeNumber < $1.episodeNumber
-                }
-            }
-        case .number:
-            result.sort { $0.episodeNumber < $1.episodeNumber }
-        case .title:
-            result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
-        case .rating:
-            result.sort { ($0.rating ?? 0) > ($1.rating ?? 0) }
-        case .releaseYear:
-            result.sort {
-                if $0.releaseYear != $1.releaseYear {
-                    return $0.releaseYear > $1.releaseYear
-                }
-                return $0.episodeNumber < $1.episodeNumber
-            }
-        }
-
-        return result
+        EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: searchText,
+            filterUniverse: filterUniverse,
+            filterMood: filterMood,
+            statusFilter: statusFilter,
+            sortOrder: sortOrder
+        )
     }
 
     private var shouldShowUniverseSections: Bool {
-        sortOrder == .releaseYear
-        || (filterUniverse == nil && universes.count > 1)
+        !episodeGroups.isEmpty
     }
 
-    private var episodeGroups: [EpisodeGroup] {
-        if sortOrder == .releaseYear {
-            let grouped = Dictionary(grouping: filteredEpisodes) { episode in
-                String(episode.releaseYear)
-            }
-            return grouped.keys.sorted(by: >).map { key in
-                EpisodeGroup(title: key, episodes: grouped[key] ?? [])
-            }
-        }
-
-        let grouped = Dictionary(grouping: filteredEpisodes) { episode in
-            episode.universe?.name ?? "Allgemein"
-        }
-        return grouped.keys.sorted().map { key in
-            EpisodeGroup(title: key, episodes: grouped[key] ?? [])
-        }
+    private var episodeGroups: [EpisodeListGroup] {
+        EpisodeListOrganizer.groups(
+            for: filteredEpisodes,
+            sortOrder: sortOrder,
+            filterUniverse: filterUniverse,
+            universeCount: universes.count
+        )
     }
 
     private var hasActiveFilter: Bool {
-        filterMood != nil || filterUniverse != nil
+        filterMood != nil || filterUniverse != nil || statusFilter != .all
+    }
+
+    private var availableMoodFilters: [Mood] {
+        moods.filter { mood in
+            episodes.contains { episode in
+                episode.moods.contains { $0.id == mood.id }
+            }
+        }
+    }
+
+    private var collapsedGroupIDs: Set<String> {
+        Set(collapsedGroupIDsRaw.split(separator: "\n").map(String.init))
     }
 
     private var listenedCount: Int {
@@ -132,21 +91,52 @@ struct EpisodeListView: View {
                 .listRowBackground(Color.clear)
             }
 
-            if !moods.isEmpty {
-                MoodFilterBar(moods: moods, selection: $filterMood)
+            if !availableMoodFilters.isEmpty || filterMood != nil {
+                MoodFilterBar(moods: availableMoodFilters, selection: $filterMood)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
 
-            if shouldShowUniverseSections {
+            if episodes.isEmpty {
+                EmptyLibraryOnboardingView()
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            } else if filteredEpisodes.isEmpty {
+                ContentUnavailableView {
+                    Label("Nichts gefunden", systemImage: "magnifyingglass")
+                } description: {
+                    Text("Passe Suche oder Filter an.")
+                } actions: {
+                    Button("Suche und Filter zurücksetzen") {
+                        searchText = ""
+                        filterMood = nil
+                        filterUniverse = nil
+                        statusFilter = .all
+                    }
+                }
+                .padding(.vertical, 36)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            } else if shouldShowUniverseSections {
                 ForEach(episodeGroups) { group in
-                    Section(group.title) {
-                        ForEach(group.episodes) { episode in
-                            episodeRow(episode)
+                    Section {
+                        if !isCollapsed(group) {
+                            ForEach(group.episodes) { episode in
+                                episodeRow(episode)
+                            }
+                            .onDelete { offsets in
+                                requestDeleteEpisodes(group.episodes, at: offsets)
+                            }
                         }
-                        .onDelete { offsets in
-                            requestDeleteEpisodes(group.episodes, at: offsets)
+                    } header: {
+                        EpisodeGroupHeader(
+                            group: group,
+                            isCollapsed: isCollapsed(group)
+                        ) {
+                            toggleGroup(group)
                         }
                     }
                 }
@@ -205,10 +195,20 @@ struct EpisodeListView: View {
                             }
                         }
                     }
+                    Menu("Status") {
+                        ForEach(EpisodeStatusFilter.allCases, id: \.self) { filter in
+                            Button {
+                                statusFilter = filter
+                            } label: {
+                                sortingLabel(filter.rawValue, isSelected: statusFilter == filter)
+                            }
+                        }
+                    }
                     if hasActiveFilter {
                         Button("Filter zurücksetzen", role: .destructive) {
                             filterMood = nil
                             filterUniverse = nil
+                            statusFilter = .all
                         }
                     }
                 } label: {
@@ -216,25 +216,6 @@ struct EpisodeListView: View {
                 }
                 NavigationLink(value: NavigationDestination.addEpisode) {
                     Label("Neue Folge", systemImage: "plus")
-                }
-            }
-        }
-        .overlay {
-            if filteredEpisodes.isEmpty {
-                if episodes.isEmpty {
-                    EmptyLibraryOnboardingView()
-                } else {
-                    ContentUnavailableView {
-                        Label("Nichts gefunden", systemImage: "magnifyingglass")
-                    } description: {
-                        Text("Passe Suche oder Filter an.")
-                    } actions: {
-                        Button("Suche und Filter zurücksetzen") {
-                            searchText = ""
-                            filterMood = nil
-                            filterUniverse = nil
-                        }
-                    }
                 }
             }
         }
@@ -319,6 +300,20 @@ struct EpisodeListView: View {
             modelContext.delete(episode)
         }
         pendingDeleteEpisodes = []
+    }
+
+    private func isCollapsed(_ group: EpisodeListGroup) -> Bool {
+        collapsedGroupIDs.contains(group.id)
+    }
+
+    private func toggleGroup(_ group: EpisodeListGroup) {
+        var ids = collapsedGroupIDs
+        if ids.contains(group.id) {
+            ids.remove(group.id)
+        } else {
+            ids.insert(group.id)
+        }
+        collapsedGroupIDsRaw = ids.sorted().joined(separator: "\n")
     }
 
     private func sortingLabel(_ text: String, isSelected: Bool) -> some View {
