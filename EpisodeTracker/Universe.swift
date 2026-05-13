@@ -3,22 +3,30 @@ import SwiftData
 
 @Model
 final class Universe {
+    var id: UUID
     var name: String
     var syncKey: String?
-    var episodes: [Episode]
+    var episodeRelationships: [Episode]? = []
 
     init(
+        id: UUID = UUID(),
         name: String,
         syncKey: String? = nil,
         episodes: [Episode] = []
     ) {
+        self.id = id
         self.name = name
         self.syncKey = syncKey ?? Universe.makeSyncKey(name: name)
-        self.episodes = episodes
+        self.episodeRelationships = episodes
     }
 }
 
 extension Universe {
+    var episodes: [Episode] {
+        get { episodeRelationships ?? [] }
+        set { episodeRelationships = newValue }
+    }
+
     static func makeSyncKey(name: String) -> String {
         "universe:\(name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"
     }

@@ -1,9 +1,22 @@
 import XCTest
 import SwiftData
+import SwiftUI
 @testable import EpisodeTracker
 
 final class EpisodeTrackerTests: XCTestCase {
     private let parser = CatalogParser()
+
+    private func makeCloudKitContainer(schema: Schema) throws -> ModelContainer {
+        let configuration = ModelConfiguration(
+            UUID().uuidString,
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            allowsSave: true,
+            cloudKitDatabase: .automatic
+        )
+
+        return try ModelContainer(for: schema, configurations: [configuration])
+    }
 
     func testParsesWrappedCatalogEntriesWithFallbackCollection() throws {
         let json = """
@@ -147,6 +160,16 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(storeURL.lastPathComponent, "EpisodeTracker.store")
         XCTAssertEqual(storeURL.deletingLastPathComponent().lastPathComponent, "EpisodeTracker")
+    }
+
+    func testSchemaSupportsCloudKitContainerCreation() throws {
+        let schema = Schema([
+            Episode.self,
+            Mood.self,
+            Universe.self,
+        ])
+
+        XCTAssertNoThrow(try makeCloudKitContainer(schema: schema))
     }
 
     @MainActor
@@ -353,7 +376,7 @@ final class EpisodeTrackerTests: XCTestCase {
         let pickerMood = Mood(name: "Gruselig", iconName: "😱")
         let episodes = [
             Episode(episodeNumber: 1, title: "A", releaseYear: 1980, moods: [libraryMood]),
-            Episode(episodeNumber: 2, title: "B", releaseYear: 1981, moods: [libraryMood], isListened: true)
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1981, isListened: true, moods: [libraryMood])
         ]
 
         let available = SmartListDefinition.availableMoods(

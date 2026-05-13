@@ -3,21 +3,24 @@ import SwiftData
 
 @Model
 final class Mood {
+    var id: UUID
     var name: String
     var iconName: String?
     var syncKey: String?
-    var episodes: [Episode]
+    var episodeRelationships: [Episode]? = []
 
     init(
+        id: UUID = UUID(),
         name: String,
         iconName: String? = nil,
         syncKey: String? = nil,
         episodes: [Episode] = []
     ) {
+        self.id = id
         self.name = name
         self.iconName = iconName
         self.syncKey = syncKey ?? Mood.makeSyncKey(name: name)
-        self.episodes = episodes
+        self.episodeRelationships = episodes
     }
 }
 
@@ -33,6 +36,11 @@ extension Mood {
 
     var normalizedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    var episodes: [Episode] {
+        get { episodeRelationships ?? [] }
+        set { episodeRelationships = newValue }
     }
 
     static func makeSyncKey(name: String) -> String {

@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class Episode {
+    var id: UUID
     var syncKey: String?
     var episodeNumber: Int
     var title: String
@@ -12,10 +13,11 @@ final class Episode {
     var rating: Int?
     var listenCount: Int
     var lastListenedAt: Date?
-    @Relationship(inverse: \Universe.episodes) var universe: Universe?
-    @Relationship(inverse: \Mood.episodes) var moods: [Mood]
+    @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
+    @Relationship(inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
 
     init(
+        id: UUID = UUID(),
         episodeNumber: Int,
         title: String,
         releaseYear: Int,
@@ -28,6 +30,7 @@ final class Episode {
         universe: Universe? = nil,
         moods: [Mood] = []
     ) {
+        self.id = id
         self.syncKey = syncKey ?? Episode.makeSyncKey(
             universeSyncKey: universe?.resolvedSyncKey,
             episodeNumber: episodeNumber
@@ -41,11 +44,16 @@ final class Episode {
         self.listenCount = listenCount
         self.lastListenedAt = lastListenedAt
         self.universe = universe
-        self.moods = moods
+        self.moodRelationships = moods
     }
 }
 
 extension Episode {
+    var moods: [Mood] {
+        get { moodRelationships ?? [] }
+        set { moodRelationships = newValue }
+    }
+
     static func makeSyncKey(
         universeSyncKey: String?,
         episodeNumber: Int
@@ -80,10 +88,10 @@ extension Episode {
         } else {
             let trimmed = syncKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmed.isEmpty {
-            syncKey = Self.makeSyncKey(
-                universeSyncKey: nil,
-                episodeNumber: episodeNumber
-            )
+                syncKey = Self.makeSyncKey(
+                    universeSyncKey: nil,
+                    episodeNumber: episodeNumber
+                )
             }
         }
     }
