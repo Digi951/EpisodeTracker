@@ -3,6 +3,7 @@ import SwiftData
 import SwiftUI
 @testable import EpisodeTracker
 
+@MainActor
 final class EpisodeTrackerTests: XCTestCase {
     private let parser = CatalogParser()
 

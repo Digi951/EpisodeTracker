@@ -257,6 +257,12 @@ private struct CatalogBulkImportCard: View {
     let universeCount: Int
     let action: () -> Void
 
+    private var buttonTitle: String {
+        suggestionCount == 1
+            ? "Die sichtbare Folge übernehmen"
+            : "Alle \(suggestionCount) sichtbaren Folgen übernehmen"
+    }
+
     private var detailText: String {
         if universeCount == 1 {
             return "\(suggestionCount) fehlende Folgen in 1 Katalog"
@@ -267,7 +273,7 @@ private struct CatalogBulkImportCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Katalog übernehmen")
+                Text("Sichtbare Vorschläge")
                     .font(.headline)
                 Spacer()
                 Text("\(suggestionCount)")
@@ -280,10 +286,14 @@ private struct CatalogBulkImportCard: View {
                 .foregroundStyle(.secondary)
 
             Button(action: action) {
-                Label("Alle sichtbaren Vorschläge übernehmen", systemImage: "plus.rectangle.on.rectangle")
+                Text(buttonTitle)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+
+            Text("Übernimmt nur die aktuell sichtbaren Vorschläge aus dieser Liste.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -294,6 +304,10 @@ private struct CatalogGroupHeader: View {
     let title: String
     let count: Int
     let action: () -> Void
+
+    private var buttonTitle: String {
+        count == 1 ? "1 Folge übernehmen" : "\(count) Folgen übernehmen"
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -309,11 +323,13 @@ private struct CatalogGroupHeader: View {
             Spacer()
 
             Button(action: action) {
-                Label("Alle", systemImage: "plus")
-                    .labelStyle(.titleAndIcon)
+                Text(buttonTitle)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.tint.opacity(0.12), in: Capsule())
             }
             .buttonStyle(.borderless)
-            .font(.subheadline.weight(.semibold))
+            .font(.footnote.weight(.semibold))
         }
         .textCase(nil)
     }

@@ -32,6 +32,17 @@ enum AppModelContainerFactory {
     static let runtimeModeDebugTitleKey = "syncRuntimeModeDebugTitle"
     static let cloudStartupErrorKey = "syncCloudStartupError"
 
+    private enum CloudStartupPreflightError: LocalizedError {
+        case missingICloudAccount
+
+        var errorDescription: String? {
+            switch self {
+            case .missingICloudAccount:
+                return "Kein aktiver iCloud-Account verfuegbar. Cloud-Sync bleibt lokal, bis iCloud auf diesem Geraet verfuegbar ist."
+            }
+        }
+    }
+
     static func schema() -> Schema {
         Schema([
             Episode.self,
@@ -85,6 +96,20 @@ enum AppModelContainerFactory {
             recordRuntimeMode(.localPersistent, userDefaults: userDefaults)
             return makePersistentContainer(schema: schema, fileManager: fileManager)
         case .cloudPersistent(let containerIdentifier):
+            guard isICloudIdentityAvailable(fileManager: fileManager) else {
+#if DEBUG
+                recordRuntimeMode(
+                    .localPersistent,
+                    cloudStartupError: CloudStartupPreflightError.missingICloudAccount,
+                    userDefaults: userDefaults
+                )
+                return makePersistentContainer(schema: schema, fileManager: fileManager)
+#else
+                recordRuntimeMode(.localPersistent, userDefaults: userDefaults)
+                return makePersistentContainer(schema: schema, fileManager: fileManager)
+#endif
+            }
+
             do {
                 let container = try makeCloudContainer(
                     schema: schema,
@@ -115,6 +140,10 @@ enum AppModelContainerFactory {
         let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let storeDirectoryURL = appSupportURL.appendingPathComponent("EpisodeTracker", isDirectory: true)
         return storeDirectoryURL.appendingPathComponent("EpisodeTracker.store")
+    }
+
+    static func isICloudIdentityAvailable(fileManager: FileManager = .default) -> Bool {
+        fileManager.ubiquityIdentityToken != nil
     }
 
     private static func makePersistentContainer(
