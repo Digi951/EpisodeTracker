@@ -196,14 +196,14 @@ struct SettingsView: View {
 #if DEBUG
     private var syncDiagnosticsSection: some View {
         Section {
+            Toggle("Cloud-Sync wünschen", isOn: $prefersICloudSync)
             SettingsValueRow(label: "Container-Modus", value: containerMode.debugTitle)
-            SettingsValueRow(label: "Cloud-Wunsch", value: prefersICloudSync ? "An" : "Aus")
             SettingsValueRow(label: "PoC-Guard", value: cloudGuardEnabled ? "Aktiv" : "Aus")
             SettingsValueRow(label: "Container", value: AppModelContainerFactory.cloudContainerIdentifier)
         } header: {
             Text("Sync-Diagnose")
         } footer: {
-            Text("Cloud-Sync wird nur aktiv, wenn sowohl der Nutzerwunsch als auch der interne PoC-Guard gesetzt sind.")
+            Text("Cloud-Sync wird nur beim nächsten App-Start aktiv, wenn sowohl dieser Wunsch als auch der interne PoC-Guard gesetzt sind.")
         }
     }
 #endif

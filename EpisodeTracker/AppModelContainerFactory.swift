@@ -50,7 +50,11 @@ enum AppModelContainerFactory {
             return .previewInMemory
         }
 
-        // Keep the CloudKit path out of app startup until the PoC is isolated in a separate target/build.
+        if userDefaults.bool(forKey: cloudSyncPreferenceKey),
+           isCloudSyncGuardEnabled(environment: environment) {
+            return .cloudPersistent(containerIdentifier: cloudContainerIdentifier)
+        }
+
         return .localPersistent
     }
 
