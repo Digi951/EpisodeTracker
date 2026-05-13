@@ -4,7 +4,13 @@ import SwiftData
 @main
 struct EpisodeTrackerApp: App {
     var sharedModelContainer: ModelContainer = AppModelContainerFactory.makeSharedContainer()
-    private let containerMode = AppModelContainerFactory.resolveMode()
+
+    private var usesCloudSync: Bool {
+        UserDefaults.standard.string(forKey: AppModelContainerFactory.runtimeModeDebugTitleKey)
+            == AppModelContainerMode.cloudPersistent(
+                containerIdentifier: AppModelContainerFactory.cloudContainerIdentifier
+            ).debugTitle
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -12,7 +18,7 @@ struct EpisodeTrackerApp: App {
                 .task { @MainActor in
                     await AppDataBootstrapper.bootstrap(
                         container: sharedModelContainer,
-                        usesCloudSync: containerMode.usesCloudSync
+                        usesCloudSync: usesCloudSync
                     )
                 }
         }

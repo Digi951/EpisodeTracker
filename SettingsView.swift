@@ -10,6 +10,8 @@ struct SettingsView: View {
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @AppStorage(AppModelContainerFactory.cloudSyncPreferenceKey) private var prefersICloudSync = false
+    @AppStorage(AppModelContainerFactory.runtimeModeDebugTitleKey) private var runtimeModeDebugTitle = "Unbekannt"
+    @AppStorage(AppModelContainerFactory.cloudStartupErrorKey) private var cloudStartupError = ""
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
@@ -197,9 +199,16 @@ struct SettingsView: View {
     private var syncDiagnosticsSection: some View {
         Section {
             Toggle("Cloud-Sync wünschen", isOn: $prefersICloudSync)
-            SettingsValueRow(label: "Container-Modus", value: containerMode.debugTitle)
+            SettingsValueRow(label: "Gewünschter Modus", value: containerMode.debugTitle)
+            SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
             SettingsValueRow(label: "PoC-Guard", value: cloudGuardEnabled ? "Aktiv" : "Aus")
             SettingsValueRow(label: "Container", value: AppModelContainerFactory.cloudContainerIdentifier)
+            if !cloudStartupError.isEmpty {
+                Text(cloudStartupError)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+            }
         } header: {
             Text("Sync-Diagnose")
         } footer: {

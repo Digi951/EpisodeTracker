@@ -29,6 +29,8 @@ enum AppModelContainerFactory {
     static let cloudSyncPreferenceKey = "prefersICloudSync"
     static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
     static let cloudContainerIdentifier = "iCloud.com.Digi.EpisodeTracker"
+    static let runtimeModeDebugTitleKey = "syncRuntimeModeDebugTitle"
+    static let cloudStartupErrorKey = "syncCloudStartupError"
 
     static func schema() -> Schema {
         Schema([
@@ -77,15 +79,35 @@ enum AppModelContainerFactory {
 
         switch resolveMode(environment: environment, userDefaults: userDefaults) {
         case .previewInMemory:
+            recordRuntimeMode(.previewInMemory, userDefaults: userDefaults)
             return makeInMemoryContainer(schema: schema)
         case .localPersistent:
+            recordRuntimeMode(.localPersistent, userDefaults: userDefaults)
             return makePersistentContainer(schema: schema, fileManager: fileManager)
         case .cloudPersistent(let containerIdentifier):
-            return makeCloudContainer(
-                schema: schema,
-                fileManager: fileManager,
-                containerIdentifier: containerIdentifier
-            )
+            do {
+                let container = try makeCloudContainer(
+                    schema: schema,
+                    fileManager: fileManager,
+                    containerIdentifier: containerIdentifier
+                )
+                recordRuntimeMode(
+                    .cloudPersistent(containerIdentifier: containerIdentifier),
+                    userDefaults: userDefaults
+                )
+                return container
+            } catch {
+#if DEBUG
+                recordRuntimeMode(
+                    .localPersistent,
+                    cloudStartupError: error,
+                    userDefaults: userDefaults
+                )
+                return makePersistentContainer(schema: schema, fileManager: fileManager)
+#else
+                fatalError("Could not create CloudKit ModelContainer for \(containerIdentifier): \(error)")
+#endif
+            }
         }
     }
 
@@ -121,7 +143,7 @@ enum AppModelContainerFactory {
         schema: Schema,
         fileManager: FileManager,
         containerIdentifier: String
-    ) -> ModelContainer {
+    ) throws -> ModelContainer {
         let storeURL = persistentStoreURL(fileManager: fileManager)
         let storeDirectoryURL = storeURL.deletingLastPathComponent()
 
@@ -134,11 +156,7 @@ enum AppModelContainerFactory {
             cloudKitDatabase: .private(containerIdentifier)
         )
 
-        do {
-            return try ModelContainer(for: schema, configurations: [configuration])
-        } catch {
-            fatalError("Could not create CloudKit ModelContainer for \(containerIdentifier): \(error)")
-        }
+        return try ModelContainer(for: schema, configurations: [configuration])
     }
 
     private static func makeInMemoryContainer(schema: Schema) -> ModelContainer {
@@ -147,6 +165,20 @@ enum AppModelContainerFactory {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
             fatalError("Could not create in-memory ModelContainer: \(error)")
+        }
+    }
+
+    private static func recordRuntimeMode(
+        _ mode: AppModelContainerMode,
+        cloudStartupError: Error? = nil,
+        userDefaults: UserDefaults
+    ) {
+        userDefaults.set(mode.debugTitle, forKey: runtimeModeDebugTitleKey)
+
+        if let cloudStartupError {
+            userDefaults.set(String(describing: cloudStartupError), forKey: cloudStartupErrorKey)
+        } else {
+            userDefaults.removeObject(forKey: cloudStartupErrorKey)
         }
     }
 }
