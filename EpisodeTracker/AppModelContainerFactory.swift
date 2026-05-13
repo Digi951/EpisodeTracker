@@ -144,16 +144,10 @@ enum AppModelContainerFactory {
         fileManager: FileManager,
         containerIdentifier: String
     ) throws -> ModelContainer {
-        let storeURL = persistentStoreURL(fileManager: fileManager)
-        let storeDirectoryURL = storeURL.deletingLastPathComponent()
-
-        try? fileManager.createDirectory(at: storeDirectoryURL, withIntermediateDirectories: true)
-
         let configuration = ModelConfiguration(
             "Default",
             schema: schema,
-            url: storeURL,
-            cloudKitDatabase: .private(containerIdentifier)
+            cloudKitDatabase: .automatic
         )
 
         return try ModelContainer(for: schema, configurations: [configuration])

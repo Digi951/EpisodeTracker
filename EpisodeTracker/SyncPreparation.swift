@@ -10,6 +10,9 @@ enum SyncPreparation {
 
         var didChange = false
 
+        didChange = repairEpisodeIDs(allEpisodes) || didChange
+        didChange = repairMoodIDs(allMoods) || didChange
+        didChange = repairUniverseIDs(allUniverses) || didChange
         didChange = repairMoods(allMoods, in: context) || didChange
         didChange = repairUniverses(allUniverses, in: context) || didChange
 
@@ -19,6 +22,45 @@ enum SyncPreparation {
         if didChange {
             try? context.save()
         }
+    }
+
+    @MainActor
+    private static func repairEpisodeIDs(_ episodes: [Episode]) -> Bool {
+        var seenIDs = Set<UUID>()
+        var didChange = false
+
+        for episode in episodes where !seenIDs.insert(episode.id).inserted {
+            episode.id = UUID()
+            didChange = true
+        }
+
+        return didChange
+    }
+
+    @MainActor
+    private static func repairMoodIDs(_ moods: [Mood]) -> Bool {
+        var seenIDs = Set<UUID>()
+        var didChange = false
+
+        for mood in moods where !seenIDs.insert(mood.id).inserted {
+            mood.id = UUID()
+            didChange = true
+        }
+
+        return didChange
+    }
+
+    @MainActor
+    private static func repairUniverseIDs(_ universes: [Universe]) -> Bool {
+        var seenIDs = Set<UUID>()
+        var didChange = false
+
+        for universe in universes where !seenIDs.insert(universe.id).inserted {
+            universe.id = UUID()
+            didChange = true
+        }
+
+        return didChange
     }
 
     @MainActor

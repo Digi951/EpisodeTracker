@@ -3,8 +3,8 @@ import SwiftData
 
 @Model
 final class Mood {
-    var id: UUID
-    var name: String
+    var id: UUID = UUID()
+    var name: String = ""
     var iconName: String?
     var syncKey: String?
     var episodeRelationships: [Episode]? = []

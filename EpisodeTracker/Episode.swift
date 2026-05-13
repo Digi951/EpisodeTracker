@@ -3,15 +3,15 @@ import SwiftData
 
 @Model
 final class Episode {
-    var id: UUID
+    var id: UUID = UUID()
     var syncKey: String?
-    var episodeNumber: Int
-    var title: String
-    var releaseYear: Int
+    var episodeNumber: Int = 0
+    var title: String = ""
+    var releaseYear: Int = 0
     var personalNote: String?
-    var isListened: Bool
+    var isListened: Bool = false
     var rating: Int?
-    var listenCount: Int
+    var listenCount: Int = 0
     var lastListenedAt: Date?
     @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
     @Relationship(inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []

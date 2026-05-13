@@ -3,8 +3,8 @@ import SwiftData
 
 @Model
 final class Universe {
-    var id: UUID
-    var name: String
+    var id: UUID = UUID()
+    var name: String = ""
     var syncKey: String?
     var episodeRelationships: [Episode]? = []
 

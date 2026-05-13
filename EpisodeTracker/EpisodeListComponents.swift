@@ -141,7 +141,7 @@ struct EpisodeListSortFilterMenu: View {
                 )
             }
 
-            ForEach(universes) { universe in
+            ForEach(Array(universes.enumerated()), id: \.offset) { _, universe in
                 Button {
                     controls.filterUniverse = universe
                 } label: {
