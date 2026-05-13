@@ -11,6 +11,7 @@
 		FA54EDA62F858FE100CEDE1A /* CatalogParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA52F858FE100CEDE1A /* CatalogParser.swift */; };
 		FA54EDA82F858FFB00CEDE1A /* CatalogCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA72F858FFB00CEDE1A /* CatalogCacheStore.swift */; };
 		FA54EDAA2F85900300CEDE1A /* CatalogRemoteDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA54EDA92F85900300CEDE1A /* CatalogRemoteDataSource.swift */; };
+		FA7A000D2F90000100ABCD01 /* HoerspielLogWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FA7A000B2F90000100ABCD01 /* HoerspielLogWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FAE8CA1A2F85271E0023458E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE8CA192F85271E0023458E /* SettingsView.swift */; };
 		FAE8CA1E2F854A040023458E /* KeyboardDismissModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */; };
 /* End PBXBuildFile section */
@@ -30,7 +31,28 @@
 			remoteGlobalIDString = FA49EC9E2F85085600521E9B;
 			remoteInfo = EpisodeTracker;
 		};
+		FA7A000E2F90000100ABCD01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FA49EC972F85085600521E9B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FA7A00032F90000100ABCD01;
+			remoteInfo = EpisodeTrackerWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FA7A00072F90000100ABCD01 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FA7A000D2F90000100ABCD01 /* HoerspielLogWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		FA49EC9F2F85085600521E9B /* HoerspielLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HoerspielLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,6 +62,7 @@
 		FA54EDA52F858FE100CEDE1A /* CatalogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogParser.swift; sourceTree = "<group>"; };
 		FA54EDA72F858FFB00CEDE1A /* CatalogCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogCacheStore.swift; sourceTree = "<group>"; };
 		FA54EDA92F85900300CEDE1A /* CatalogRemoteDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogRemoteDataSource.swift; sourceTree = "<group>"; };
+		FA7A000B2F90000100ABCD01 /* HoerspielLogWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HoerspielLogWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAE8CA192F85271E0023458E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardDismissModifier.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,6 +81,11 @@
 		FA49ECBB2F85085800521E9B /* EpisodeTrackerUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = EpisodeTrackerUITests;
+			sourceTree = "<group>";
+		};
+		FA7A000C2F90000100ABCD01 /* EpisodeTrackerWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = EpisodeTrackerWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -84,6 +112,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA7A00052F90000100ABCD01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -93,6 +128,7 @@
 				FA49ECA12F85085600521E9B /* EpisodeTracker */,
 				FA49ECB12F85085800521E9B /* EpisodeTrackerTests */,
 				FA49ECBB2F85085800521E9B /* EpisodeTrackerUITests */,
+				FA7A000C2F90000100ABCD01 /* EpisodeTrackerWidgets */,
 				FA49ECA02F85085600521E9B /* Products */,
 				FAE8CA192F85271E0023458E /* SettingsView.swift */,
 				FAE8CA1D2F854A040023458E /* KeyboardDismissModifier.swift */,
@@ -109,6 +145,7 @@
 				FA49EC9F2F85085600521E9B /* HoerspielLog.app */,
 				FA49ECAE2F85085800521E9B /* EpisodeTrackerTests.xctest */,
 				FA49ECB82F85085800521E9B /* EpisodeTrackerUITests.xctest */,
+				FA7A000B2F90000100ABCD01 /* HoerspielLogWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -123,10 +160,12 @@
 				FA49EC9B2F85085600521E9B /* Sources */,
 				FA49EC9C2F85085600521E9B /* Frameworks */,
 				FA49EC9D2F85085600521E9B /* Resources */,
+				FA7A00072F90000100ABCD01 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FA7A000F2F90000100ABCD01 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FA49ECA12F85085600521E9B /* EpisodeTracker */,
@@ -184,6 +223,28 @@
 			productReference = FA49ECB82F85085800521E9B /* EpisodeTrackerUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		FA7A00032F90000100ABCD01 /* EpisodeTrackerWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA7A00082F90000100ABCD01 /* Build configuration list for PBXNativeTarget "EpisodeTrackerWidgets" */;
+			buildPhases = (
+				FA7A00042F90000100ABCD01 /* Sources */,
+				FA7A00052F90000100ABCD01 /* Frameworks */,
+				FA7A00062F90000100ABCD01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FA7A000C2F90000100ABCD01 /* EpisodeTrackerWidgets */,
+			);
+			name = EpisodeTrackerWidgets;
+			packageProductDependencies = (
+			);
+			productName = EpisodeTrackerWidgets;
+			productReference = FA7A000B2F90000100ABCD01 /* HoerspielLogWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +258,9 @@
 					FA49EC9E2F85085600521E9B = {
 						CreatedOnToolsVersion = 26.4;
 						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
 							com.apple.iCloud = {
 								enabled = 1;
 							};
@@ -209,6 +273,17 @@
 					FA49ECB72F85085800521E9B = {
 						CreatedOnToolsVersion = 26.4;
 						TestTargetID = FA49EC9E2F85085600521E9B;
+					};
+					FA7A00032F90000100ABCD01 = {
+						CreatedOnToolsVersion = 26.4;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+							com.apple.WidgetKit = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -229,6 +304,7 @@
 				FA49EC9E2F85085600521E9B /* EpisodeTracker */,
 				FA49ECAD2F85085800521E9B /* EpisodeTrackerTests */,
 				FA49ECB72F85085800521E9B /* EpisodeTrackerUITests */,
+				FA7A00032F90000100ABCD01 /* EpisodeTrackerWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -249,6 +325,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FA49ECB62F85085800521E9B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FA7A00062F90000100ABCD01 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -285,6 +368,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA7A00042F90000100ABCD01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -297,6 +387,11 @@
 			isa = PBXTargetDependency;
 			target = FA49EC9E2F85085600521E9B /* EpisodeTracker */;
 			targetProxy = FA49ECB92F85085800521E9B /* PBXContainerItemProxy */;
+		};
+		FA7A000F2F90000100ABCD01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FA7A00032F90000100ABCD01 /* EpisodeTrackerWidgets */;
+			targetProxy = FA7A000E2F90000100ABCD01 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -576,6 +671,66 @@
 			};
 			name = Release;
 		};
+		FA7A00092F90000100ABCD01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = EpisodeTrackerWidgets/EpisodeTrackerWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YVDJZV6GT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "EpisodeTrackerWidgets-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.widgets;
+				PRODUCT_NAME = HoerspielLogWidgets;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FA7A000A2F90000100ABCD01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = EpisodeTrackerWidgets/EpisodeTrackerWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YVDJZV6GT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "EpisodeTrackerWidgets-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Digi.EpisodeTracker.widgets;
+				PRODUCT_NAME = HoerspielLogWidgets;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -611,6 +766,15 @@
 			buildConfigurations = (
 				FA49ECC92F85085800521E9B /* Debug */,
 				FA49ECCA2F85085800521E9B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FA7A00082F90000100ABCD01 /* Build configuration list for PBXNativeTarget "EpisodeTrackerWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA7A00092F90000100ABCD01 /* Debug */,
+				FA7A000A2F90000100ABCD01 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

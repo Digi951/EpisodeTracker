@@ -14,13 +14,16 @@ struct EpisodeTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .task { @MainActor in
-                    await AppDataBootstrapper.bootstrap(
-                        container: sharedModelContainer,
-                        usesCloudSync: usesCloudSync
-                    )
-                }
+            ZStack {
+                ContentView()
+                WidgetSyncObserverView()
+            }
+            .task { @MainActor in
+                await AppDataBootstrapper.bootstrap(
+                    container: sharedModelContainer,
+                    usesCloudSync: usesCloudSync
+                )
+            }
         }
         .defaultSize(width: 1180, height: 820)
         .modelContainer(sharedModelContainer)
