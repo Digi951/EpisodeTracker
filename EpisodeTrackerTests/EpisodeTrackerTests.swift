@@ -101,7 +101,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(mode, .localPersistent)
     }
 
-    func testContainerFactoryCanResolveCloudModeWithPreferenceAndGuard() {
+    func testContainerFactoryKeepsCloudModeDisabledDuringPoCHold() {
         let defaults = UserDefaults(suiteName: #function)!
         defaults.removePersistentDomain(forName: #function)
         defaults.set(true, forKey: AppModelContainerFactory.cloudSyncPreferenceKey)
@@ -111,7 +111,7 @@ final class EpisodeTrackerTests: XCTestCase {
             userDefaults: defaults
         )
 
-        XCTAssertEqual(mode, .cloudPersistent(containerIdentifier: AppModelContainerFactory.cloudContainerIdentifier))
+        XCTAssertEqual(mode, .localPersistent)
     }
 
     func testContainerFactoryParsesCloudGuardEnvironmentValues() {

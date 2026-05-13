@@ -50,12 +50,7 @@ enum AppModelContainerFactory {
             return .previewInMemory
         }
 
-        let prefersICloudSync = userDefaults.bool(forKey: cloudSyncPreferenceKey)
-        let cloudSyncGuardEnabled = isCloudSyncGuardEnabled(environment: environment)
-        if prefersICloudSync && cloudSyncGuardEnabled {
-            return .cloudPersistent(containerIdentifier: cloudContainerIdentifier)
-        }
-
+        // Keep the CloudKit path out of app startup until the PoC is isolated in a separate target/build.
         return .localPersistent
     }
 
@@ -110,7 +105,11 @@ enum AppModelContainerFactory {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
+#if DEBUG
+            return makeInMemoryContainer(schema: schema)
+#else
             fatalError("Could not create persistent ModelContainer at \(storeURL.path): \(error)")
+#endif
         }
     }
 
