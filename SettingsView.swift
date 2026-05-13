@@ -576,7 +576,8 @@ private struct CatalogManagementView: View {
         let store = CatalogCacheStore()
         catalogStatuses = Dictionary(
             uniqueKeysWithValues: predefinedUniverseNames.map { universeName in
-                (universeName, store.loadRemoteCatalogStatus(universeName: universeName))
+                let cacheKey = CatalogSourceRegistry.managedSource(named: universeName)?.id
+                return (universeName, store.loadRemoteCatalogStatus(universeName: universeName, cacheKey: cacheKey))
             }
         )
     }

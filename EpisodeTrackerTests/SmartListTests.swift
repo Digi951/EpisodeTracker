@@ -575,6 +575,22 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(resultCustom.count, 5)
     }
 
+    func testMissingCatalogEntriesReturnsAllMissingEpisodesPerUniverse() {
+        let u1 = makeUniverse("Die drei ???")
+        let library = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+        ]
+        let catalog = (1...8).map {
+            makeCatalogEntry(number: $0, title: "Folge \($0)", collection: "Die drei ???")
+        }
+
+        let result = SmartListDefinition.missingCatalogEntries(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(result.count, 7)
+        XCTAssertEqual(result.first?.entry.number, 2)
+        XCTAssertEqual(result.last?.entry.number, 8)
+    }
+
     func testNextFromCatalogMultipleUniversesSortedByName() {
         let u1 = makeUniverse("TKKG")
         let u2 = makeUniverse("Die drei ???")

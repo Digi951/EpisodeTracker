@@ -111,8 +111,8 @@ final class EpisodeCatalog {
     }
 
     private func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
-        let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name)
-        let hasCachedEntries = cacheStore.loadRemoteCache(universeName: source.name)?.isEmpty == false
+        let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
+        let hasCachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)?.isEmpty == false
         guard force || !hasCachedEntries || shouldRefresh(previousMetadata) else { return }
 
         do {
@@ -131,16 +131,16 @@ final class EpisodeCatalog {
                         collectionName: source.name
                     )
                 }
-                try cacheStore.saveRemoteCache(entries: normalizedEntries, universeName: source.name)
+                try cacheStore.saveRemoteCache(entries: normalizedEntries, universeName: source.name, cacheKey: source.id)
 
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
                 metadata.lastCheckedAt = .now
-                try cacheStore.saveRemoteMetadata(metadata, universeName: source.name)
+                try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
 
             case .notModified, .skipped:
                 metadata.lastCheckedAt = .now
-                try cacheStore.saveRemoteMetadata(metadata, universeName: source.name)
+                try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
             }
         } catch {
             lastRefreshError = "Katalog \(source.name) nicht aktualisierbar."
@@ -151,7 +151,7 @@ final class EpisodeCatalog {
         var result: [CatalogEntry] = []
 
         for source in managedSources {
-            if let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name) {
+            if let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id) {
                 result.append(contentsOf: cachedEntries)
             } else if source.name == CatalogSourceRegistry.bundledCollectionName {
                 result.append(contentsOf: cacheStore.loadBundledFallbackEntries())

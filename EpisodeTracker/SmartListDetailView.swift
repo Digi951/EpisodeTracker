@@ -10,6 +10,7 @@ struct SmartListDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allEpisodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
+    @AppStorage("collapsedCatalogSuggestionGroupIDs") private var collapsedCatalogGroupIDsRaw = ""
     @State private var shuffledEpisodes: [Episode]?
     @State private var episodeFilter: EpisodeFilter = .all
     @State private var catalogAddItem: CatalogAddItem?
@@ -23,31 +24,33 @@ struct SmartListDetailView: View {
     }
 
     private var catalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
-        let all = SmartListDefinition.nextFromCatalog(
-            catalogEntries: EpisodeCatalog.shared.allEntries,
-            libraryEpisodes: allEpisodes
-        )
+        let all = allMissingCatalogSuggestions
         if let year = catalogYearFilter {
             return all.filter { $0.entry.releaseYear == year }
         }
         return all
     }
 
-    private var availableCatalogYears: [Int] {
-        let allSuggestions = SmartListDefinition.nextFromCatalog(
+    private var allMissingCatalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
+        SmartListDefinition.missingCatalogEntries(
             catalogEntries: EpisodeCatalog.shared.allEntries,
             libraryEpisodes: allEpisodes
         )
-        let years = Set(allSuggestions.map(\.entry.releaseYear)).filter { $0 > 0 }
+    }
+
+    private var availableCatalogYears: [Int] {
+        let years = Set(allMissingCatalogSuggestions.map(\.entry.releaseYear)).filter { $0 > 0 }
         return years.sorted()
     }
 
     private var catalogGroups: [CatalogSuggestionGroup] {
         let grouped = Dictionary(grouping: catalogSuggestions, by: \.universeName)
+        let allMissingGrouped = Dictionary(grouping: allMissingCatalogSuggestions, by: \.universeName)
         return grouped.keys.sorted().map { universeName in
             CatalogSuggestionGroup(
                 universeName: universeName,
-                suggestions: grouped[universeName] ?? []
+                suggestions: grouped[universeName] ?? [],
+                allMissingSuggestions: allMissingGrouped[universeName] ?? []
             )
         }
     }
@@ -57,6 +60,15 @@ struct SmartListDetailView: View {
             return "\(mood.iconName ?? "") \(mood.name)"
         }
         return smartList.displayName
+    }
+
+    private var collapsedCatalogGroupIDs: Set<String> {
+        Set(
+            collapsedCatalogGroupIDsRaw
+                .split(separator: "\n")
+                .map(String.init)
+                .filter { !$0.isEmpty }
+        )
     }
 
     var body: some View {
@@ -130,12 +142,16 @@ struct SmartListDetailView: View {
     private var catalogContent: some View {
         if !availableCatalogYears.isEmpty {
             Section {
-                Picker("Jahr", selection: $catalogYearFilter) {
+                Picker("Erscheinungsjahr", selection: $catalogYearFilter) {
                     Text("Alle Jahre").tag(Optional<Int>.none)
                     ForEach(availableCatalogYears, id: \.self) { year in
                         Text(String(year)).tag(Optional(year))
                     }
                 }
+            } header: {
+                Text("Filtern")
+            } footer: {
+                Text("Zeigt nur fehlende Folgen aus dem ausgewählten Erscheinungsjahr. Mit „Alle Jahre“ siehst du wieder alle offenen Katalogvorschläge.")
             }
         }
 
@@ -163,24 +179,34 @@ struct SmartListDetailView: View {
 
             ForEach(catalogGroups) { group in
                 Section {
-                    ForEach(Array(group.suggestions.enumerated()), id: \.offset) { _, suggestion in
-                        CatalogEntryRow(
-                            universeName: suggestion.universeName,
-                            entry: suggestion.entry
-                        ) {
-                            catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+                    if !isCatalogGroupCollapsed(group) {
+                        ForEach(Array(group.suggestions.enumerated()), id: \.offset) { _, suggestion in
+                            CatalogEntryRow(
+                                universeName: suggestion.universeName,
+                                entry: suggestion.entry
+                            ) {
+                                catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+                            }
                         }
                     }
                 } header: {
                     CatalogGroupHeader(
                         title: group.universeName,
-                        count: group.suggestions.count
+                        count: group.suggestions.count,
+                        isCollapsed: isCatalogGroupCollapsed(group)
                     ) {
-                        addCatalogSuggestions(group.suggestions)
+                        toggleCatalogGroup(group)
                     }
                 } footer: {
-                    if group.suggestions.count > 1 {
-                        Text("Die Vorschläge werden direkt im Katalog „\(group.universeName)“ angelegt.")
+                    if !isCatalogGroupCollapsed(group) {
+                        CatalogGroupFooter(
+                            universeName: group.universeName,
+                            visibleCount: group.suggestions.count,
+                            totalMissingCount: group.allMissingSuggestions.count,
+                            action: {
+                                addCatalogSuggestions(group.allMissingSuggestions)
+                            }
+                        )
                     }
                 }
             }
@@ -243,11 +269,26 @@ struct SmartListDetailView: View {
             shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes, filter: episodeFilter)
         }
     }
+
+    private func isCatalogGroupCollapsed(_ group: CatalogSuggestionGroup) -> Bool {
+        collapsedCatalogGroupIDs.contains(group.id)
+    }
+
+    private func toggleCatalogGroup(_ group: CatalogSuggestionGroup) {
+        var ids = collapsedCatalogGroupIDs
+        if ids.contains(group.id) {
+            ids.remove(group.id)
+        } else {
+            ids.insert(group.id)
+        }
+        collapsedCatalogGroupIDsRaw = ids.sorted().joined(separator: "\n")
+    }
 }
 
 private struct CatalogSuggestionGroup: Identifiable {
     let universeName: String
     let suggestions: [(universeName: String, entry: CatalogEntry)]
+    let allMissingSuggestions: [(universeName: String, entry: CatalogEntry)]
 
     var id: String { universeName }
 }
@@ -272,15 +313,6 @@ private struct CatalogBulkImportCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Sichtbare Vorschläge")
-                    .font(.headline)
-                Spacer()
-                Text("\(suggestionCount)")
-                    .font(.headline.monospacedDigit())
-                    .foregroundStyle(.tint)
-            }
-
             Text(detailText)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -300,37 +332,79 @@ private struct CatalogBulkImportCard: View {
     }
 }
 
-private struct CatalogGroupHeader: View {
-    let title: String
-    let count: Int
+private struct CatalogGroupFooter: View {
+    let universeName: String
+    let visibleCount: Int
+    let totalMissingCount: Int
     let action: () -> Void
 
+    private var hiddenCount: Int {
+        max(0, totalMissingCount - visibleCount)
+    }
+
     private var buttonTitle: String {
-        count == 1 ? "1 Folge übernehmen" : "\(count) Folgen übernehmen"
+        if totalMissingCount == 1 {
+            return "Die fehlende Folge aus dem Katalog übernehmen"
+        }
+        return "Alle \(totalMissingCount) fehlenden Folgen aus dem Katalog übernehmen"
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                Text(count == 1 ? "1 fehlende Folge" : "\(count) fehlende Folgen")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Die Vorschläge werden direkt im Katalog „\(universeName)“ angelegt.")
+
+            if hiddenCount > 0 {
+                Button(action: action) {
+                    Text(buttonTitle)
+                        .font(.footnote.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
             }
+        }
+    }
+}
 
-            Spacer()
+private struct CatalogGroupHeader: View {
+    let title: String
+    let count: Int
+    let isCollapsed: Bool
+    let action: () -> Void
 
-            Button(action: action) {
-                Text(buttonTitle)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+    private var detailText: String {
+        count == 1 ? "1 sichtbare fehlende Folge" : "\(count) sichtbare fehlende Folgen"
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 12, height: 20, alignment: .center)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(detailText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(count)")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.tint)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                     .background(.tint.opacity(0.12), in: Capsule())
             }
-            .buttonStyle(.borderless)
-            .font(.footnote.weight(.semibold))
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .textCase(nil)
     }
 }

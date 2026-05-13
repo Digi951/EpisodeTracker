@@ -271,6 +271,11 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     // MARK: - Catalog Queries
 
     static func nextFromCatalog(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode], perUniverse: Int = 3) -> [(universeName: String, entry: CatalogEntry)] {
+        missingCatalogEntries(catalogEntries: catalogEntries, libraryEpisodes: libraryEpisodes)
+            .groupedAndLimited(perUniverse: perUniverse)
+    }
+
+    static func missingCatalogEntries(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode]) -> [(universeName: String, entry: CatalogEntry)] {
         let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { $0.universe!.name.lowercased() }
 
         let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { $0.collectionName!.lowercased() }
@@ -290,7 +295,6 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             let missing = uniqueEpisodes
                 .filter { !libraryNumbers.contains($0.number) }
                 .sorted(by: { $0.number < $1.number })
-                .prefix(perUniverse)
 
             for entry in missing {
                 results.append((displayName, entry))
@@ -316,5 +320,23 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     static func teaserText(for episode: Episode) -> String {
         let universeName = episode.universe?.name ?? "Allgemein"
         return "\(universeName): Folge \(episode.episodeNumber) — \(episode.title)"
+    }
+}
+
+private extension Array where Element == (universeName: String, entry: CatalogEntry) {
+    func groupedAndLimited(perUniverse: Int) -> [(universeName: String, entry: CatalogEntry)] {
+        guard perUniverse > 0 else { return [] }
+
+        let grouped = Dictionary(grouping: self, by: \.universeName)
+        var results: [(universeName: String, entry: CatalogEntry)] = []
+
+        for universeName in grouped.keys.sorted(by: { $0.localizedCompare($1) == .orderedAscending }) {
+            let entries = (grouped[universeName] ?? [])
+                .sorted(by: { $0.entry.number < $1.entry.number })
+                .prefix(perUniverse)
+            results.append(contentsOf: entries)
+        }
+
+        return results
     }
 }

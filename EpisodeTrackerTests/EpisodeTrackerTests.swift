@@ -88,6 +88,23 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(manifest.catalogs[0].url.absoluteString, "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_questionmarks.json")
     }
 
+    func testFallbackManagedSourcesUseExpectedCatalogURLs() {
+        let sources = CatalogSourceRegistry.fallbackManagedSources
+
+        XCTAssertEqual(
+            sources.first(where: { $0.name == "Die drei !!!" })?.url.absoluteString,
+            "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_exclamationmarks.json"
+        )
+        XCTAssertEqual(
+            sources.first(where: { $0.name == "Die drei ???" })?.id,
+            "die-drei-fragezeichen"
+        )
+        XCTAssertEqual(
+            sources.first(where: { $0.name == "Die drei !!!" })?.id,
+            "die-drei-ausrufezeichen"
+        )
+    }
+
     func testContainerFactoryUsesPreviewModeForPreviewEnvironment() {
         let mode = AppModelContainerFactory.resolveMode(
             environment: ["XCODE_RUNNING_FOR_PREVIEWS": "1"]

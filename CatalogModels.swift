@@ -66,6 +66,12 @@ enum CatalogSourceRegistry {
         CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources
     }
 
+    static func managedSource(named universeName: String) -> ManagedCatalogSource? {
+        managedSources.first {
+            $0.name.caseInsensitiveCompare(universeName) == .orderedSame
+        }
+    }
+
     static let fallbackManagedSources: [ManagedCatalogSource] = [
         ManagedCatalogSource(
             id: "die-drei-fragezeichen",
@@ -85,7 +91,7 @@ enum CatalogSourceRegistry {
         ManagedCatalogSource(
             id: "die-drei-ausrufezeichen",
             name: "Die drei !!!",
-            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_tree_exclamationmarks.json")!
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_exclamationmarks.json")!
         )
     ]
 }

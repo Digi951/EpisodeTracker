@@ -59,8 +59,8 @@ struct CatalogCacheStore {
         try data.write(to: manifestURL, options: [.atomic])
     }
 
-    func loadRemoteCache(universeName: String) -> [CatalogEntry]? {
-        let cacheURL = remoteCacheURL(for: universeName)
+    func loadRemoteCache(universeName: String, cacheKey: String? = nil) -> [CatalogEntry]? {
+        let cacheURL = remoteCacheURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey))
         guard let data = try? Data(contentsOf: cacheURL),
               let decoded = try? JSONDecoder().decode([CatalogEntry].self, from: data)
         else {
@@ -69,13 +69,13 @@ struct CatalogCacheStore {
         return decoded
     }
 
-    func saveRemoteCache(entries: [CatalogEntry], universeName: String) throws {
+    func saveRemoteCache(entries: [CatalogEntry], universeName: String, cacheKey: String? = nil) throws {
         let data = try JSONEncoder().encode(entries)
-        try data.write(to: remoteCacheURL(for: universeName), options: [.atomic])
+        try data.write(to: remoteCacheURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey)), options: [.atomic])
     }
 
-    func loadRemoteMetadata(universeName: String) -> RemoteCatalogMetadata? {
-        let metadataURL = remoteMetadataURL(for: universeName)
+    func loadRemoteMetadata(universeName: String, cacheKey: String? = nil) -> RemoteCatalogMetadata? {
+        let metadataURL = remoteMetadataURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey))
         guard let data = try? Data(contentsOf: metadataURL),
               let decoded = try? JSONDecoder().decode(RemoteCatalogMetadata.self, from: data)
         else {
@@ -84,15 +84,15 @@ struct CatalogCacheStore {
         return decoded
     }
 
-    func saveRemoteMetadata(_ metadata: RemoteCatalogMetadata, universeName: String) throws {
+    func saveRemoteMetadata(_ metadata: RemoteCatalogMetadata, universeName: String, cacheKey: String? = nil) throws {
         let data = try JSONEncoder().encode(metadata)
-        try data.write(to: remoteMetadataURL(for: universeName), options: [.atomic])
+        try data.write(to: remoteMetadataURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey)), options: [.atomic])
     }
 
-    func loadRemoteCatalogStatus(universeName: String) -> CatalogCacheStatus {
+    func loadRemoteCatalogStatus(universeName: String, cacheKey: String? = nil) -> CatalogCacheStatus {
         CatalogCacheStatus(
-            cachedEntryCount: loadRemoteCache(universeName: universeName)?.count,
-            lastCheckedAt: loadRemoteMetadata(universeName: universeName)?.lastCheckedAt
+            cachedEntryCount: loadRemoteCache(universeName: universeName, cacheKey: cacheKey)?.count,
+            lastCheckedAt: loadRemoteMetadata(universeName: universeName, cacheKey: cacheKey)?.lastCheckedAt
         )
     }
 
@@ -125,6 +125,11 @@ struct CatalogCacheStore {
 
     private func remoteMetadataURL(for universeName: String) -> URL {
         remoteCatalogDirectoryURL.appendingPathComponent("\(sanitizedFileName(for: universeName)).meta.json")
+    }
+
+    private func cacheStorageKey(universeName: String, cacheKey: String?) -> String {
+        let trimmedKey = cacheKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedKey.isEmpty ? universeName : trimmedKey
     }
 
     private func sanitizedFileName(for value: String) -> String {
