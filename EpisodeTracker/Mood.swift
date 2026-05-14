@@ -7,7 +7,7 @@ final class Mood {
     var name: String = ""
     var iconName: String?
     var syncKey: String?
-    var episodeRelationships: [Episode]? = []
+    @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
 
     init(
         id: UUID = UUID(),
