@@ -70,146 +70,39 @@ struct EpisodeEditView: View {
 
     var body: some View {
         List {
-            Section("Folge") {
-                Picker("Katalog", selection: $selectedUniverse) {
-                    if selectedUniverse == nil {
-                        Text("Katalog auswählen").tag(Optional<Universe>.none)
-                    }
-                    ForEach(universes) { universe in
-                        Text(universe.name).tag(Optional(universe))
-                    }
-                }
+            EpisodeFormSection(
+                universes: universes,
+                selectedUniverse: $selectedUniverse,
+                episodeNumberText: $episodeNumberText,
+                title: $title,
+                releaseYearText: $releaseYearText,
+                catalogMatch: catalogMatch,
+                isNew: isNew,
+                yearSuggestions: yearSuggestions,
+                formValidationMessage: formValidationMessage,
+                canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan,
+                onApplyCatalogMatch: applyCatalogMatch,
+                onSelectSuggestedEntry: applySuggestedEntry
+            )
 
-                LabeledContent("Nummer") {
-                    TextField("Nummer", text: $episodeNumberText)
-                        .multilineTextAlignment(.trailing)
-                        .keyboardType(.numberPad)
-                }
-                if let catalogMatch, isNew {
-                    Button {
-                        title = catalogMatch.title
-                        releaseYearText = String(catalogMatch.releaseYear)
-                    } label: {
-                        Label(
-                            "Titel übernehmen: \(catalogMatch.title) (\(String(catalogMatch.releaseYear)))",
-                            systemImage: "text.badge.checkmark"
-                        )
-                        .font(.subheadline)
-                    }
-                }
-                TextField("Titel der Folge", text: $title)
-                LabeledContent("Erscheinungsjahr") {
-                    TextField("Jahr", text: $releaseYearText)
-                        .multilineTextAlignment(.trailing)
-                        .keyboardType(.numberPad)
-                }
-                if isNew && !yearSuggestions.isEmpty && episodeNumberText.isEmpty {
-                    DisclosureGroup("Folgen aus \(releaseYearText)") {
-                        ForEach(Array(yearSuggestions.enumerated()), id: \.offset) { _, entry in
-                            Button {
-                                episodeNumberText = String(entry.number)
-                                title = entry.title
-                                releaseYearText = String(entry.releaseYear)
-                            } label: {
-                                HStack {
-                                    Text("\(entry.number)")
-                                        .font(.subheadline.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 28, alignment: .trailing)
-                                    Text(entry.title)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.primary)
-                                }
-                            }
-                        }
-                    }
-                    .font(.subheadline)
-                }
-                if let formValidationMessage {
-                    Text(formValidationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-                if isNew && !canCreateEpisodeUnderCurrentPlan {
-                    Text(FreemiumAccess.limitReachedMessage())
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            EpisodeStatusSection(
+                isListened: $isListened,
+                rating: $rating
+            )
 
-            Section("Status") {
-                Toggle("Bereits gehört", isOn: $isListened)
-                RatingPicker(rating: $rating)
-            }
+            EpisodeMoodSection(
+                suggestedMoods: suggestedMoods,
+                newMoodName: $newMoodName,
+                newMoodIcon: $newMoodIcon,
+                moodValidationMessage: moodValidationMessage,
+                allMoods: allMoods,
+                selectedMoods: selectedMoods,
+                onAddSuggestedMood: addSuggestedMood,
+                onAddMood: addMood,
+                onToggleMood: toggleMoodSelection
+            )
 
-            Section("Stimmungen") {
-                if !suggestedMoods.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Vorschläge")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        ScrollView(.horizontal) {
-                            HStack(spacing: 8) {
-                                ForEach(suggestedMoods, id: \.name) { suggestion in
-                                    Button {
-                                        addSuggestedMood(suggestion)
-                                    } label: {
-                                        Text("\(suggestion.icon) \(suggestion.name)")
-                                            .font(.subheadline)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                    }
-                                    .buttonStyle(.bordered)
-                                }
-                            }
-                        }
-                        .scrollIndicators(.hidden)
-                    }
-                }
-
-                HStack {
-                    TextField("Neue Stimmung", text: $newMoodName)
-                    TextField("Symbol", text: $newMoodIcon)
-                        .frame(width: 56)
-                        .multilineTextAlignment(.center)
-                    Button("Hinzufügen") {
-                        addMood()
-                    }
-                    .disabled(newMoodName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                if let moodValidationMessage {
-                    Text(moodValidationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-
-                ForEach(allMoods) { mood in
-                    let isSelected = selectedMoods.contains(mood)
-                    Button {
-                        if isSelected {
-                            selectedMoods.remove(mood)
-                        } else {
-                            selectedMoods.insert(mood)
-                        }
-                    } label: {
-                        HStack {
-                            Text("\(mood.iconName ?? "") \(mood.name)")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if isSelected {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Section("Persönliche Notiz") {
-                TextField("Was möchtest du dir merken?", text: $personalNote, axis: .vertical)
-                    .lineLimit(3...6)
-            }
+            EpisodeNoteSection(personalNote: $personalNote)
         }
         .navigationTitle(isNew ? "Neue Folge" : "Folge bearbeiten")
         .navigationBarTitleDisplayMode(.inline)
@@ -281,31 +174,35 @@ struct EpisodeEditView: View {
             refreshYearSuggestions()
         }
         .onAppear {
-            if let episode {
-                episodeNumberText = String(episode.episodeNumber)
-                title = episode.title
-                releaseYearText = String(episode.releaseYear)
-                personalNote = episode.personalNote ?? ""
-                isListened = episode.isListened
-                rating = episode.rating
-                selectedMoods = Set(episode.moods)
-                selectedUniverse = episode.universe ?? universes.first
-            } else if let prefillEntry {
-                episodeNumberText = String(prefillEntry.number)
-                title = prefillEntry.title
-                releaseYearText = String(prefillEntry.releaseYear)
-                if let prefillUniverseName {
-                    selectedUniverse = universes.first {
-                        $0.name.caseInsensitiveCompare(prefillUniverseName) == .orderedSame
-                    } ?? universes.first
-                } else {
-                    selectedUniverse = preferredCatalogUniverse ?? universes.first
-                }
-            } else if releaseYearText.isEmpty {
-                releaseYearText = "1979"
+            populateInitialState()
+            refreshCatalogMatch()
+        }
+    }
+
+    private func populateInitialState() {
+        if let episode {
+            episodeNumberText = String(episode.episodeNumber)
+            title = episode.title
+            releaseYearText = String(episode.releaseYear)
+            personalNote = episode.personalNote ?? ""
+            isListened = episode.isListened
+            rating = episode.rating
+            selectedMoods = Set(episode.moods)
+            selectedUniverse = episode.universe ?? universes.first
+        } else if let prefillEntry {
+            episodeNumberText = String(prefillEntry.number)
+            title = prefillEntry.title
+            releaseYearText = String(prefillEntry.releaseYear)
+            if let prefillUniverseName {
+                selectedUniverse = universes.first {
+                    $0.name.caseInsensitiveCompare(prefillUniverseName) == .orderedSame
+                } ?? universes.first
+            } else {
                 selectedUniverse = preferredCatalogUniverse ?? universes.first
             }
-            refreshCatalogMatch()
+        } else if releaseYearText.isEmpty {
+            releaseYearText = "1979"
+            selectedUniverse = preferredCatalogUniverse ?? universes.first
         }
     }
 
@@ -470,6 +367,200 @@ struct EpisodeEditView: View {
         try? modelContext.save()
         newMoodName = ""
         newMoodIcon = ""
+    }
+
+    private func applyCatalogMatch() {
+        guard let catalogMatch else { return }
+        title = catalogMatch.title
+        releaseYearText = String(catalogMatch.releaseYear)
+    }
+
+    private func applySuggestedEntry(_ entry: CatalogEntry) {
+        episodeNumberText = String(entry.number)
+        title = entry.title
+        releaseYearText = String(entry.releaseYear)
+    }
+
+    private func toggleMoodSelection(_ mood: Mood) {
+        if selectedMoods.contains(mood) {
+            selectedMoods.remove(mood)
+        } else {
+            selectedMoods.insert(mood)
+        }
+    }
+}
+
+private struct EpisodeFormSection: View {
+    let universes: [Universe]
+    @Binding var selectedUniverse: Universe?
+    @Binding var episodeNumberText: String
+    @Binding var title: String
+    @Binding var releaseYearText: String
+    let catalogMatch: CatalogEntry?
+    let isNew: Bool
+    let yearSuggestions: [CatalogEntry]
+    let formValidationMessage: String?
+    let canCreateEpisodeUnderCurrentPlan: Bool
+    let onApplyCatalogMatch: () -> Void
+    let onSelectSuggestedEntry: (CatalogEntry) -> Void
+
+    var body: some View {
+        Section("Folge") {
+            Picker("Katalog", selection: $selectedUniverse) {
+                if selectedUniverse == nil {
+                    Text("Katalog auswählen").tag(Optional<Universe>.none)
+                }
+                ForEach(universes) { universe in
+                    Text(universe.name).tag(Optional(universe))
+                }
+            }
+
+            LabeledContent("Nummer") {
+                TextField("Nummer", text: $episodeNumberText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.numberPad)
+            }
+            if let catalogMatch, isNew {
+                Button(action: onApplyCatalogMatch) {
+                    Label(
+                        "Titel übernehmen: \(catalogMatch.title) (\(String(catalogMatch.releaseYear)))",
+                        systemImage: "text.badge.checkmark"
+                    )
+                    .font(.subheadline)
+                }
+            }
+            TextField("Titel der Folge", text: $title)
+            LabeledContent("Erscheinungsjahr") {
+                TextField("Jahr", text: $releaseYearText)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.numberPad)
+            }
+            if isNew && !yearSuggestions.isEmpty && episodeNumberText.isEmpty {
+                DisclosureGroup("Folgen aus \(releaseYearText)") {
+                    ForEach(Array(yearSuggestions.enumerated()), id: \.offset) { _, entry in
+                        Button {
+                            onSelectSuggestedEntry(entry)
+                        } label: {
+                            HStack {
+                                Text("\(entry.number)")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 28, alignment: .trailing)
+                                Text(entry.title)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                    }
+                }
+                .font(.subheadline)
+            }
+            if let formValidationMessage {
+                Text(formValidationMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+            if isNew && !canCreateEpisodeUnderCurrentPlan {
+                Text(FreemiumAccess.limitReachedMessage())
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct EpisodeStatusSection: View {
+    @Binding var isListened: Bool
+    @Binding var rating: Int?
+
+    var body: some View {
+        Section("Status") {
+            Toggle("Bereits gehört", isOn: $isListened)
+            RatingPicker(rating: $rating)
+        }
+    }
+}
+
+private struct EpisodeMoodSection: View {
+    let suggestedMoods: [(name: String, icon: String)]
+    @Binding var newMoodName: String
+    @Binding var newMoodIcon: String
+    let moodValidationMessage: String?
+    let allMoods: [Mood]
+    let selectedMoods: Set<Mood>
+    let onAddSuggestedMood: ((name: String, icon: String)) -> Void
+    let onAddMood: () -> Void
+    let onToggleMood: (Mood) -> Void
+
+    var body: some View {
+        Section("Stimmungen") {
+            if !suggestedMoods.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Vorschläge")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) {
+                            ForEach(suggestedMoods, id: \.name) { suggestion in
+                                Button {
+                                    onAddSuggestedMood(suggestion)
+                                } label: {
+                                    Text("\(suggestion.icon) \(suggestion.name)")
+                                        .font(.subheadline)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                    }
+                    .scrollIndicators(.hidden)
+                }
+            }
+
+            HStack {
+                TextField("Neue Stimmung", text: $newMoodName)
+                TextField("Symbol", text: $newMoodIcon)
+                    .frame(width: 56)
+                    .multilineTextAlignment(.center)
+                Button("Hinzufügen", action: onAddMood)
+                    .disabled(newMoodName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            if let moodValidationMessage {
+                Text(moodValidationMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+
+            ForEach(allMoods) { mood in
+                let isSelected = selectedMoods.contains(mood)
+                Button {
+                    onToggleMood(mood)
+                } label: {
+                    HStack {
+                        Text("\(mood.iconName ?? "") \(mood.name)")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct EpisodeNoteSection: View {
+    @Binding var personalNote: String
+
+    var body: some View {
+        Section("Persönliche Notiz") {
+            TextField("Was möchtest du dir merken?", text: $personalNote, axis: .vertical)
+                .lineLimit(3...6)
+        }
     }
 }
 

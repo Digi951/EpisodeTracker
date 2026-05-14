@@ -33,13 +33,36 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            librarySection
-            managementSection
-            backupSection
-            resetSection
+            SettingsLibrarySection(
+                libraryTitle: $libraryTitle,
+                appearanceModeRawValue: $appearanceModeRawValue,
+                showsLibrarySnapshot: $showsLibrarySnapshot,
+                prefersCatalogProgressTotals: $prefersCatalogProgressTotals
+            )
+            SettingsManagementSection(
+                universeCount: universes.count,
+                moodCount: moods.count
+            )
+            SettingsBackupSection(
+                episodeCount: episodes.count,
+                backupStatusMessage: backupStatusMessage,
+                backupStatusIsError: backupStatusIsError,
+                onExport: exportBackup,
+                onImport: { showingImporter = true }
+            )
+            SettingsResetSection(
+                onReset: resetDisplaySettings
+            )
 
 #if DEBUG
-            syncDiagnosticsSection
+            SettingsSyncDiagnosticsSection(
+                prefersICloudSync: $prefersICloudSync,
+                containerModeTitle: containerMode.debugTitle,
+                runtimeModeDebugTitle: runtimeModeDebugTitle,
+                cloudGuardEnabled: cloudGuardEnabled,
+                cloudContainerIdentifier: AppModelContainerFactory.cloudContainerIdentifier,
+                cloudStartupError: cloudStartupError
+            )
 #endif
         }
         .navigationTitle("Einstellungen")
@@ -107,120 +130,17 @@ struct SettingsView: View {
         }
     }
 
-    private var librarySection: some View {
-        Section {
-            TextField("Sammlungsname", text: $libraryTitle)
-            Picker("Darstellung", selection: $appearanceModeRawValue) {
-                ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode.rawValue)
-                }
-            }
-            Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
-            Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
-        } header: {
-            Text("Mediathek")
-        } footer: {
-            Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
-        }
-    }
-
-    private var managementSection: some View {
-        Section("Verwalten") {
-            NavigationLink {
-                CatalogManagementView()
-            } label: {
-                SettingsNavigationRow(
-                    title: "Kataloge",
-                    subtitle: "\(universes.count) Kataloge aktiv",
-                    systemImage: "books.vertical"
-                )
-            }
-
-            NavigationLink {
-                MoodManagementView()
-            } label: {
-                SettingsNavigationRow(
-                    title: "Stimmungen",
-                    subtitle: "\(moods.count) Stimmungen gespeichert",
-                    systemImage: "tag"
-                )
-            }
-        }
-    }
-
-    private var backupSection: some View {
-        Section {
-            Button {
-                exportBackup()
-            } label: {
-                SettingsActionRow(
-                    title: "Backup exportieren",
-                    subtitle: "\(episodes.count) Folgen sichern",
-                    systemImage: "square.and.arrow.up"
-                )
-            }
-
-            Button {
-                showingImporter = true
-            } label: {
-                SettingsActionRow(
-                    title: "Backup importieren",
-                    subtitle: "Folgen, Kataloge und Stimmungen wiederherstellen",
-                    systemImage: "square.and.arrow.down"
-                )
-            }
-
-            if let backupStatusMessage {
-                Text(backupStatusMessage)
-                    .font(.footnote)
-                    .foregroundStyle(backupStatusIsError ? .red : .secondary)
-            }
-        } header: {
-            Text("Daten")
-        } footer: {
-            Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
-        }
-    }
-
-    private var resetSection: some View {
-        Section("Zurücksetzen") {
-            Button(role: .destructive) {
-                libraryTitle = "Meine Hörspiele"
-                appearanceModeRawValue = AppearanceMode.system.rawValue
-                showsLibrarySnapshot = true
-                prefersCatalogProgressTotals = true
-            } label: {
-                Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
-            }
-        }
-    }
-
-#if DEBUG
-    private var syncDiagnosticsSection: some View {
-        Section {
-            Toggle("Cloud-Sync wünschen", isOn: $prefersICloudSync)
-            SettingsValueRow(label: "Gewünschter Modus", value: containerMode.debugTitle)
-            SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
-            SettingsValueRow(label: "PoC-Guard", value: cloudGuardEnabled ? "Aktiv" : "Aus")
-            SettingsValueRow(label: "Container", value: AppModelContainerFactory.cloudContainerIdentifier)
-            if !cloudStartupError.isEmpty {
-                Text(cloudStartupError)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .textSelection(.enabled)
-            }
-        } header: {
-            Text("Sync-Diagnose")
-        } footer: {
-            Text("Cloud-Sync wird nur beim nächsten App-Start aktiv, wenn sowohl dieser Wunsch als auch der interne PoC-Guard gesetzt sind.")
-        }
-    }
-#endif
-
     private var backupFileName: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return "HoerspielLog-Backup-\(formatter.string(from: .now))"
+    }
+
+    private func resetDisplaySettings() {
+        libraryTitle = "Meine Hörspiele"
+        appearanceModeRawValue = AppearanceMode.system.rawValue
+        showsLibrarySnapshot = true
+        prefersCatalogProgressTotals = true
     }
 
     private func exportBackup() {
@@ -361,6 +281,140 @@ struct SettingsView: View {
         }
     }
 }
+
+private struct SettingsLibrarySection: View {
+    @Binding var libraryTitle: String
+    @Binding var appearanceModeRawValue: String
+    @Binding var showsLibrarySnapshot: Bool
+    @Binding var prefersCatalogProgressTotals: Bool
+
+    var body: some View {
+        Section {
+            TextField("Sammlungsname", text: $libraryTitle)
+            Picker("Darstellung", selection: $appearanceModeRawValue) {
+                ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                    Text(mode.title).tag(mode.rawValue)
+                }
+            }
+            Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
+            Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
+        } header: {
+            Text("Mediathek")
+        } footer: {
+            Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
+        }
+    }
+}
+
+private struct SettingsManagementSection: View {
+    let universeCount: Int
+    let moodCount: Int
+
+    var body: some View {
+        Section("Verwalten") {
+            NavigationLink {
+                CatalogManagementView()
+            } label: {
+                SettingsNavigationRow(
+                    title: "Kataloge",
+                    subtitle: "\(universeCount) Kataloge aktiv",
+                    systemImage: "books.vertical"
+                )
+            }
+
+            NavigationLink {
+                MoodManagementView()
+            } label: {
+                SettingsNavigationRow(
+                    title: "Stimmungen",
+                    subtitle: "\(moodCount) Stimmungen gespeichert",
+                    systemImage: "tag"
+                )
+            }
+        }
+    }
+}
+
+private struct SettingsBackupSection: View {
+    let episodeCount: Int
+    let backupStatusMessage: String?
+    let backupStatusIsError: Bool
+    let onExport: () -> Void
+    let onImport: () -> Void
+
+    var body: some View {
+        Section {
+            Button(action: onExport) {
+                SettingsActionRow(
+                    title: "Backup exportieren",
+                    subtitle: "\(episodeCount) Folgen sichern",
+                    systemImage: "square.and.arrow.up"
+                )
+            }
+
+            Button(action: onImport) {
+                SettingsActionRow(
+                    title: "Backup importieren",
+                    subtitle: "Folgen, Kataloge und Stimmungen wiederherstellen",
+                    systemImage: "square.and.arrow.down"
+                )
+            }
+
+            if let backupStatusMessage {
+                Text(backupStatusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(backupStatusIsError ? .red : .secondary)
+            }
+        } header: {
+            Text("Daten")
+        } footer: {
+            Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
+        }
+    }
+}
+
+private struct SettingsResetSection: View {
+    let onReset: () -> Void
+
+    var body: some View {
+        Section("Zurücksetzen") {
+            Button(role: .destructive, action: onReset) {
+                Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
+            }
+        }
+    }
+}
+
+#if DEBUG
+private struct SettingsSyncDiagnosticsSection: View {
+    @Binding var prefersICloudSync: Bool
+    let containerModeTitle: String
+    let runtimeModeDebugTitle: String
+    let cloudGuardEnabled: Bool
+    let cloudContainerIdentifier: String
+    let cloudStartupError: String
+
+    var body: some View {
+        Section {
+            Toggle("Cloud-Sync wünschen", isOn: $prefersICloudSync)
+            SettingsValueRow(label: "Gewünschter Modus", value: containerModeTitle)
+            SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
+            SettingsValueRow(label: "PoC-Guard", value: cloudGuardEnabled ? "Aktiv" : "Aus")
+            SettingsValueRow(label: "Container", value: cloudContainerIdentifier)
+            if !cloudStartupError.isEmpty {
+                Text(cloudStartupError)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+            }
+        } header: {
+            Text("Sync-Diagnose")
+        } footer: {
+            Text("Cloud-Sync wird nur beim nächsten App-Start aktiv, wenn sowohl dieser Wunsch als auch der interne PoC-Guard gesetzt sind.")
+        }
+    }
+}
+#endif
 
 private struct SettingsNavigationRow: View {
     let title: String

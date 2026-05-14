@@ -14,6 +14,10 @@ struct EpisodeListView: View {
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
 
+    private var librarySnapshot: EpisodeLibrarySnapshot {
+        EpisodeLibrarySnapshot(episodes: episodes)
+    }
+
     private var filteredEpisodes: [Episode] {
         EpisodeListOrganizer.filteredAndSortedEpisodes(
             episodes: episodes,
@@ -70,87 +74,11 @@ struct EpisodeListView: View {
         )
     }
 
-    private var listenedCount: Int {
-        episodes.filter(\.isListened).count
-    }
-
-    private var openCount: Int {
-        episodes.count - listenedCount
-    }
-
-    private var totalListens: Int {
-        episodes.reduce(0) { $0 + $1.listenCount }
-    }
-
     var body: some View {
         List {
-            if showsLibrarySnapshot && !episodes.isEmpty {
-                LibrarySnapshotView(
-                    episodeCount: episodes.count,
-                    listenedCount: listenedCount,
-                    openCount: openCount,
-                    totalListens: totalListens
-                )
-                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            }
-
-            if !availableMoodFilters.isEmpty || controls.filterMood != nil {
-                MoodFilterBar(moods: availableMoodFilters, selection: $controls.filterMood)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-            }
-
-            if episodes.isEmpty {
-                EmptyLibraryOnboardingView()
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-            } else if filteredEpisodes.isEmpty {
-                ContentUnavailableView {
-                    Label("Nichts gefunden", systemImage: "magnifyingglass")
-                } description: {
-                    Text("Passe Suche oder Filter an.")
-                } actions: {
-                    Button("Suche und Filter zurücksetzen") {
-                        controls.searchText = ""
-                        controls.resetFilters()
-                    }
-                }
-                .padding(.vertical, 36)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            } else if shouldShowUniverseSections {
-                ForEach(episodeGroups) { group in
-                    Section {
-                        if !isCollapsed(group) {
-                            ForEach(group.episodes) { episode in
-                                episodeRow(episode)
-                            }
-                            .onDelete { offsets in
-                                requestDeleteEpisodes(group.episodes, at: offsets)
-                            }
-                        }
-                    } header: {
-                        EpisodeGroupHeader(
-                            group: group,
-                            isCollapsed: isCollapsed(group)
-                        ) {
-                            toggleGroup(group)
-                        }
-                    }
-                }
-            } else {
-                ForEach(filteredEpisodes) { episode in
-                    episodeRow(episode)
-                }
-                .onDelete { offsets in
-                    requestDeleteEpisodes(filteredEpisodes, at: offsets)
-                }
-            }
+            librarySnapshotRow
+            moodFilterRow
+            contentRows
         }
         .searchable(text: $controls.searchText, prompt: "Folge suchen…")
         .toolbar {
@@ -177,6 +105,87 @@ struct EpisodeListView: View {
             }
         } message: {
             Text(deleteState.message)
+        }
+    }
+
+    @ViewBuilder
+    private var librarySnapshotRow: some View {
+        if showsLibrarySnapshot && !episodes.isEmpty {
+            LibrarySnapshotView(
+                episodeCount: librarySnapshot.episodeCount,
+                listenedCount: librarySnapshot.listenedCount,
+                openCount: librarySnapshot.openCount,
+                totalListens: librarySnapshot.totalListens
+            )
+            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
+    }
+
+    @ViewBuilder
+    private var moodFilterRow: some View {
+        if !availableMoodFilters.isEmpty || controls.filterMood != nil {
+            MoodFilterBar(moods: availableMoodFilters, selection: $controls.filterMood)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        }
+    }
+
+    @ViewBuilder
+    private var contentRows: some View {
+        if episodes.isEmpty {
+            EmptyLibraryOnboardingView()
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        } else if filteredEpisodes.isEmpty {
+            EmptyFilteredEpisodesView {
+                controls.searchText = ""
+                controls.resetFilters()
+            }
+            .padding(.vertical, 36)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        } else if shouldShowUniverseSections {
+            groupedEpisodeRows
+        } else {
+            flatEpisodeRows
+        }
+    }
+
+    @ViewBuilder
+    private var groupedEpisodeRows: some View {
+        ForEach(episodeGroups) { group in
+            Section {
+                if !isCollapsed(group) {
+                    ForEach(group.episodes) { episode in
+                        episodeRow(episode)
+                    }
+                    .onDelete { offsets in
+                        requestDeleteEpisodes(group.episodes, at: offsets)
+                    }
+                }
+            } header: {
+                EpisodeGroupHeader(
+                    group: group,
+                    isCollapsed: isCollapsed(group)
+                ) {
+                    toggleGroup(group)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var flatEpisodeRows: some View {
+        ForEach(filteredEpisodes) { episode in
+            episodeRow(episode)
+        }
+        .onDelete { offsets in
+            requestDeleteEpisodes(filteredEpisodes, at: offsets)
         }
     }
 
@@ -248,6 +257,20 @@ struct EpisodeListView: View {
     }
 }
 
+private struct EpisodeLibrarySnapshot {
+    let episodeCount: Int
+    let listenedCount: Int
+    let openCount: Int
+    let totalListens: Int
+
+    init(episodes: [Episode]) {
+        episodeCount = episodes.count
+        listenedCount = episodes.filter(\.isListened).count
+        openCount = episodeCount - listenedCount
+        totalListens = episodes.reduce(0) { $0 + $1.listenCount }
+    }
+}
+
 struct LibrarySnapshotView: View {
     let episodeCount: Int
     let listenedCount: Int
@@ -288,6 +311,20 @@ struct LibrarySnapshotView: View {
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct EmptyFilteredEpisodesView: View {
+    let onReset: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Nichts gefunden", systemImage: "magnifyingglass")
+        } description: {
+            Text("Passe Suche oder Filter an.")
+        } actions: {
+            Button("Suche und Filter zurücksetzen", action: onReset)
+        }
     }
 }
 

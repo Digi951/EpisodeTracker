@@ -8,65 +8,19 @@ struct StatisticsView: View {
     @Query private var episodes: [Episode]
     @State private var showingCustomization = false
 
-    private var listenedCount: Int {
-        episodes.filter(\.isListened).count
-    }
-
-    private var unlistenedCount: Int {
-        episodes.count - listenedCount
-    }
-
-    private var averageRating: Double? {
-        let rated = episodes.compactMap(\.rating)
-        guard !rated.isEmpty else { return nil }
-        return Double(rated.reduce(0, +)) / Double(rated.count)
-    }
-
-    private var totalListens: Int {
-        episodes.reduce(0) { $0 + $1.listenCount }
-    }
-
-    private var topRated: [Episode] {
-        episodes
-            .filter { $0.rating != nil }
-            .sorted {
-                let leftRating = $0.rating ?? 0
-                let rightRating = $1.rating ?? 0
-                if leftRating != rightRating {
-                    return leftRating > rightRating
-                }
-
-                let leftUniverse = $0.universe?.name ?? "Allgemein"
-                let rightUniverse = $1.universe?.name ?? "Allgemein"
-                if leftUniverse != rightUniverse {
-                    return leftUniverse.localizedCompare(rightUniverse) == .orderedAscending
-                }
-
-                return $0.episodeNumber < $1.episodeNumber
-            }
-            .prefix(5)
-            .map { $0 }
-    }
-
-    private var moodDistribution: [(Mood, Int)] {
-        var counts: [Mood: Int] = [:]
-        for episode in episodes {
-            for mood in episode.moods {
-                counts[mood, default: 0] += 1
-            }
-        }
-        return counts.sorted { $0.value > $1.value }
+    private var statistics: StatisticsSnapshot {
+        StatisticsSnapshot(episodes: episodes)
     }
 
     private var availableOverviewItems: [StatisticsOverviewItem] {
         var items = [
             StatisticsOverviewItem(kind: .episodes, value: "\(episodes.count)"),
-            StatisticsOverviewItem(kind: .listened, value: "\(listenedCount)"),
-            StatisticsOverviewItem(kind: .open, value: "\(unlistenedCount)"),
-            StatisticsOverviewItem(kind: .totalListens, value: "\(totalListens)")
+            StatisticsOverviewItem(kind: .listened, value: "\(statistics.listenedCount)"),
+            StatisticsOverviewItem(kind: .open, value: "\(statistics.unlistenedCount)"),
+            StatisticsOverviewItem(kind: .totalListens, value: "\(statistics.totalListens)")
         ]
 
-        if let avg = averageRating {
+        if let avg = statistics.averageRating {
             items.append(
                 StatisticsOverviewItem(
                     kind: .averageRating,
@@ -101,11 +55,11 @@ struct StatisticsView: View {
     }
 
     private var moodSummaryText: String {
-        guard !moodDistribution.isEmpty else {
+        guard !statistics.moodDistribution.isEmpty else {
             return "Noch keine Stimmungen in deiner Bibliothek"
         }
 
-        let topMoods = moodDistribution.prefix(2).map { mood, count in
+        let topMoods = statistics.moodDistribution.prefix(2).map { mood, count in
             "\(mood.iconName ?? "") \(mood.name) (\(count))"
         }
         return topMoods.joined(separator: " · ")
@@ -144,42 +98,14 @@ struct StatisticsView: View {
     private var iPhoneBody: some View {
         List {
             if episodes.isEmpty {
-                ContentUnavailableView {
-                    Label("Noch keine Statistik", systemImage: "chart.bar")
-                } description: {
-                    Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
-                }
+                StatisticsEmptyState()
             } else {
-                Section("Übersicht") {
-                    ForEach(visibleOverviewStats) { stat in
-                        StatRow(label: stat.kind.title, value: stat.value)
-                    }
-                }
-
-                Section("Beste Bewertungen") {
-                    if topRated.isEmpty {
-                        EmptyStatisticRow(
-                            systemImage: "star",
-                            title: "Noch keine Bewertungen",
-                            detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
-                        )
-                    } else {
-                        ForEach(topRated) { episode in
-                            TopRatedStatisticRow(episode: episode)
-                        }
-                    }
-                }
-
-                Section("Stimmungen") {
-                    NavigationLink {
-                        MoodStatisticsDetailView(moodDistribution: moodDistribution)
-                    } label: {
-                        StatisticNavigationRow(
-                            title: "Stimmungen ansehen",
-                            detail: moodSummaryText
-                        )
-                    }
-                }
+                StatisticsPhoneContent(
+                    visibleOverviewStats: visibleOverviewStats,
+                    topRated: statistics.topRated,
+                    moodDistribution: statistics.moodDistribution,
+                    moodSummaryText: moodSummaryText
+                )
             }
         }
     }
@@ -190,65 +116,16 @@ struct StatisticsView: View {
 
             ScrollView {
                 if episodes.isEmpty {
-                    ContentUnavailableView {
-                        Label("Noch keine Statistik", systemImage: "chart.bar")
-                    } description: {
-                        Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
-                    }
+                    StatisticsEmptyState()
                     .frame(maxWidth: .infinity, minHeight: 360)
                 } else {
-                    VStack(alignment: .leading, spacing: 24) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Dein Hörstand auf einen Blick")
-                                .font(.title3.weight(.semibold))
-                            Text("Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        LazyVGrid(
-                            columns: layout.summaryColumns,
-                            spacing: 16
-                        ) {
-                            ForEach(visibleOverviewStats) { stat in
-                                StatSummaryTile(stat: stat)
-                            }
-                        }
-
-                        LazyVGrid(
-                            columns: layout.detailColumns,
-                            alignment: .leading,
-                            spacing: 16
-                        ) {
-                            StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
-                                if topRated.isEmpty {
-                                    EmptyStatisticRow(
-                                        systemImage: "star",
-                                        title: "Noch keine Bewertungen",
-                                        detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
-                                    )
-                                } else {
-                                    VStack(spacing: 12) {
-                                        ForEach(topRated) { episode in
-                                            TopRatedStatisticRow(episode: episode)
-                                        }
-                                    }
-                                }
-                            }
-
-                            StatisticPanel(title: "Stimmungen", systemImage: "tag") {
-                                NavigationLink {
-                                    MoodStatisticsDetailView(moodDistribution: moodDistribution)
-                                } label: {
-                                    StatisticNavigationRow(
-                                        title: "Stimmungen ansehen",
-                                        detail: moodSummaryText
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
+                    StatisticsPadContent(
+                        layout: layout,
+                        visibleOverviewStats: visibleOverviewStats,
+                        topRated: statistics.topRated,
+                        moodDistribution: statistics.moodDistribution,
+                        moodSummaryText: moodSummaryText
+                    )
                     .frame(maxWidth: layout.contentWidth, alignment: .leading)
                     .padding(.horizontal, layout.horizontalPadding)
                     .padding(.vertical, 24)
@@ -256,6 +133,52 @@ struct StatisticsView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
+    }
+}
+
+private struct StatisticsSnapshot {
+    let listenedCount: Int
+    let unlistenedCount: Int
+    let averageRating: Double?
+    let totalListens: Int
+    let topRated: [Episode]
+    let moodDistribution: [(Mood, Int)]
+
+    init(episodes: [Episode]) {
+        listenedCount = episodes.filter(\.isListened).count
+        unlistenedCount = episodes.count - listenedCount
+
+        let rated = episodes.compactMap(\.rating)
+        averageRating = rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count)
+        totalListens = episodes.reduce(0) { $0 + $1.listenCount }
+
+        topRated = episodes
+            .filter { $0.rating != nil }
+            .sorted {
+                let leftRating = $0.rating ?? 0
+                let rightRating = $1.rating ?? 0
+                if leftRating != rightRating {
+                    return leftRating > rightRating
+                }
+
+                let leftUniverse = $0.universe?.name ?? "Allgemein"
+                let rightUniverse = $1.universe?.name ?? "Allgemein"
+                if leftUniverse != rightUniverse {
+                    return leftUniverse.localizedCompare(rightUniverse) == .orderedAscending
+                }
+
+                return $0.episodeNumber < $1.episodeNumber
+            }
+            .prefix(5)
+            .map { $0 }
+
+        var moodCounts: [Mood: Int] = [:]
+        for episode in episodes {
+            for mood in episode.moods {
+                moodCounts[mood, default: 0] += 1
+            }
+        }
+        moodDistribution = moodCounts.sorted { $0.value > $1.value }
     }
 }
 
@@ -376,6 +299,168 @@ private struct StatRow: View {
 
     var body: some View {
         LabeledContent(label, value: value)
+    }
+}
+
+private struct StatisticsEmptyState: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label("Noch keine Statistik", systemImage: "chart.bar")
+        } description: {
+            Text("Sobald du Folgen anlegst, siehst du hier deinen Hörstand.")
+        }
+    }
+}
+
+private struct StatisticsPhoneContent: View {
+    let visibleOverviewStats: [StatisticsOverviewItem]
+    let topRated: [Episode]
+    let moodDistribution: [(Mood, Int)]
+    let moodSummaryText: String
+
+    var body: some View {
+        StatisticsOverviewSection(stats: visibleOverviewStats)
+        StatisticsTopRatedSection(topRated: topRated)
+        StatisticsMoodSection(
+            moodDistribution: moodDistribution,
+            moodSummaryText: moodSummaryText
+        )
+    }
+}
+
+private struct StatisticsPadContent: View {
+    let layout: StatisticsRegularLayout
+    let visibleOverviewStats: [StatisticsOverviewItem]
+    let topRated: [Episode]
+    let moodDistribution: [(Mood, Int)]
+    let moodSummaryText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            StatisticsHeader()
+
+            LazyVGrid(
+                columns: layout.summaryColumns,
+                spacing: 16
+            ) {
+                ForEach(visibleOverviewStats) { stat in
+                    StatSummaryTile(stat: stat)
+                }
+            }
+
+            LazyVGrid(
+                columns: layout.detailColumns,
+                alignment: .leading,
+                spacing: 16
+            ) {
+                StatisticsTopRatedPanel(topRated: topRated)
+                StatisticsMoodPanel(
+                    moodDistribution: moodDistribution,
+                    moodSummaryText: moodSummaryText
+                )
+            }
+        }
+    }
+}
+
+private struct StatisticsHeader: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Dein Hörstand auf einen Blick")
+                .font(.title3.weight(.semibold))
+            Text("Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct StatisticsOverviewSection: View {
+    let stats: [StatisticsOverviewItem]
+
+    var body: some View {
+        Section("Übersicht") {
+            ForEach(stats) { stat in
+                StatRow(label: stat.kind.title, value: stat.value)
+            }
+        }
+    }
+}
+
+private struct StatisticsTopRatedSection: View {
+    let topRated: [Episode]
+
+    var body: some View {
+        Section("Beste Bewertungen") {
+            StatisticsTopRatedContent(topRated: topRated)
+        }
+    }
+}
+
+private struct StatisticsMoodSection: View {
+    let moodDistribution: [(Mood, Int)]
+    let moodSummaryText: String
+
+    var body: some View {
+        Section("Stimmungen") {
+            NavigationLink {
+                MoodStatisticsDetailView(moodDistribution: moodDistribution)
+            } label: {
+                StatisticNavigationRow(
+                    title: "Stimmungen ansehen",
+                    detail: moodSummaryText
+                )
+            }
+        }
+    }
+}
+
+private struct StatisticsTopRatedPanel: View {
+    let topRated: [Episode]
+
+    var body: some View {
+        StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
+            StatisticsTopRatedContent(topRated: topRated)
+        }
+    }
+}
+
+private struct StatisticsMoodPanel: View {
+    let moodDistribution: [(Mood, Int)]
+    let moodSummaryText: String
+
+    var body: some View {
+        StatisticPanel(title: "Stimmungen", systemImage: "tag") {
+            NavigationLink {
+                MoodStatisticsDetailView(moodDistribution: moodDistribution)
+            } label: {
+                StatisticNavigationRow(
+                    title: "Stimmungen ansehen",
+                    detail: moodSummaryText
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+private struct StatisticsTopRatedContent: View {
+    let topRated: [Episode]
+
+    var body: some View {
+        if topRated.isEmpty {
+            EmptyStatisticRow(
+                systemImage: "star",
+                title: "Noch keine Bewertungen",
+                detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+            )
+        } else {
+            VStack(spacing: 12) {
+                ForEach(topRated) { episode in
+                    TopRatedStatisticRow(episode: episode)
+                }
+            }
+        }
     }
 }
 
