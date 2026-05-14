@@ -299,15 +299,29 @@ final class SmartListTests: XCTestCase {
     }
 
     func testRandomRespectsCountLimit() {
-        let u1 = makeUniverse("Test")
         var episodes: [Episode] = []
-        for i in 1...20 {
-            episodes.append(makeEpisode(number: i, universe: u1))
+        for i in 1...5 {
+            let u = makeUniverse("U\(i)")
+            for j in 1...4 {
+                episodes.append(makeEpisode(number: (i - 1) * 4 + j, universe: u))
+            }
         }
 
         let result = SmartListDefinition.randomEpisodes(from: episodes, count: 5)
 
         XCTAssertEqual(result.count, 5)
+    }
+
+    func testRandomRespectsMaxPerUniverse() {
+        let u1 = makeUniverse("Test")
+        var episodes: [Episode] = []
+        for i in 1...10 {
+            episodes.append(makeEpisode(number: i, universe: u1))
+        }
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, count: 10, maxPerUniverse: 3)
+
+        XCTAssertEqual(result.count, 3)
     }
 
     func testRandomReturnsAllWhenFewerThanCount() {
