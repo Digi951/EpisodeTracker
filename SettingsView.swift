@@ -73,6 +73,7 @@ struct SettingsView: View {
                 prefersICloudSync: $prefersICloudSync
             )
 
+#if DEBUG
             if showsInternalSyncControls {
                 SettingsSyncDiagnosticsSection(
                     containerModeTitle: containerMode.debugTitle,
@@ -86,6 +87,7 @@ struct SettingsView: View {
                     onRunMigration: runInternalSyncMigration
                 )
             }
+#endif
         }
         .navigationTitle("Einstellungen")
         .listStyle(.insetGrouped)
