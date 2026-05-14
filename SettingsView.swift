@@ -54,9 +54,12 @@ struct SettingsView: View {
                 onReset: resetDisplaySettings
             )
 
+            SettingsSyncSection(
+                prefersICloudSync: $prefersICloudSync
+            )
+
 #if DEBUG
             SettingsSyncDiagnosticsSection(
-                prefersICloudSync: $prefersICloudSync,
                 containerModeTitle: containerMode.debugTitle,
                 runtimeModeDebugTitle: runtimeModeDebugTitle,
                 cloudGuardEnabled: cloudGuardEnabled,
@@ -385,9 +388,22 @@ private struct SettingsResetSection: View {
     }
 }
 
+private struct SettingsSyncSection: View {
+    @Binding var prefersICloudSync: Bool
+
+    var body: some View {
+        Section {
+            Toggle("iCloud-Sync", isOn: $prefersICloudSync)
+        } header: {
+            Text("Sync")
+        } footer: {
+            Text("Cloud-Sync wird erst nach dem nächsten App-Start aktiv.")
+        }
+    }
+}
+
 #if DEBUG
 private struct SettingsSyncDiagnosticsSection: View {
-    @Binding var prefersICloudSync: Bool
     let containerModeTitle: String
     let runtimeModeDebugTitle: String
     let cloudGuardEnabled: Bool
@@ -396,7 +412,6 @@ private struct SettingsSyncDiagnosticsSection: View {
 
     var body: some View {
         Section {
-            Toggle("Cloud-Sync wünschen", isOn: $prefersICloudSync)
             SettingsValueRow(label: "Gewünschter Modus", value: containerModeTitle)
             SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
             SettingsValueRow(label: "PoC-Guard", value: cloudGuardEnabled ? "Aktiv" : "Aus")
@@ -410,7 +425,7 @@ private struct SettingsSyncDiagnosticsSection: View {
         } header: {
             Text("Sync-Diagnose")
         } footer: {
-            Text("Cloud-Sync wird nur beim nächsten App-Start aktiv, wenn sowohl dieser Wunsch als auch der interne PoC-Guard gesetzt sind.")
+            Text("Nur im Debug-Build sichtbar.")
         }
     }
 }
