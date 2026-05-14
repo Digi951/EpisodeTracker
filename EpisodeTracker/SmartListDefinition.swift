@@ -197,9 +197,11 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         let withUniverse = episodes.filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
-        let thresholdDate = Calendar.current.date(
+        guard let thresholdDate = Calendar.current.date(
             byAdding: .day, value: -longPauseDays, to: referenceDate
-        )!
+        ) else {
+            return []
+        }
 
         var results: [(episode: Episode, lastActivity: Date)] = []
 
@@ -231,8 +233,10 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         episodes
             .filter { !$0.isListened && $0.rating != nil }
             .sorted {
-                if $0.rating! != $1.rating! {
-                    return $0.rating! > $1.rating!
+                let r0 = $0.rating ?? 0
+                let r1 = $1.rating ?? 0
+                if r0 != r1 {
+                    return r0 > r1
                 }
                 return $0.episodeNumber < $1.episodeNumber
             }
@@ -276,9 +280,9 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func missingCatalogEntries(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode]) -> [(universeName: String, entry: CatalogEntry)] {
-        let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { $0.universe!.name.lowercased() }
+        let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { ($0.universe?.name ?? "").lowercased() }
 
-        let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { $0.collectionName!.lowercased() }
+        let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { ($0.collectionName ?? "").lowercased() }
 
         var results: [(universeName: String, entry: CatalogEntry)] = []
 
