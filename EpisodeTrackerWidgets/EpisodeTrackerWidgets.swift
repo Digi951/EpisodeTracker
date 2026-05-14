@@ -11,27 +11,18 @@ struct EpisodeWidgetEntry: TimelineEntry {
     let libraryTitle: String
 }
 
+private struct EpisodeWidgetDisplayContext {
+    let title: String
+    let subtitle: String
+    let symbolName: String
+    let emptyMessage: String
+}
+
 struct EpisodeWidgetProvider: AppIntentTimelineProvider {
     let kind: WidgetEpisodeKind
 
     func placeholder(in context: Context) -> EpisodeWidgetEntry {
-        EpisodeWidgetEntry(
-            date: .now,
-            kind: kind,
-            selectedCatalogID: WidgetCatalogSelection.allValue,
-            selectedCatalogName: "Alle Kataloge",
-            episode: WidgetEpisodeSnapshot(
-                id: UUID(),
-                episodeNumber: 7,
-                title: "und der unheimliche Drache",
-                releaseYear: 1979,
-                universeName: "Die drei ???",
-                isListened: false,
-                rating: 4,
-                lastListenedAt: nil
-            ),
-            libraryTitle: "HörspielLog"
-        )
+        EpisodeWidgetEntry.placeholder(for: kind)
     }
 
     func snapshot(for configuration: EpisodeWidgetConfigurationIntent, in context: Context) async -> EpisodeWidgetEntry {
@@ -78,7 +69,40 @@ struct EpisodeWidgetView: View {
         family == .systemSmall
     }
 
-    private var title: String {
+    private var displayContext: EpisodeWidgetDisplayContext {
+        EpisodeWidgetDisplayContext(
+            title: widgetTitle,
+            subtitle: widgetSubtitle,
+            symbolName: widgetSymbolName,
+            emptyMessage: widgetEmptyMessage
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: isSmall ? 10 : 14) {
+            WidgetHeaderView(
+                title: displayContext.title,
+                subtitle: displayContext.subtitle,
+                symbolName: displayContext.symbolName,
+                compact: isSmall,
+                shuffleCatalogID: entry.kind == .random ? entry.selectedCatalogID : nil
+            )
+
+            if let episode = entry.episode {
+                EpisodeWidgetCard(
+                    entry: entry,
+                    episode: episode,
+                    isSmall: isSmall
+                )
+            } else {
+                EmptyEpisodeWidgetCard(title: "Nichts gefunden", message: displayContext.emptyMessage)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    private var widgetTitle: String {
         if isSmall {
             switch entry.kind {
             case .upNext: return "Nächste"
@@ -92,53 +116,43 @@ struct EpisodeWidgetView: View {
         }
     }
 
-    private var subtitle: String {
-        if isSmall {
-            return ""
-        }
+    private var widgetSubtitle: String {
+        guard !isSmall else { return "" }
         if entry.selectedCatalogName == "Alle Kataloge" {
             return entry.libraryTitle
         }
         return entry.selectedCatalogName
     }
 
-    private var symbolName: String {
+    private var widgetSymbolName: String {
         switch entry.kind {
         case .upNext: return "play.circle.fill"
         case .random: return "shuffle.circle.fill"
         }
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: isSmall ? 10 : 14) {
-            WidgetHeaderView(
-                title: title,
-                subtitle: subtitle,
-                symbolName: symbolName,
-                compact: isSmall,
-                shuffleCatalogID: entry.kind == .random ? entry.selectedCatalogID : nil
-            )
-
-            if let episode = entry.episode {
-                if isSmall {
-                    SmallEpisodeWidgetCard(entry: entry, episode: episode)
-                } else {
-                    MediumEpisodeWidgetCard(entry: entry, episode: episode)
-                }
-            } else {
-                EmptyEpisodeWidgetCard(title: "Nichts gefunden", message: emptyMessage)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .containerBackground(.fill.tertiary, for: .widget)
-    }
-
-    private var emptyMessage: String {
+    private var widgetEmptyMessage: String {
         switch entry.kind {
         case .upNext:
             return "Für diese Auswahl gibt es gerade keine offene Fortsetzung."
         case .random:
             return "Für diese Auswahl ist noch keine Folge verfügbar."
+        }
+    }
+}
+
+private struct EpisodeWidgetCard: View {
+    let entry: EpisodeWidgetEntry
+    let episode: WidgetEpisodeSnapshot
+    let isSmall: Bool
+
+    var body: some View {
+        Group {
+            if isSmall {
+                SmallEpisodeWidgetCard(entry: entry, episode: episode)
+            } else {
+                MediumEpisodeWidgetCard(entry: entry, episode: episode)
+            }
         }
     }
 }
@@ -427,16 +441,12 @@ struct UpNextEpisodeWidget: Widget {
     let kind: String = "UpNextEpisodeWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
+        EpisodeWidgetConfiguration.make(
             kind: kind,
-            intent: EpisodeWidgetConfigurationIntent.self,
-            provider: EpisodeWidgetProvider(kind: .upNext)
-        ) { entry in
-            EpisodeWidgetView(entry: entry)
-        }
-        .configurationDisplayName("Als Nächstes")
-        .description("Zeigt dir eine passende nächste Folge aus einem Katalog oder aus allen Katalogen.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+            widgetKind: .upNext,
+            displayName: "Als Nächstes",
+            description: "Zeigt dir eine passende nächste Folge aus einem Katalog oder aus allen Katalogen."
+        )
     }
 }
 
@@ -444,16 +454,12 @@ struct RandomEpisodeWidget: Widget {
     let kind: String = "RandomEpisodeWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
+        EpisodeWidgetConfiguration.make(
             kind: kind,
-            intent: EpisodeWidgetConfigurationIntent.self,
-            provider: EpisodeWidgetProvider(kind: .random)
-        ) { entry in
-            EpisodeWidgetView(entry: entry)
-        }
-        .configurationDisplayName("Zufällige Folge")
-        .description("Wählt stündlich eine zufällige Folge aus einem Katalog oder aus allen Katalogen.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+            widgetKind: .random,
+            displayName: "Zufällige Folge",
+            description: "Wählt stündlich eine zufällige Folge aus einem Katalog oder aus allen Katalogen."
+        )
     }
 }
 
@@ -462,5 +468,47 @@ struct EpisodeTrackerWidgetsBundle: WidgetBundle {
     var body: some Widget {
         UpNextEpisodeWidget()
         RandomEpisodeWidget()
+    }
+}
+
+private enum EpisodeWidgetConfiguration {
+    static func make(
+        kind: String,
+        widgetKind: WidgetEpisodeKind,
+        displayName: String,
+        description: String
+    ) -> some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: kind,
+            intent: EpisodeWidgetConfigurationIntent.self,
+            provider: EpisodeWidgetProvider(kind: widgetKind)
+        ) { entry in
+            EpisodeWidgetView(entry: entry)
+        }
+        .configurationDisplayName(displayName)
+        .description(description)
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+private extension EpisodeWidgetEntry {
+    static func placeholder(for kind: WidgetEpisodeKind) -> EpisodeWidgetEntry {
+        EpisodeWidgetEntry(
+            date: .now,
+            kind: kind,
+            selectedCatalogID: WidgetCatalogSelection.allValue,
+            selectedCatalogName: "Alle Kataloge",
+            episode: WidgetEpisodeSnapshot(
+                id: UUID(),
+                episodeNumber: 7,
+                title: "und der unheimliche Drache",
+                releaseYear: 1979,
+                universeName: "Die drei ???",
+                isListened: false,
+                rating: 4,
+                lastListenedAt: nil
+            ),
+            libraryTitle: "HörspielLog"
+        )
     }
 }
