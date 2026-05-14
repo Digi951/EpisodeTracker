@@ -23,9 +23,9 @@ struct ContentView: View {
 
             Group {
                 if usesSplitLayout {
-                    iPadBody
+                    ContentPadTabs(libraryTitle: effectiveLibraryTitle)
                 } else {
-                    iPhoneBody
+                    ContentPhoneTabs(libraryTitle: effectiveLibraryTitle)
                 }
             }
         }
@@ -40,67 +40,42 @@ struct ContentView: View {
         )
     }
 
-    private var iPhoneBody: some View {
+}
+
+private struct ContentPhoneTabs: View {
+    let libraryTitle: String
+
+    var body: some View {
         TabView {
-            NavigationStack {
-                EpisodeListView()
-                    .navigationDestination(for: Episode.self) { episode in
-                        EpisodeDetailView(episode: episode)
-                    }
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        switch destination {
-                        case .episode(let episode):
-                            EpisodeDetailView(episode: episode)
-                        case .addEpisode:
-                            EpisodeEditView()
-                        }
-                    }
-                    .navigationTitle(effectiveLibraryTitle)
-            }
-            .tabItem {
-                Label("Folgen", systemImage: "list.number")
-            }
+            PhoneEpisodesRoot(libraryTitle: libraryTitle)
+                .tabItem {
+                    Label("Folgen", systemImage: "list.number")
+                }
 
-            NavigationStack {
-                UpNextView()
-                    .navigationDestination(for: Episode.self) { episode in
-                        EpisodeDetailView(episode: episode)
-                    }
-                    .navigationDestination(for: SmartListNavigation.self) { destination in
-                        switch destination {
-                        case .detail(let smartList):
-                            SmartListDetailView(smartList: smartList)
-                        case .moodPicker:
-                            MoodPickerView()
-                        case .moodDetail(let mood):
-                            SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
-                        }
-                    }
-                    .navigationTitle("Als nächstes")
-            }
-            .tabItem {
-                Label("Als nächstes", systemImage: "play.circle")
-            }
+            PhoneUpNextRoot()
+                .tabItem {
+                    Label("Als nächstes", systemImage: "play.circle")
+                }
 
-            NavigationStack {
-                StatisticsView()
-            }
-            .tabItem {
-                Label("Statistiken", systemImage: "chart.bar")
-            }
+            StatisticsRootTab()
+                .tabItem {
+                    Label("Statistiken", systemImage: "chart.bar")
+                }
 
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Label("Einstellungen", systemImage: "gearshape")
-            }
+            SettingsRootTab()
+                .tabItem {
+                    Label("Einstellungen", systemImage: "gearshape")
+                }
         }
     }
+}
 
-    private var iPadBody: some View {
+private struct ContentPadTabs: View {
+    let libraryTitle: String
+
+    var body: some View {
         TabView {
-            EpisodeSplitView(libraryTitle: effectiveLibraryTitle)
+            EpisodeSplitView(libraryTitle: libraryTitle)
                 .tabItem {
                     Label("Folgen", systemImage: "list.number")
                 }
@@ -110,19 +85,75 @@ struct ContentView: View {
                     Label("Als nächstes", systemImage: "play.circle")
                 }
 
-            NavigationStack {
-                StatisticsView()
-            }
-            .tabItem {
-                Label("Statistiken", systemImage: "chart.bar")
-            }
+            StatisticsRootTab()
+                .tabItem {
+                    Label("Statistiken", systemImage: "chart.bar")
+                }
 
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Label("Einstellungen", systemImage: "gearshape")
-            }
+            SettingsRootTab()
+                .tabItem {
+                    Label("Einstellungen", systemImage: "gearshape")
+                }
+        }
+    }
+}
+
+private struct PhoneEpisodesRoot: View {
+    let libraryTitle: String
+
+    var body: some View {
+        NavigationStack {
+            EpisodeListView()
+                .navigationDestination(for: Episode.self) { episode in
+                    EpisodeDetailView(episode: episode)
+                }
+                .navigationDestination(for: NavigationDestination.self) { destination in
+                    switch destination {
+                    case .episode(let episode):
+                        EpisodeDetailView(episode: episode)
+                    case .addEpisode:
+                        EpisodeEditView()
+                    }
+                }
+                .navigationTitle(libraryTitle)
+        }
+    }
+}
+
+private struct PhoneUpNextRoot: View {
+    var body: some View {
+        NavigationStack {
+            UpNextView()
+                .navigationDestination(for: Episode.self) { episode in
+                    EpisodeDetailView(episode: episode)
+                }
+                .navigationDestination(for: SmartListNavigation.self) { destination in
+                    switch destination {
+                    case .detail(let smartList):
+                        SmartListDetailView(smartList: smartList)
+                    case .moodPicker:
+                        MoodPickerView()
+                    case .moodDetail(let mood):
+                        SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                    }
+                }
+                .navigationTitle("Als nächstes")
+        }
+    }
+}
+
+private struct StatisticsRootTab: View {
+    var body: some View {
+        NavigationStack {
+            StatisticsView()
+        }
+    }
+}
+
+private struct SettingsRootTab: View {
+    var body: some View {
+        NavigationStack {
+            SettingsView()
         }
     }
 }
@@ -174,6 +205,10 @@ private struct IPadEpisodeListView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingAddEpisode = false
 
+    private var librarySnapshot: SidebarLibrarySnapshot {
+        SidebarLibrarySnapshot(episodes: episodes)
+    }
+
     private var filteredEpisodes: [Episode] {
         EpisodeListOrganizer.filteredAndSortedEpisodes(
             episodes: episodes,
@@ -218,26 +253,14 @@ private struct IPadEpisodeListView: View {
         )
     }
 
-    private var listenedCount: Int {
-        episodes.filter(\.isListened).count
-    }
-
-    private var openCount: Int {
-        episodes.count - listenedCount
-    }
-
-    private var totalListens: Int {
-        episodes.reduce(0) { $0 + $1.listenCount }
-    }
-
     var body: some View {
         List(selection: $selection) {
             if showsLibrarySnapshot && !episodes.isEmpty {
                 CompactLibrarySnapshotView(
-                    episodeCount: episodes.count,
-                    listenedCount: listenedCount,
-                    openCount: openCount,
-                    totalListens: totalListens
+                    episodeCount: librarySnapshot.episodeCount,
+                    listenedCount: librarySnapshot.listenedCount,
+                    openCount: librarySnapshot.openCount,
+                    totalListens: librarySnapshot.totalListens
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
                 .listRowSeparator(.hidden)
@@ -401,6 +424,20 @@ private struct IPadEpisodeListView: View {
             in: collapsedGroupIDsRaw,
             scopeKey: groupCollapseScopeKey
         )
+    }
+}
+
+private struct SidebarLibrarySnapshot {
+    let episodeCount: Int
+    let listenedCount: Int
+    let openCount: Int
+    let totalListens: Int
+
+    init(episodes: [Episode]) {
+        episodeCount = episodes.count
+        listenedCount = episodes.filter(\.isListened).count
+        openCount = episodeCount - listenedCount
+        totalListens = episodes.reduce(0) { $0 + $1.listenCount }
     }
 }
 

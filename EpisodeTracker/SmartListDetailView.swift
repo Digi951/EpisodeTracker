@@ -119,115 +119,30 @@ struct SmartListDetailView: View {
     @ViewBuilder
     private var listContent: some View {
         if smartList.isRandomList {
-            Section {
-                Picker("Filter", selection: $episodeFilter) {
-                    ForEach(EpisodeFilter.allCases) { filter in
-                        Text(filter.displayName).tag(filter)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            }
+            SmartListFilterSection(episodeFilter: $episodeFilter)
         }
 
         if smartList.needsCatalog {
-            catalogContent
+            SmartListCatalogContent(
+                availableCatalogYears: availableCatalogYears,
+                catalogYearFilter: $catalogYearFilter,
+                catalogSuggestions: catalogSuggestions,
+                catalogGroups: catalogGroups,
+                smartListDisplayName: smartList.displayName,
+                emptyStateMessage: smartList.emptyStateMessage,
+                isCatalogGroupCollapsed: isCatalogGroupCollapsed,
+                onToggleCatalogGroup: toggleCatalogGroup,
+                onAddCatalogSuggestion: { suggestion in
+                    catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
+                },
+                onAddCatalogSuggestions: addCatalogSuggestions
+            )
         } else {
-            episodeContent
-        }
-    }
-
-    @ViewBuilder
-    private var catalogContent: some View {
-        if !availableCatalogYears.isEmpty {
-            Section {
-                Picker("Erscheinungsjahr", selection: $catalogYearFilter) {
-                    Text("Alle Jahre").tag(Optional<Int>.none)
-                    ForEach(availableCatalogYears, id: \.self) { year in
-                        Text(String(year)).tag(Optional(year))
-                    }
-                }
-            } header: {
-                Text("Filtern")
-            } footer: {
-                Text("Zeigt nur fehlende Folgen aus dem ausgewählten Erscheinungsjahr. Mit „Alle Jahre“ siehst du wieder alle offenen Katalogvorschläge.")
-            }
-        }
-
-        if catalogSuggestions.isEmpty {
-            ContentUnavailableView {
-                Label(smartList.displayName, systemImage: "tray")
-            } description: {
-                Text(catalogYearFilter != nil
-                     ? "Keine fehlenden Folgen aus \(String(catalogYearFilter!))"
-                     : smartList.emptyStateMessage)
-            }
-            .listRowSeparator(.hidden)
-        } else {
-            Section {
-                CatalogBulkImportCard(
-                    suggestionCount: catalogSuggestions.count,
-                    universeCount: catalogGroups.count
-                ) {
-                    addCatalogSuggestions(catalogSuggestions)
-                }
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-
-            ForEach(catalogGroups) { group in
-                Section {
-                    if !isCatalogGroupCollapsed(group) {
-                        ForEach(Array(group.suggestions.enumerated()), id: \.offset) { _, suggestion in
-                            CatalogEntryRow(
-                                universeName: suggestion.universeName,
-                                entry: suggestion.entry
-                            ) {
-                                catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
-                            }
-                        }
-                    }
-                } header: {
-                    CatalogGroupHeader(
-                        title: group.universeName,
-                        count: group.suggestions.count,
-                        isCollapsed: isCatalogGroupCollapsed(group)
-                    ) {
-                        toggleCatalogGroup(group)
-                    }
-                } footer: {
-                    if !isCatalogGroupCollapsed(group) {
-                        CatalogGroupFooter(
-                            universeName: group.universeName,
-                            visibleCount: group.suggestions.count,
-                            totalMissingCount: group.allMissingSuggestions.count,
-                            action: {
-                                addCatalogSuggestions(group.allMissingSuggestions)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var episodeContent: some View {
-        if displayedEpisodes.isEmpty {
-            ContentUnavailableView {
-                Label(smartList.displayName, systemImage: "tray")
-            } description: {
-                Text(emptyMessage)
-            }
-            .listRowSeparator(.hidden)
-        } else {
-            ForEach(displayedEpisodes) { episode in
-                NavigationLink(value: episode) {
-                    EpisodeRowView(episode: episode)
-                }
-            }
+            SmartListEpisodeContent(
+                displayedEpisodes: displayedEpisodes,
+                smartListDisplayName: smartList.displayName,
+                emptyMessage: emptyMessage
+            )
         }
     }
 
@@ -282,6 +197,153 @@ struct SmartListDetailView: View {
             ids.insert(group.id)
         }
         collapsedCatalogGroupIDsRaw = ids.sorted().joined(separator: "\n")
+    }
+}
+
+private struct SmartListFilterSection: View {
+    @Binding var episodeFilter: EpisodeFilter
+
+    var body: some View {
+        Section {
+            Picker("Filter", selection: $episodeFilter) {
+                ForEach(EpisodeFilter.allCases) { filter in
+                    Text(filter.displayName).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
+    }
+}
+
+private struct SmartListCatalogContent: View {
+    let availableCatalogYears: [Int]
+    @Binding var catalogYearFilter: Int?
+    let catalogSuggestions: [(universeName: String, entry: CatalogEntry)]
+    let catalogGroups: [CatalogSuggestionGroup]
+    let smartListDisplayName: String
+    let emptyStateMessage: String
+    let isCatalogGroupCollapsed: (CatalogSuggestionGroup) -> Bool
+    let onToggleCatalogGroup: (CatalogSuggestionGroup) -> Void
+    let onAddCatalogSuggestion: ((universeName: String, entry: CatalogEntry)) -> Void
+    let onAddCatalogSuggestions: ([(universeName: String, entry: CatalogEntry)]) -> Void
+
+    var body: some View {
+        catalogYearFilterSection
+
+        if catalogSuggestions.isEmpty {
+            SmartListEmptyState(
+                title: smartListDisplayName,
+                message: emptyCatalogMessage
+            )
+        } else {
+            Section {
+                CatalogBulkImportCard(
+                    suggestionCount: catalogSuggestions.count,
+                    universeCount: catalogGroups.count
+                ) {
+                    onAddCatalogSuggestions(catalogSuggestions)
+                }
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+            ForEach(catalogGroups) { group in
+                Section {
+                    if !isCatalogGroupCollapsed(group) {
+                        ForEach(Array(group.suggestions.enumerated()), id: \.offset) { _, suggestion in
+                            CatalogEntryRow(
+                                universeName: suggestion.universeName,
+                                entry: suggestion.entry
+                            ) {
+                                onAddCatalogSuggestion(suggestion)
+                            }
+                        }
+                    }
+                } header: {
+                    CatalogGroupHeader(
+                        title: group.universeName,
+                        count: group.suggestions.count,
+                        isCollapsed: isCatalogGroupCollapsed(group)
+                    ) {
+                        onToggleCatalogGroup(group)
+                    }
+                } footer: {
+                    if !isCatalogGroupCollapsed(group) {
+                        CatalogGroupFooter(
+                            universeName: group.universeName,
+                            visibleCount: group.suggestions.count,
+                            totalMissingCount: group.allMissingSuggestions.count,
+                            action: {
+                                onAddCatalogSuggestions(group.allMissingSuggestions)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var catalogYearFilterSection: some View {
+        if !availableCatalogYears.isEmpty {
+            Section {
+                Picker("Erscheinungsjahr", selection: $catalogYearFilter) {
+                    Text("Alle Jahre").tag(Optional<Int>.none)
+                    ForEach(availableCatalogYears, id: \.self) { year in
+                        Text(String(year)).tag(Optional(year))
+                    }
+                }
+            } header: {
+                Text("Filtern")
+            } footer: {
+                Text("Zeigt nur fehlende Folgen aus dem ausgewählten Erscheinungsjahr. Mit „Alle Jahre“ siehst du wieder alle offenen Katalogvorschläge.")
+            }
+        }
+    }
+
+    private var emptyCatalogMessage: String {
+        if let catalogYearFilter {
+            return "Keine fehlenden Folgen aus \(String(catalogYearFilter))"
+        }
+        return emptyStateMessage
+    }
+}
+
+private struct SmartListEpisodeContent: View {
+    let displayedEpisodes: [Episode]
+    let smartListDisplayName: String
+    let emptyMessage: String
+
+    var body: some View {
+        if displayedEpisodes.isEmpty {
+            SmartListEmptyState(
+                title: smartListDisplayName,
+                message: emptyMessage
+            )
+        } else {
+            ForEach(displayedEpisodes) { episode in
+                NavigationLink(value: episode) {
+                    EpisodeRowView(episode: episode)
+                }
+            }
+        }
+    }
+}
+
+private struct SmartListEmptyState: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(title, systemImage: "tray")
+        } description: {
+            Text(message)
+        }
+        .listRowSeparator(.hidden)
     }
 }
 
