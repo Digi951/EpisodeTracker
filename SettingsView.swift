@@ -75,7 +75,6 @@ struct SettingsView: View {
 
             if showsInternalSyncControls {
                 SettingsSyncDiagnosticsSection(
-                    prefersICloudSync: $prefersICloudSync,
                     containerModeTitle: containerMode.debugTitle,
                     runtimeModeDebugTitle: runtimeModeDebugTitle,
                     cloudGuardEnabled: cloudGuardEnabled,
@@ -472,7 +471,6 @@ private struct SettingsSyncDiagnosticsSection: View {
 
     var body: some View {
         Section {
-            Toggle("Cloud-Sync testen", isOn: $prefersICloudSync)
             SettingsValueRow(label: "Angeforderter Modus", value: containerModeTitle)
             SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
             SettingsValueRow(label: "Interner Schutzschalter", value: cloudGuardEnabled ? "Aktiv" : "Aus")
