@@ -15,7 +15,9 @@ struct CatalogCacheStore {
     private let remoteCatalogDirectoryURL: URL
 
     init(fileManager: FileManager = .default) {
-        let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fatalError("Application Support directory unavailable")
+        }
         let directoryURL = appSupportURL.appendingPathComponent("EpisodeTracker", isDirectory: true)
         try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 

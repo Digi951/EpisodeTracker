@@ -69,6 +69,10 @@ struct SettingsView: View {
                 onReset: resetDisplaySettings
             )
 
+            SettingsSyncSection(
+                prefersICloudSync: $prefersICloudSync
+            )
+
             if showsInternalSyncControls {
                 SettingsSyncDiagnosticsSection(
                     prefersICloudSync: $prefersICloudSync,
@@ -440,9 +444,22 @@ private struct SettingsResetSection: View {
     }
 }
 
+private struct SettingsSyncSection: View {
+    @Binding var prefersICloudSync: Bool
+
+    var body: some View {
+        Section {
+            Toggle("iCloud-Sync", isOn: $prefersICloudSync)
+        } header: {
+            Text("Sync")
+        } footer: {
+            Text("Cloud-Sync wird erst nach dem nächsten App-Start aktiv.")
+        }
+    }
+}
+
 #if DEBUG
 private struct SettingsSyncDiagnosticsSection: View {
-    @Binding var prefersICloudSync: Bool
     let containerModeTitle: String
     let runtimeModeDebugTitle: String
     let cloudGuardEnabled: Bool

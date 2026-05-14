@@ -45,7 +45,7 @@ enum AppModelContainerFactory {
         var errorDescription: String? {
             switch self {
             case .missingICloudAccount:
-                return "Kein aktiver iCloud-Account verfuegbar. Cloud-Sync bleibt lokal, bis iCloud auf diesem Geraet verfuegbar ist."
+                return "Kein aktiver iCloud-Account verfügbar. Cloud-Sync bleibt lokal, bis iCloud auf diesem Gerät verfügbar ist."
             }
         }
     }
@@ -205,7 +205,9 @@ enum AppModelContainerFactory {
     }
 
     static func persistentStoreURL(fileManager: FileManager = .default) -> URL {
-        let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fatalError("Application Support directory unavailable")
+        }
         let storeDirectoryURL = appSupportURL.appendingPathComponent("EpisodeTracker", isDirectory: true)
         return storeDirectoryURL.appendingPathComponent("EpisodeTracker.store")
     }

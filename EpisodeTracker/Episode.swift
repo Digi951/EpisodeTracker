@@ -14,7 +14,7 @@ final class Episode {
     var listenCount: Int = 0
     var lastListenedAt: Date?
     @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
-    @Relationship(inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
+    @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
 
     init(
         id: UUID = UUID(),

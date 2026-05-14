@@ -573,8 +573,8 @@ enum AppearanceMode: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .light: "Light"
-        case .dark: "Dark"
+        case .light: "Hell"
+        case .dark: "Dunkel"
         case .system: "System"
         }
     }

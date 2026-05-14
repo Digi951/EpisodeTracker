@@ -19,7 +19,6 @@ struct WidgetSyncObserverView: View {
                 String(episode.releaseYear),
                 universeName,
                 episode.isListened ? "1" : "0",
-                String(episode.listenCount),
                 rating,
                 listenedAt,
             ].joined(separator: "|")
