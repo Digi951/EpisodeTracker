@@ -179,42 +179,10 @@ enum EpisodeListOrganizer {
         sortOrder: EpisodeSortOrder
     ) -> [Episode] {
         var result = episodes
-
-        if !searchText.isEmpty {
-            result = result.filter { episode in
-                episode.title.localizedCaseInsensitiveContains(searchText)
-                || String(episode.episodeNumber).contains(searchText)
-            }
-        }
-
-        if let filterUniverse {
-            result = result.filter { $0.universe == filterUniverse }
-        }
-
-        if let filterMood {
-            result = result.filter { episode in
-                episode.moods.contains(where: { $0.matches(filterMood) })
-            }
-        }
-
-        switch statusFilter {
-        case .all:
-            break
-        case .open:
-            result = result.filter { !$0.isListened }
-        case .listened:
-            result = result.filter(\.isListened)
-        case .rated:
-            result = result.filter { $0.rating != nil }
-        case .noted:
-            result = result.filter { episode in
-                guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
-                    return false
-                }
-                return !note.isEmpty
-            }
-        }
-
+        result = applySearch(searchText, to: result)
+        result = applyUniverseFilter(filterUniverse, to: result)
+        result = applyMoodFilter(filterMood, to: result)
+        result = applyStatusFilter(statusFilter, to: result)
         sort(&result, by: sortOrder)
         return result
     }
@@ -231,17 +199,21 @@ enum EpisodeListOrganizer {
             return []
         }
 
+        if let multiUniverseGroups = multiUniverseNumberGroupsIfNeeded(
+            for: episodes,
+            sortOrder: sortOrder,
+            filterUniverse: filterUniverse,
+            universeCount: universeCount,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: preferCatalogTotals
+        ) {
+            return multiUniverseGroups
+        }
+
         switch sortOrder {
         case .recentlyPlayed:
             return listenedStateGroups(for: episodes)
         case .number:
-            if filterUniverse == nil && universeCount > 1 {
-                return universeGroups(
-                    for: episodes,
-                    catalogTotalsByUniverse: catalogTotalsByUniverse,
-                    preferCatalogTotals: preferCatalogTotals
-                )
-            }
             return numberRangeGroups(for: episodes)
         case .title:
             return titleGroups(for: episodes)
@@ -250,6 +222,48 @@ enum EpisodeListOrganizer {
         case .releaseYear:
             return releaseYearGroups(for: episodes)
         }
+    }
+
+    private static func applySearch(_ searchText: String, to episodes: [Episode]) -> [Episode] {
+        guard !searchText.isEmpty else { return episodes }
+        return episodes.filter { episode in
+            episode.title.localizedCaseInsensitiveContains(searchText)
+            || String(episode.episodeNumber).contains(searchText)
+        }
+    }
+
+    private static func applyUniverseFilter(_ universe: Universe?, to episodes: [Episode]) -> [Episode] {
+        guard let universe else { return episodes }
+        return episodes.filter { $0.universe == universe }
+    }
+
+    private static func applyMoodFilter(_ mood: Mood?, to episodes: [Episode]) -> [Episode] {
+        guard let mood else { return episodes }
+        return episodes.filter { episode in
+            episode.moods.contains(where: { $0.matches(mood) })
+        }
+    }
+
+    private static func applyStatusFilter(_ statusFilter: EpisodeStatusFilter, to episodes: [Episode]) -> [Episode] {
+        switch statusFilter {
+        case .all:
+            return episodes
+        case .open:
+            return episodes.filter { !$0.isListened }
+        case .listened:
+            return episodes.filter(\.isListened)
+        case .rated:
+            return episodes.filter { $0.rating != nil }
+        case .noted:
+            return episodes.filter(hasNonEmptyNote)
+        }
+    }
+
+    private static func hasNonEmptyNote(_ episode: Episode) -> Bool {
+        guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            return false
+        }
+        return !note.isEmpty
     }
 
     static func shouldGroup(
@@ -304,6 +318,25 @@ enum EpisodeListOrganizer {
                 return $0.episodeNumber < $1.episodeNumber
             }
         }
+    }
+
+    private static func multiUniverseNumberGroupsIfNeeded(
+        for episodes: [Episode],
+        sortOrder: EpisodeSortOrder,
+        filterUniverse: Universe?,
+        universeCount: Int,
+        catalogTotalsByUniverse: [String: Int],
+        preferCatalogTotals: Bool
+    ) -> [EpisodeListGroup]? {
+        guard sortOrder == .number, filterUniverse == nil, universeCount > 1 else {
+            return nil
+        }
+
+        return universeGroups(
+            for: episodes,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: preferCatalogTotals
+        )
     }
 
     private static func universeGroups(
