@@ -65,6 +65,8 @@ struct SettingsView: View {
                 onExport: exportBackup,
                 onImport: { showingImporter = true }
             )
+            SettingsStreamingSection()
+
             SettingsResetSection(
                 onReset: resetDisplaySettings
             )
@@ -441,6 +443,31 @@ private struct SettingsResetSection: View {
             Button(role: .destructive, action: onReset) {
                 Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
             }
+        }
+    }
+}
+
+private struct SettingsStreamingSection: View {
+    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
+
+    private var selectedService: Binding<StreamingService> {
+        Binding(
+            get: { StreamingService(rawValue: preferredServiceRaw) ?? .spotify },
+            set: { preferredServiceRaw = $0.rawValue }
+        )
+    }
+
+    var body: some View {
+        Section {
+            Picker("Streaming-Dienst", selection: selectedService) {
+                ForEach(StreamingService.allCases) { service in
+                    Text(service.displayName).tag(service)
+                }
+            }
+        } header: {
+            Text("Streaming")
+        } footer: {
+            Text("In der Folgendetailansicht kannst du direkt nach der Folge im gewählten Dienst suchen.")
         }
     }
 }
