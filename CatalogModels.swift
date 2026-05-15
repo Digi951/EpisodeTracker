@@ -110,6 +110,11 @@ enum CatalogSourceRegistry {
             id: "die-drei-ausrufezeichen",
             name: "Die drei !!!",
             url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_exclamation_marks.json")!
+        ),
+        ManagedCatalogSource(
+            id: "tkkg",
+            name: "TKKG",
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/tkkg.json")!
         )
     ]
 }
