@@ -2,11 +2,17 @@ import Foundation
 import SwiftData
 
 enum AppDataBootstrapper {
+    static let schemaVersionKey = "schemaVersion"
+    static let currentSchemaVersion = 3
+
     @MainActor
     static func bootstrap(
         container: ModelContainer,
-        usesCloudSync: Bool
+        usesCloudSync: Bool,
+        userDefaults: UserDefaults = .standard
     ) async {
+        let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
+
         seedMoodsIfNeeded(container: container)
         seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
@@ -17,12 +23,34 @@ enum AppDataBootstrapper {
             repairCloudSyncReadinessIfNeeded(container: container)
         }
 
+        if lastSchemaVersion < 2 {
+            repairPostMigrationIfNeeded(container: container)
+        }
+
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
         prepareSyncDataIfNeeded(container: container)
 
         if usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: container)
+        }
+
+        userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
+        AppModelContainerFactory.removePreMigrationBackup()
+    }
+
+    @MainActor
+    static func repairPostMigrationIfNeeded(container: ModelContainer) {
+        let context = container.mainContext
+        let episodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
+
+        var didChange = false
+        for episode in episodes where episode.id == UUID(uuidString: "00000000-0000-0000-0000-000000000000") {
+            episode.id = UUID()
+            didChange = true
+        }
+        if didChange {
+            try? context.save()
         }
     }
 
