@@ -1,8 +1,11 @@
 import Foundation
 
 struct CatalogParser {
-    private struct CollectionCatalogDocument: Decodable {
+    struct CatalogDocument: Decodable {
         let collectionName: String?
+        let version: Int?
+        let lastUpdated: String?
+        let entryCount: Int?
         let entries: [CatalogEntry]
     }
 
@@ -13,21 +16,29 @@ struct CatalogParser {
                     number: $0.number,
                     title: $0.title,
                     releaseYear: $0.releaseYear,
-                    collectionName: $0.collectionName ?? fallbackCollectionName
+                    collectionName: $0.collectionName ?? fallbackCollectionName,
+                    spotifyURL: $0.spotifyURL,
+                    appleMusicURL: $0.appleMusicURL
                 )
             }
         }
 
-        let document = try JSONDecoder().decode(CollectionCatalogDocument.self, from: data)
+        let document = try JSONDecoder().decode(CatalogDocument.self, from: data)
         let collection = document.collectionName ?? fallbackCollectionName
         return document.entries.map {
             CatalogEntry(
                 number: $0.number,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
-                collectionName: $0.collectionName ?? collection
+                collectionName: $0.collectionName ?? collection,
+                spotifyURL: $0.spotifyURL,
+                appleMusicURL: $0.appleMusicURL
             )
         }
+    }
+
+    func parseCatalogDocument(from data: Data) throws -> CatalogDocument {
+        try JSONDecoder().decode(CatalogDocument.self, from: data)
     }
 
     func parseManifest(from data: Data) throws -> CatalogManifest {
