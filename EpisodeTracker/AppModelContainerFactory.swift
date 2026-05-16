@@ -25,6 +25,13 @@ enum AppModelContainerMode: Equatable {
     }
 }
 
+struct AppModelContainerSet {
+    let primary: ModelContainer
+    let localPersistent: ModelContainer?
+    let cloudPersistent: ModelContainer?
+    let runtimeMode: AppModelContainerMode
+}
+
 enum AppModelContainerFactory {
     static let cloudSyncPreferenceKey = "prefersICloudSync"
     static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
@@ -81,20 +88,61 @@ enum AppModelContainerFactory {
         return rawValue == "1" || rawValue == "true" || rawValue == "yes"
     }
 
+    static func showsInternalSyncControls(
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> Bool {
+#if DEBUG
+        let isPreviewProcess =
+            environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+            || environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1"
+
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return isPreviewProcess
+        #endif
+#else
+        return false
+#endif
+    }
+
     static func makeSharedContainer(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         fileManager: FileManager = .default,
         userDefaults: UserDefaults = .standard
     ) -> ModelContainer {
+        makeSharedContainerSet(
+            environment: environment,
+            fileManager: fileManager,
+            userDefaults: userDefaults
+        ).primary
+    }
+
+    static func makeSharedContainerSet(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        fileManager: FileManager = .default,
+        userDefaults: UserDefaults = .standard
+    ) -> AppModelContainerSet {
         let schema = schema()
+        let localPersistentContainer = makePersistentContainer(schema: schema, fileManager: fileManager)
 
         switch resolveMode(environment: environment, userDefaults: userDefaults) {
         case .previewInMemory:
             recordRuntimeMode(.previewInMemory, userDefaults: userDefaults)
-            return makeInMemoryContainer(schema: schema)
+            return AppModelContainerSet(
+                primary: makeInMemoryContainer(schema: schema),
+                localPersistent: nil,
+                cloudPersistent: nil,
+                runtimeMode: .previewInMemory
+            )
         case .localPersistent:
             recordRuntimeMode(.localPersistent, userDefaults: userDefaults)
-            return makePersistentContainer(schema: schema, fileManager: fileManager)
+            return AppModelContainerSet(
+                primary: localPersistentContainer,
+                localPersistent: localPersistentContainer,
+                cloudPersistent: nil,
+                runtimeMode: .localPersistent
+            )
         case .cloudPersistent(let containerIdentifier):
             guard isICloudIdentityAvailable(fileManager: fileManager) else {
 #if DEBUG
@@ -103,15 +151,25 @@ enum AppModelContainerFactory {
                     cloudStartupError: CloudStartupPreflightError.missingICloudAccount,
                     userDefaults: userDefaults
                 )
-                return makePersistentContainer(schema: schema, fileManager: fileManager)
+                return AppModelContainerSet(
+                    primary: localPersistentContainer,
+                    localPersistent: localPersistentContainer,
+                    cloudPersistent: nil,
+                    runtimeMode: .localPersistent
+                )
 #else
                 recordRuntimeMode(.localPersistent, userDefaults: userDefaults)
-                return makePersistentContainer(schema: schema, fileManager: fileManager)
+                return AppModelContainerSet(
+                    primary: localPersistentContainer,
+                    localPersistent: localPersistentContainer,
+                    cloudPersistent: nil,
+                    runtimeMode: .localPersistent
+                )
 #endif
             }
 
             do {
-                let container = try makeCloudContainer(
+                let cloudContainer = try makeCloudContainer(
                     schema: schema,
                     fileManager: fileManager,
                     containerIdentifier: containerIdentifier
@@ -120,7 +178,12 @@ enum AppModelContainerFactory {
                     .cloudPersistent(containerIdentifier: containerIdentifier),
                     userDefaults: userDefaults
                 )
-                return container
+                return AppModelContainerSet(
+                    primary: cloudContainer,
+                    localPersistent: localPersistentContainer,
+                    cloudPersistent: cloudContainer,
+                    runtimeMode: .cloudPersistent(containerIdentifier: containerIdentifier)
+                )
             } catch {
 #if DEBUG
                 recordRuntimeMode(
@@ -128,7 +191,12 @@ enum AppModelContainerFactory {
                     cloudStartupError: error,
                     userDefaults: userDefaults
                 )
-                return makePersistentContainer(schema: schema, fileManager: fileManager)
+                return AppModelContainerSet(
+                    primary: localPersistentContainer,
+                    localPersistent: localPersistentContainer,
+                    cloudPersistent: nil,
+                    runtimeMode: .localPersistent
+                )
 #else
                 fatalError("Could not create CloudKit ModelContainer for \(containerIdentifier): \(error)")
 #endif

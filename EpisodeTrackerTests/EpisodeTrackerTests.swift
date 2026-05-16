@@ -19,6 +19,16 @@ final class EpisodeTrackerTests: XCTestCase {
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 
+    private func makeInMemoryContainer() throws -> ModelContainer {
+        try ModelContainer(
+            for: AppModelContainerFactory.schema(),
+            configurations: ModelConfiguration(
+                schema: AppModelContainerFactory.schema(),
+                isStoredInMemoryOnly: true
+            )
+        )
+    }
+
     func testParsesWrappedCatalogEntriesWithFallbackCollection() throws {
         let json = """
         {
@@ -117,6 +127,24 @@ final class EpisodeTrackerTests: XCTestCase {
         let mode = AppModelContainerFactory.resolveMode(environment: [:])
 
         XCTAssertEqual(mode, .localPersistent)
+    }
+
+    func testContainerFactoryBuildsContainerSetForLocalMode() {
+        let containerSet = AppModelContainerFactory.makeSharedContainerSet(environment: [:])
+
+        XCTAssertEqual(containerSet.runtimeMode, .localPersistent)
+        XCTAssertNotNil(containerSet.localPersistent)
+        XCTAssertNil(containerSet.cloudPersistent)
+    }
+
+    func testContainerFactoryBuildsContainerSetForPreviewMode() {
+        let containerSet = AppModelContainerFactory.makeSharedContainerSet(
+            environment: ["XCODE_RUNNING_FOR_PREVIEWS": "1"]
+        )
+
+        XCTAssertEqual(containerSet.runtimeMode, .previewInMemory)
+        XCTAssertNil(containerSet.localPersistent)
+        XCTAssertNil(containerSet.cloudPersistent)
     }
 
     func testContainerFactoryKeepsCloudModeDisabledWithoutGuard() {
@@ -240,6 +268,328 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertNotEqual(episode.resolvedSyncKey, originalSyncKey)
         XCTAssertEqual(episode.resolvedSyncKey, "episode:universe:die drei ???#1")
+    }
+
+    func testLocalLibrarySnapshotCapturesResolvedSyncKeysAndRelationships() throws {
+        let container = try ModelContainer(
+            for: AppModelContainerFactory.schema(),
+            configurations: ModelConfiguration(schema: AppModelContainerFactory.schema(), isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let episode = Episode(
+            episodeNumber: 42,
+            title: "und der weisse Leopard",
+            releaseYear: 1987,
+            personalNote: "Merken",
+            isListened: true,
+            rating: 5,
+            listenCount: 3,
+            lastListenedAt: Date(timeIntervalSince1970: 1_000),
+            universe: universe,
+            moods: [mood]
+        )
+
+        context.insert(universe)
+        context.insert(mood)
+        context.insert(episode)
+
+        let snapshot = LocalLibrarySnapshot.capture(context: context)
+
+        XCTAssertEqual(snapshot.universes, [
+            .init(syncKey: "universe:die drei ???", name: "Die drei ???")
+        ])
+        XCTAssertEqual(snapshot.moods, [
+            .init(syncKey: "mood:spannend", name: "Spannend", iconName: "⚡")
+        ])
+        XCTAssertEqual(snapshot.episodes.count, 1)
+        XCTAssertEqual(snapshot.episodes[0].syncKey, "episode:universe:die drei ???#42")
+        XCTAssertEqual(snapshot.episodes[0].universeSyncKey, "universe:die drei ???")
+        XCTAssertEqual(snapshot.episodes[0].moodSyncKeys, ["mood:spannend"])
+    }
+
+    func testSyncMigrationValidatorFindsDuplicateEpisodeKeysAndMissingReferences() {
+        let snapshot = LocalLibrarySnapshot(
+            universes: [],
+            moods: [],
+            episodes: [
+                .init(
+                    syncKey: "episode:universe:die drei ???#1",
+                    episodeNumber: 1,
+                    title: "A",
+                    releaseYear: 1979,
+                    personalNote: nil,
+                    isListened: false,
+                    rating: nil,
+                    listenCount: 0,
+                    lastListenedAt: nil,
+                    universeSyncKey: "universe:die drei ???",
+                    moodSyncKeys: ["mood:spannend"]
+                ),
+                .init(
+                    syncKey: "episode:universe:die drei ???#1",
+                    episodeNumber: 1,
+                    title: "B",
+                    releaseYear: 1979,
+                    personalNote: nil,
+                    isListened: false,
+                    rating: nil,
+                    listenCount: 0,
+                    lastListenedAt: nil,
+                    universeSyncKey: nil,
+                    moodSyncKeys: []
+                )
+            ]
+        )
+
+        let issues = SyncMigrationValidator.validate(snapshot: snapshot)
+
+        XCTAssertEqual(
+            Set(issues),
+            Set([
+                .duplicateEpisodeSyncKey("episode:universe:die drei ???#1"),
+                .missingUniverseReference(
+                    episodeSyncKey: "episode:universe:die drei ???#1",
+                    universeSyncKey: "universe:die drei ???"
+                ),
+                .missingMoodReference(
+                    episodeSyncKey: "episode:universe:die drei ???#1",
+                    moodSyncKey: "mood:spannend"
+                ),
+            ])
+        )
+    }
+
+    func testSyncMigrationEpisodeMergerUsesConservativeListenCountAndLatestDate() {
+        let local = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: "Kurze Notiz",
+            isListened: false,
+            rating: 4,
+            listenCount: 2,
+            lastListenedAt: Date(timeIntervalSince1970: 1_000),
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: ["mood:spannend"]
+        )
+        let cloud = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "",
+            releaseYear: 0,
+            personalNote: "Das ist die deutlich laengere Notiz",
+            isListened: true,
+            rating: 5,
+            listenCount: 5,
+            lastListenedAt: Date(timeIntervalSince1970: 2_000),
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: ["mood:gruselig"]
+        )
+
+        let merged = SyncMigrationEpisodeMerger.merge(local: local, cloud: cloud)
+
+        XCTAssertEqual(merged.title, "und der Super-Papagei")
+        XCTAssertEqual(merged.releaseYear, 1979)
+        XCTAssertEqual(merged.personalNote, "Das ist die deutlich laengere Notiz")
+        XCTAssertTrue(merged.isListened)
+        XCTAssertEqual(merged.rating, 4)
+        XCTAssertEqual(merged.listenCount, 5)
+        XCTAssertEqual(merged.lastListenedAt, Date(timeIntervalSince1970: 2_000))
+        XCTAssertEqual(merged.moodSyncKeys, ["mood:gruselig", "mood:spannend"])
+    }
+
+    func testSyncMigrationStateStorePersistsCompletionMarker() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        XCTAssertFalse(
+            SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: defaults)
+        )
+
+        SyncMigrationStateStore.markLocalToCloudMigrationCompleted(userDefaults: defaults)
+
+        XCTAssertTrue(
+            SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: defaults)
+        )
+    }
+
+    func testSyncMigrationCoordinatorImportsSnapshotIntoEmptyTarget() throws {
+        let sourceContainer = try makeInMemoryContainer()
+        let sourceContext = sourceContainer.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let episode = Episode(
+            episodeNumber: 7,
+            title: "und der unheimliche Drache",
+            releaseYear: 1979,
+            personalNote: "Merken",
+            isListened: true,
+            rating: 4,
+            listenCount: 2,
+            lastListenedAt: Date(timeIntervalSince1970: 1_000),
+            universe: universe,
+            moods: [mood]
+        )
+        sourceContext.insert(universe)
+        sourceContext.insert(mood)
+        sourceContext.insert(episode)
+
+        let snapshot = LocalLibrarySnapshot.capture(context: sourceContext)
+
+        let targetContainer = try makeInMemoryContainer()
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let report = try SyncMigrationCoordinator.migrate(
+            snapshot: snapshot,
+            into: targetContainer.mainContext,
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(report.migratedUniverseCount, 1)
+        XCTAssertEqual(report.migratedMoodCount, 1)
+        XCTAssertEqual(report.migratedEpisodeCount, 1)
+        XCTAssertTrue(report.validationIssues.isEmpty)
+        XCTAssertTrue(report.markedCompleted)
+        XCTAssertTrue(SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: defaults))
+
+        let importedSnapshot = LocalLibrarySnapshot.capture(context: targetContainer.mainContext)
+        XCTAssertEqual(importedSnapshot, snapshot)
+    }
+
+    func testSyncMigrationCoordinatorMergesIntoExistingTargetConservatively() throws {
+        let sourceSnapshot = LocalLibrarySnapshot(
+            universes: [
+                .init(syncKey: "universe:die drei ???", name: "Die drei ???")
+            ],
+            moods: [
+                .init(syncKey: "mood:spannend", name: "Spannend", iconName: "⚡")
+            ],
+            episodes: [
+                .init(
+                    syncKey: "episode:universe:die drei ???#1",
+                    episodeNumber: 1,
+                    title: "und der Super-Papagei",
+                    releaseYear: 1979,
+                    personalNote: "Kurz",
+                    isListened: false,
+                    rating: 4,
+                    listenCount: 2,
+                    lastListenedAt: Date(timeIntervalSince1970: 1_000),
+                    universeSyncKey: "universe:die drei ???",
+                    moodSyncKeys: ["mood:spannend"]
+                )
+            ]
+        )
+
+        let targetContainer = try makeInMemoryContainer()
+        let targetContext = targetContainer.mainContext
+
+        let existingUniverse = Universe(name: "Die drei ???")
+        let existingMood = Mood(name: "Gruselig", iconName: "😱")
+        let existingEpisode = Episode(
+            episodeNumber: 1,
+            title: "",
+            releaseYear: 0,
+            syncKey: "episode:universe:die drei ???#1",
+            personalNote: "Das ist die deutlich laengere Notiz",
+            isListened: true,
+            rating: 5,
+            listenCount: 5,
+            lastListenedAt: Date(timeIntervalSince1970: 2_000),
+            universe: existingUniverse,
+            moods: [existingMood]
+        )
+
+        targetContext.insert(existingUniverse)
+        targetContext.insert(existingMood)
+        targetContext.insert(existingEpisode)
+
+        let report = try SyncMigrationCoordinator.migrate(
+            snapshot: sourceSnapshot,
+            into: targetContext,
+            userDefaults: UserDefaults(suiteName: "\(#function)-defaults")!
+        )
+
+        XCTAssertTrue(report.validationIssues.isEmpty)
+
+        let mergedSnapshot = LocalLibrarySnapshot.capture(context: targetContext)
+        XCTAssertEqual(mergedSnapshot.universes.count, 1)
+        XCTAssertEqual(mergedSnapshot.moods.count, 2)
+        XCTAssertEqual(mergedSnapshot.episodes.count, 1)
+        XCTAssertEqual(mergedSnapshot.episodes[0].title, "und der Super-Papagei")
+        XCTAssertEqual(mergedSnapshot.episodes[0].releaseYear, 1979)
+        XCTAssertEqual(mergedSnapshot.episodes[0].personalNote, "Das ist die deutlich laengere Notiz")
+        XCTAssertTrue(mergedSnapshot.episodes[0].isListened)
+        XCTAssertEqual(mergedSnapshot.episodes[0].rating, 4)
+        XCTAssertEqual(mergedSnapshot.episodes[0].listenCount, 5)
+        XCTAssertEqual(mergedSnapshot.episodes[0].lastListenedAt, Date(timeIntervalSince1970: 2_000))
+        XCTAssertEqual(mergedSnapshot.episodes[0].moodSyncKeys, ["mood:gruselig", "mood:spannend"])
+    }
+
+    func testSyncMigrationReadinessRequiresContainersDataAndCleanSnapshot() throws {
+        let localContainer = try makeInMemoryContainer()
+        let localContext = localContainer.mainContext
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: universe,
+            moods: [mood]
+        )
+        localContext.insert(universe)
+        localContext.insert(mood)
+        localContext.insert(episode)
+
+        let cloudContainer = try makeInMemoryContainer()
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let readiness = SyncMigrationReadinessEvaluator.evaluate(
+            containerSet: AppModelContainerSet(
+                primary: localContainer,
+                localPersistent: localContainer,
+                cloudPersistent: cloudContainer,
+                runtimeMode: .localPersistent
+            ),
+            userDefaults: defaults
+        )
+
+        XCTAssertFalse(readiness.hasCompletedMigration)
+        XCTAssertTrue(readiness.hasLocalPersistentContainer)
+        XCTAssertTrue(readiness.hasCloudPersistentContainer)
+        XCTAssertEqual(readiness.localEpisodeCount, 1)
+        XCTAssertTrue(readiness.localValidationIssues.isEmpty)
+        XCTAssertTrue(readiness.canAttemptMigration)
+    }
+
+    func testSyncMigrationReadinessBlocksWhenAlreadyCompletedOrNoData() throws {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        SyncMigrationStateStore.markLocalToCloudMigrationCompleted(userDefaults: defaults)
+
+        let container = try makeInMemoryContainer()
+        let readiness = SyncMigrationReadinessEvaluator.evaluate(
+            containerSet: AppModelContainerSet(
+                primary: container,
+                localPersistent: container,
+                cloudPersistent: nil,
+                runtimeMode: .localPersistent
+            ),
+            userDefaults: defaults
+        )
+
+        XCTAssertTrue(readiness.hasCompletedMigration)
+        XCTAssertFalse(readiness.hasCloudPersistentContainer)
+        XCTAssertFalse(readiness.hasLocalData)
+        XCTAssertFalse(readiness.canAttemptMigration)
     }
 
     func testFreemiumPreparationDoesNotBlockCreationYet() {

@@ -137,6 +137,12 @@ struct SmartListDetailView: View {
                 },
                 onAddCatalogSuggestions: addCatalogSuggestions
             )
+        } else if smartList.isRandomList {
+            SmartListGroupedEpisodeContent(
+                displayedEpisodes: displayedEpisodes,
+                smartListDisplayName: smartList.displayName,
+                emptyMessage: emptyMessage
+            )
         } else {
             SmartListEpisodeContent(
                 displayedEpisodes: displayedEpisodes,
@@ -327,6 +333,40 @@ private struct SmartListEpisodeContent: View {
             ForEach(displayedEpisodes) { episode in
                 NavigationLink(value: episode) {
                     EpisodeRowView(episode: episode)
+                }
+            }
+        }
+    }
+}
+
+private struct SmartListGroupedEpisodeContent: View {
+    let displayedEpisodes: [Episode]
+    let smartListDisplayName: String
+    let emptyMessage: String
+
+    private var groupedEpisodes: [(universeName: String, episodes: [Episode])] {
+        let grouped = Dictionary(grouping: displayedEpisodes) { $0.universe?.name ?? "Ohne Sammlung" }
+        return grouped.keys.sorted().map { name in
+            (universeName: name, episodes: grouped[name]!.sorted { $0.episodeNumber < $1.episodeNumber })
+        }
+    }
+
+    var body: some View {
+        if displayedEpisodes.isEmpty {
+            SmartListEmptyState(
+                title: smartListDisplayName,
+                message: emptyMessage
+            )
+        } else {
+            ForEach(groupedEpisodes, id: \.universeName) { group in
+                Section {
+                    ForEach(group.episodes) { episode in
+                        NavigationLink(value: episode) {
+                            EpisodeRowView(episode: episode)
+                        }
+                    }
+                } header: {
+                    Text(group.universeName)
                 }
             }
         }

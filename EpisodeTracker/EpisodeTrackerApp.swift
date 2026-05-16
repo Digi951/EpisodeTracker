@@ -3,13 +3,17 @@ import SwiftData
 
 @main
 struct EpisodeTrackerApp: App {
-    var sharedModelContainer: ModelContainer = AppModelContainerFactory.makeSharedContainer()
+    private let containerSet: AppModelContainerSet
+    @StateObject private var containerAccess: AppContainerAccess
 
     private var usesCloudSync: Bool {
-        UserDefaults.standard.string(forKey: AppModelContainerFactory.runtimeModeDebugTitleKey)
-            == AppModelContainerMode.cloudPersistent(
-                containerIdentifier: AppModelContainerFactory.cloudContainerIdentifier
-            ).debugTitle
+        containerSet.runtimeMode.usesCloudSync
+    }
+
+    init() {
+        let containerSet = AppModelContainerFactory.makeSharedContainerSet()
+        self.containerSet = containerSet
+        _containerAccess = StateObject(wrappedValue: AppContainerAccess(containerSet: containerSet))
     }
 
     var body: some Scene {
@@ -20,12 +24,13 @@ struct EpisodeTrackerApp: App {
             }
             .task { @MainActor in
                 await AppDataBootstrapper.bootstrap(
-                    container: sharedModelContainer,
+                    container: containerSet.primary,
                     usesCloudSync: usesCloudSync
                 )
             }
+            .environmentObject(containerAccess)
         }
         .defaultSize(width: 1180, height: 820)
-        .modelContainer(sharedModelContainer)
+        .modelContainer(containerSet.primary)
     }
 }

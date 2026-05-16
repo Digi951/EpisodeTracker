@@ -242,9 +242,14 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             }
     }
 
-    static func randomEpisodes(from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
+    static func randomEpisodes(from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10, maxPerUniverse: Int = 3) -> [Episode] {
         let filtered = filter.apply(to: episodes)
-        return Array(filtered.shuffled().prefix(count))
+        let grouped = Dictionary(grouping: filtered) { $0.universe?.name ?? "" }
+        var picked: [Episode] = []
+        for (_, group) in grouped {
+            picked.append(contentsOf: group.shuffled().prefix(maxPerUniverse))
+        }
+        return Array(picked.shuffled().prefix(count))
     }
 
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
