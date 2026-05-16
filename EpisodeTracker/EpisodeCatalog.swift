@@ -64,7 +64,8 @@ final class EpisodeCatalog {
         lastRefreshError = nil
         await refreshManifestIfNeeded(force: force)
 
-        for source in managedSources {
+        let activeCatalogIDs = ActiveCatalogStore().activeIDs
+        for source in managedSources where activeCatalogIDs.contains(source.id) {
             await refreshManagedCatalogIfNeeded(source: source, force: force)
         }
         reload()

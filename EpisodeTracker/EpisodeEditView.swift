@@ -56,6 +56,25 @@ struct EpisodeEditView: View {
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
         }
     }
+    private var activeUniverses: [Universe] {
+        let activeIDs = ActiveCatalogStore().activeIDs
+        let activeManagedNames = Set(
+            CatalogSourceRegistry.managedSources
+                .filter { activeIDs.contains($0.id) }
+                .map { $0.name.lowercased() }
+        )
+        return universes.filter { universe in
+            let key = universe.name.lowercased()
+            let isManagedSource = CatalogSourceRegistry.managedSources.contains {
+                $0.name.lowercased() == key
+            }
+            if isManagedSource {
+                return activeManagedNames.contains(key)
+            }
+            return true // custom universes always shown
+        }
+    }
+
     private var preferredCatalogUniverse: Universe? {
         let sourceNames = CatalogSourceRegistry.managedSources.map(\.name)
         if let bundledUniverse = universes.first(where: {
@@ -72,7 +91,7 @@ struct EpisodeEditView: View {
     var body: some View {
         List {
             EpisodeFormSection(
-                universes: universes,
+                universes: activeUniverses,
                 selectedUniverse: $selectedUniverse,
                 episodeNumberText: $episodeNumberText,
                 title: $title,

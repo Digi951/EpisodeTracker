@@ -601,14 +601,12 @@ private struct CatalogManagementView: View {
     @State private var validationMessage: String?
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
-    @State private var catalogStatuses: [String: CatalogCacheStatus] = [:]
+    @State private var activeCatalogIDs: Set<String> = []
+
+    private let activeCatalogStore = ActiveCatalogStore()
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
         CatalogSourceRegistry.managedSources
-    }
-
-    private var predefinedUniverseNames: [String] {
-        predefinedCatalogSources.map(\.name)
     }
 
     private var existingUniverseNameKeys: Set<String> {
@@ -616,15 +614,37 @@ private struct CatalogManagementView: View {
     }
 
     private var lastGlobalRefreshText: String? {
-        let dates = catalogStatuses.values.compactMap(\.lastCheckedAt)
-        guard let oldest = dates.min() else { return nil }
-        return "Zuletzt aktualisiert: \(oldest.formatted(date: .abbreviated, time: .shortened))"
+        let store = CatalogCacheStore()
+        let dates = predefinedCatalogSources.compactMap { source -> Date? in
+            store.loadRemoteCatalogStatus(universeName: source.name, cacheKey: source.id).lastCheckedAt
+        }
+        guard let latest = dates.max() else { return nil }
+        return "Zuletzt aktualisiert: \(latest.formatted(date: .abbreviated, time: .shortened))"
     }
 
     var body: some View {
         List {
             Section {
-                ForEach(universes) { universe in
+                ForEach(predefinedCatalogSources, id: \.id) { source in
+                    CatalogToggleRow(
+                        source: source,
+                        episodeCount: episodeCount(for: source.name),
+                        isActive: activeCatalogIDs.contains(source.id),
+                        onToggle: { newValue in
+                            toggleCatalog(source, active: newValue)
+                        }
+                    )
+                }
+            } header: {
+                Text("Verfügbare Kataloge")
+            } footer: {
+                Text("Aktivierte Kataloge werden automatisch aktualisiert und liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
+            }
+
+            Section {
+                ForEach(universes.filter { universe in
+                    !predefinedCatalogSources.contains { $0.name.caseInsensitiveCompare(universe.name) == .orderedSame }
+                }) { universe in
                     HStack {
                         Text(universe.name)
                         Spacer()
@@ -633,7 +653,7 @@ private struct CatalogManagementView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .onDelete(perform: deleteUniverses)
+                .onDelete(perform: deleteCustomUniverses)
 
                 HStack {
                     TextField("Neuer Katalog", text: $newUniverseName)
@@ -649,27 +669,12 @@ private struct CatalogManagementView: View {
                         .foregroundStyle(.red)
                 }
             } header: {
-                Text("Meine Kataloge")
+                Text("Eigene Kataloge")
             } footer: {
                 Text("Nur leere Kataloge können gelöscht werden.")
             }
 
             Section {
-                ForEach(predefinedCatalogSources, id: \.id) { source in
-                    let universeName = source.name
-                    let isAdded = existingUniverseNameKeys.contains(universeName.lowercased())
-                    Button {
-                        addPredefinedUniverse(named: universeName)
-                    } label: {
-                        CatalogSourceStatusRow(
-                            name: universeName,
-                            isAdded: isAdded,
-                            status: catalogStatuses[universeName]
-                        )
-                    }
-                    .disabled(isAdded)
-                }
-
                 Button {
                     refreshAllManagedCatalogs()
                 } label: {
@@ -681,27 +686,34 @@ private struct CatalogManagementView: View {
                         .font(.footnote)
                         .foregroundStyle(catalogStatusIsError ? .red : .secondary)
                 }
-            } header: {
-                Text("Verfügbare Kataloge")
             } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Kataloge liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
-                    if let lastGlobalRefreshText {
-                        Text(lastGlobalRefreshText)
-                    }
+                if let lastGlobalRefreshText {
+                    Text(lastGlobalRefreshText)
                 }
             }
         }
         .navigationTitle("Kataloge")
         .onAppear {
-            reloadCatalogStatuses()
+            activeCatalogIDs = activeCatalogStore.activeIDs
         }
     }
 
-    private func addPredefinedUniverse(named universeName: String) {
-        let key = universeName.lowercased()
-        guard !existingUniverseNameKeys.contains(key) else { return }
-        modelContext.insert(Universe(name: universeName))
+    private func episodeCount(for universeName: String) -> Int {
+        universes.first(where: {
+            $0.name.caseInsensitiveCompare(universeName) == .orderedSame
+        })?.episodes.count ?? 0
+    }
+
+    private func toggleCatalog(_ source: ManagedCatalogSource, active: Bool) {
+        activeCatalogStore.setActive(source.id, active: active)
+        activeCatalogIDs = activeCatalogStore.activeIDs
+
+        if active {
+            let key = source.name.lowercased()
+            if !existingUniverseNameKeys.contains(key) {
+                modelContext.insert(Universe(name: source.name))
+            }
+        }
     }
 
     private func addCustomUniverse() {
@@ -722,11 +734,14 @@ private struct CatalogManagementView: View {
         newUniverseName = ""
     }
 
-    private func deleteUniverses(at offsets: IndexSet) {
+    private func deleteCustomUniverses(at offsets: IndexSet) {
         validationMessage = nil
+        let customUniverses = universes.filter { universe in
+            !predefinedCatalogSources.contains { $0.name.caseInsensitiveCompare(universe.name) == .orderedSame }
+        }
 
         for index in offsets {
-            let universe = universes[index]
+            let universe = customUniverses[index]
             if universe.episodes.isEmpty {
                 modelContext.delete(universe)
             } else {
@@ -739,64 +754,44 @@ private struct CatalogManagementView: View {
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
             await MainActor.run {
-                reloadCatalogStatuses()
                 catalogStatusIsError = false
-                catalogStatusMessage = "Alle vordefinierten Kataloge wurden aktualisiert."
+                catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
             }
         }
-    }
-
-    private func reloadCatalogStatuses() {
-        let store = CatalogCacheStore()
-        catalogStatuses = Dictionary(
-            uniqueKeysWithValues: predefinedUniverseNames.map { universeName in
-                let cacheKey = CatalogSourceRegistry.managedSource(named: universeName)?.id
-                return (universeName, store.loadRemoteCatalogStatus(universeName: universeName, cacheKey: cacheKey))
-            }
-        )
     }
 }
 
-private struct CatalogSourceStatusRow: View {
-    let name: String
-    let isAdded: Bool
-    let status: CatalogCacheStatus?
+private struct CatalogToggleRow: View {
+    let source: ManagedCatalogSource
+    let episodeCount: Int
+    let isActive: Bool
+    let onToggle: (Bool) -> Void
 
-    private var cacheText: String {
-        guard let status, let cachedEntryCount = status.cachedEntryCount else {
-            return "Noch kein Offline-Cache"
+    private var subtitle: String {
+        let store = CatalogCacheStore()
+        let titleCount = store.loadRemoteCatalogStatus(
+            universeName: source.name, cacheKey: source.id
+        ).cachedEntryCount
+
+        if episodeCount > 0, let titleCount {
+            return "\(episodeCount) Folgen · \(titleCount) Titel"
+        } else if let titleCount {
+            return "\(titleCount) Titel verfügbar"
+        } else {
+            return "Nicht geladen"
         }
-
-        return "\(cachedEntryCount) Titel im Offline-Cache"
-    }
-
-    private var checkedText: String? {
-        guard let lastCheckedAt = status?.lastCheckedAt else { return nil }
-        return "Zuletzt geprüft: \(lastCheckedAt.formatted(date: .abbreviated, time: .shortened))"
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        Toggle(isOn: Binding(
+            get: { isActive },
+            set: { onToggle($0) }
+        )) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .foregroundStyle(.primary)
-                Text(cacheText)
+                Text(source.name)
+                Text(subtitle)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if let checkedText {
-                    Text(checkedText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            if isAdded {
-                Label("Aktiv", systemImage: "checkmark.circle.fill")
-                    .labelStyle(.iconOnly)
-                    .foregroundStyle(.green)
-            } else {
-                Image(systemName: "plus.circle")
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(episodeCount > 0 ? .secondary : .tertiary)
             }
         }
     }
