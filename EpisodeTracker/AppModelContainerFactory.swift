@@ -51,11 +51,7 @@ enum AppModelContainerFactory {
     }
 
     static func schema() -> Schema {
-        Schema([
-            Episode.self,
-            Mood.self,
-            Universe.self,
-        ])
+        Schema([Episode.self, Mood.self, Universe.self])
     }
 
     static func resolveMode(
@@ -216,6 +212,36 @@ enum AppModelContainerFactory {
         fileManager.ubiquityIdentityToken != nil
     }
 
+    static func createPreMigrationBackupIfNeeded(fileManager: FileManager = .default) {
+        let storeURL = persistentStoreURL(fileManager: fileManager)
+        guard fileManager.fileExists(atPath: storeURL.path) else { return }
+
+        let backupURL = storeURL.deletingLastPathComponent()
+            .appendingPathComponent("EpisodeTracker.pre-migration-backup.store")
+        guard !fileManager.fileExists(atPath: backupURL.path) else { return }
+
+        let extensions = ["", "-wal", "-shm"]
+        for ext in extensions {
+            let source = URL(fileURLWithPath: storeURL.path + ext)
+            let destination = URL(fileURLWithPath: backupURL.path + ext)
+            try? fileManager.copyItem(at: source, to: destination)
+        }
+    }
+
+    static func removePreMigrationBackup(fileManager: FileManager = .default) {
+        let storeURL = persistentStoreURL(fileManager: fileManager)
+        let backupURL = storeURL.deletingLastPathComponent()
+            .appendingPathComponent("EpisodeTracker.pre-migration-backup.store")
+
+        let extensions = ["", "-wal", "-shm"]
+        for ext in extensions {
+            let path = backupURL.path + ext
+            if fileManager.fileExists(atPath: path) {
+                try? fileManager.removeItem(atPath: path)
+            }
+        }
+    }
+
     private static func makePersistentContainer(
         schema: Schema,
         fileManager: FileManager
@@ -224,11 +250,16 @@ enum AppModelContainerFactory {
         let storeDirectoryURL = storeURL.deletingLastPathComponent()
 
         try? fileManager.createDirectory(at: storeDirectoryURL, withIntermediateDirectories: true)
+        createPreMigrationBackupIfNeeded(fileManager: fileManager)
 
         let configuration = ModelConfiguration("Default", schema: schema, url: storeURL)
 
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            return try ModelContainer(
+                for: schema,
+                migrationPlan: EpisodeTrackerMigrationPlan.self,
+                configurations: [configuration]
+            )
         } catch {
 #if DEBUG
             return makeInMemoryContainer(schema: schema)
@@ -249,7 +280,11 @@ enum AppModelContainerFactory {
             cloudKitDatabase: .automatic
         )
 
-        return try ModelContainer(for: schema, configurations: [configuration])
+        return try ModelContainer(
+            for: schema,
+            migrationPlan: EpisodeTrackerMigrationPlan.self,
+            configurations: [configuration]
+        )
     }
 
     private static func makeInMemoryContainer(schema: Schema) -> ModelContainer {

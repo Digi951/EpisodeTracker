@@ -44,7 +44,9 @@ final class EpisodeCatalog {
                 number: $0.number,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
-                collectionName: collectionName
+                collectionName: collectionName,
+                spotifyURL: $0.spotifyURL,
+                appleMusicURL: $0.appleMusicURL
             )
         }
         try cacheStore.replaceCustomCatalog(collectionName: collectionName, entries: normalizedEntries)
@@ -62,7 +64,8 @@ final class EpisodeCatalog {
         lastRefreshError = nil
         await refreshManifestIfNeeded(force: force)
 
-        for source in managedSources {
+        let activeCatalogIDs = ActiveCatalogStore().activeIDs
+        for source in managedSources where activeCatalogIDs.contains(source.id) {
             await refreshManagedCatalogIfNeeded(source: source, force: force)
         }
         reload()
@@ -128,7 +131,9 @@ final class EpisodeCatalog {
                         number: $0.number,
                         title: $0.title,
                         releaseYear: $0.releaseYear,
-                        collectionName: source.name
+                        collectionName: source.name,
+                        spotifyURL: $0.spotifyURL,
+                        appleMusicURL: $0.appleMusicURL
                     )
                 }
                 try cacheStore.saveRemoteCache(entries: normalizedEntries, universeName: source.name, cacheKey: source.id)

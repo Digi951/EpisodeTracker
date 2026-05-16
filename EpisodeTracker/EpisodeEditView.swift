@@ -27,6 +27,7 @@ struct EpisodeEditView: View {
     @State private var newMoodIcon: String = ""
     @State private var formValidationMessage: String?
     @State private var moodValidationMessage: String?
+    @State private var streamingURL: String = ""
     @State private var showingDeleteConfirmation = false
     @State private var pendingCatalogRefreshKey: String?
 
@@ -55,6 +56,25 @@ struct EpisodeEditView: View {
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
         }
     }
+    private var activeUniverses: [Universe] {
+        let activeIDs = ActiveCatalogStore().activeIDs
+        let activeManagedNames = Set(
+            CatalogSourceRegistry.managedSources
+                .filter { activeIDs.contains($0.id) }
+                .map { $0.name.lowercased() }
+        )
+        return universes.filter { universe in
+            let key = universe.name.lowercased()
+            let isManagedSource = CatalogSourceRegistry.managedSources.contains {
+                $0.name.lowercased() == key
+            }
+            if isManagedSource {
+                return activeManagedNames.contains(key)
+            }
+            return true // custom universes always shown
+        }
+    }
+
     private var preferredCatalogUniverse: Universe? {
         let sourceNames = CatalogSourceRegistry.managedSources.map(\.name)
         if let bundledUniverse = universes.first(where: {
@@ -71,7 +91,7 @@ struct EpisodeEditView: View {
     var body: some View {
         List {
             EpisodeFormSection(
-                universes: universes,
+                universes: activeUniverses,
                 selectedUniverse: $selectedUniverse,
                 episodeNumberText: $episodeNumberText,
                 title: $title,
@@ -103,6 +123,8 @@ struct EpisodeEditView: View {
             )
 
             EpisodeNoteSection(personalNote: $personalNote)
+
+            EpisodeStreamingSection(streamingURL: $streamingURL)
         }
         .navigationTitle(isNew ? "Neue Folge" : "Folge bearbeiten")
         .navigationBarTitleDisplayMode(.inline)
@@ -187,6 +209,7 @@ struct EpisodeEditView: View {
             personalNote = episode.personalNote ?? ""
             isListened = episode.isListened
             rating = episode.rating
+            streamingURL = episode.streamingURL ?? ""
             selectedMoods = Set(episode.moods)
             selectedUniverse = episode.universe ?? universes.first
         } else if let prefillEntry {
@@ -232,6 +255,7 @@ struct EpisodeEditView: View {
             episode.rating = rating
             episode.universe = selectedUniverse
             episode.moods = Array(selectedMoods)
+            episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             episode.refreshSyncKeyIfPossible()
 
             if isListened && !wasListened {
@@ -249,6 +273,7 @@ struct EpisodeEditView: View {
                 universe: selectedUniverse,
                 moods: Array(selectedMoods)
             )
+            newEpisode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             if isListened {
                 newEpisode.listenCount = 1
                 newEpisode.lastListenedAt = .now
@@ -560,6 +585,23 @@ private struct EpisodeNoteSection: View {
         Section("Persönliche Notiz") {
             TextField("Was möchtest du dir merken?", text: $personalNote, axis: .vertical)
                 .lineLimit(3...6)
+        }
+    }
+}
+
+private struct EpisodeStreamingSection: View {
+    @Binding var streamingURL: String
+
+    var body: some View {
+        Section {
+            TextField("https://open.spotify.com/album/...", text: $streamingURL)
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        } header: {
+            Text("Streaming-Link")
+        } footer: {
+            Text("Direktlink zu Spotify oder Apple Music. Wird in der Folgendetailansicht als Button angezeigt.")
         }
     }
 }

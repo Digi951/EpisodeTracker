@@ -13,6 +13,7 @@ final class Episode {
     var rating: Int?
     var listenCount: Int = 0
     var lastListenedAt: Date?
+    var streamingURL: String?
     @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
     @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
 

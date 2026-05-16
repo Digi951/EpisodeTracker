@@ -5,6 +5,24 @@ struct CatalogEntry: Codable {
     let title: String
     let releaseYear: Int
     let collectionName: String?
+    let spotifyURL: String?
+    let appleMusicURL: String?
+
+    init(
+        number: Int,
+        title: String,
+        releaseYear: Int,
+        collectionName: String? = nil,
+        spotifyURL: String? = nil,
+        appleMusicURL: String? = nil
+    ) {
+        self.number = number
+        self.title = title
+        self.releaseYear = releaseYear
+        self.collectionName = collectionName
+        self.spotifyURL = spotifyURL
+        self.appleMusicURL = appleMusicURL
+    }
 }
 
 struct CatalogManifest: Codable {
@@ -76,22 +94,27 @@ enum CatalogSourceRegistry {
         ManagedCatalogSource(
             id: "die-drei-fragezeichen",
             name: "Die drei ???",
-            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_questionmarks.json")!
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_investigators.json")!
         ),
         ManagedCatalogSource(
             id: "die-drei-fragezeichen-kids",
             name: "Die drei ??? Kids",
-            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_questionmarks_kids.json")!
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_investigators_kids.json")!
         ),
         ManagedCatalogSource(
             id: "bibi-blocksberg",
             name: "Bibi Blocksberg",
-            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/Bibi_Blocksberg.json")!
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/bibi_blocksberg.json")!
         ),
         ManagedCatalogSource(
             id: "die-drei-ausrufezeichen",
             name: "Die drei !!!",
-            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_exclamationmarks.json")!
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_exclamation_marks.json")!
+        ),
+        ManagedCatalogSource(
+            id: "tkkg",
+            name: "TKKG",
+            url: URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/tkkg.json")!
         )
     ]
 }

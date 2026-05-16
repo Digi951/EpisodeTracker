@@ -103,7 +103,7 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(
             sources.first(where: { $0.name == "Die drei !!!" })?.url.absoluteString,
-            "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/The_three_exclamationmarks.json"
+            "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_exclamation_marks.json"
         )
         XCTAssertEqual(
             sources.first(where: { $0.name == "Die drei ???" })?.id,
