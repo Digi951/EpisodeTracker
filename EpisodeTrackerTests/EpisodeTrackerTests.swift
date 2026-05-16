@@ -568,6 +568,219 @@ final class EpisodeTrackerTests: XCTestCase {
     }
 
     @MainActor
+    func testSyncPreparationDeduplicatesEpisodesBySameUniverseAndNumber() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let moodA = Mood(name: "Spannend", iconName: "⚡")
+        let moodB = Mood(name: "Gruselig", iconName: "😱")
+
+        // Episode A: listened, rating 4, has moodA
+        let episodeA = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: true,
+            rating: 4,
+            listenCount: 2,
+            universe: universe,
+            moods: [moodA]
+        )
+
+        // Episode B: duplicate with rating 2, has moodB and a note
+        let episodeB = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: "Klassiker!",
+            isListened: false,
+            rating: 2,
+            listenCount: 1,
+            universe: universe,
+            moods: [moodB]
+        )
+
+        context.insert(universe)
+        context.insert(moodA)
+        context.insert(moodB)
+        context.insert(episodeA)
+        context.insert(episodeB)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1, "Duplicate episode should be removed")
+
+        let keeper = episodes[0]
+        XCTAssertTrue(keeper.isListened, "Keeper should be the listened episode")
+        XCTAssertEqual(keeper.rating, 4, "Keeper should have the higher rating")
+        XCTAssertEqual(keeper.listenCount, 2, "Keeper should have higher listen count")
+        XCTAssertEqual(keeper.personalNote, "Klassiker!", "Note should be merged from duplicate")
+        XCTAssertEqual(keeper.moods.count, 2, "Moods from both episodes should be merged")
+    }
+
+    @MainActor
+    func testSyncPreparationKeepsEpisodesWithDifferentNumbers() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let ep1 = Episode(episodeNumber: 1, title: "Super-Papagei", releaseYear: 1979, universe: universe)
+        let ep2 = Episode(episodeNumber: 2, title: "Phantomsee", releaseYear: 1979, universe: universe)
+
+        context.insert(universe)
+        context.insert(ep1)
+        context.insert(ep2)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 2, "Different episode numbers should not be deduplicated")
+    }
+
+    @MainActor
+    func testSyncPreparationSkipsOrphanEpisodesWithoutUniverse() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        // Two episodes with same number but no universe — should NOT be deduplicated
+        let ep1 = Episode(episodeNumber: 1, title: "Orphan A", releaseYear: 2000, isListened: true)
+        let ep2 = Episode(episodeNumber: 1, title: "Orphan B", releaseYear: 2000)
+
+        context.insert(ep1)
+        context.insert(ep2)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 2, "Orphan episodes without universe should not be deduplicated")
+    }
+
+    @MainActor
+    func testSyncPreparationDeduplicatesAcrossUniversesIndependently() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe1 = Universe(name: "Die drei ???")
+        let universe2 = Universe(name: "TKKG")
+
+        // Same episode number in different universes — NOT duplicates
+        let ep1 = Episode(episodeNumber: 1, title: "Super-Papagei", releaseYear: 1979, universe: universe1)
+        let ep2 = Episode(episodeNumber: 1, title: "Die Jagd nach den Millionendieben", releaseYear: 1981, universe: universe2)
+
+        context.insert(universe1)
+        context.insert(universe2)
+        context.insert(ep1)
+        context.insert(ep2)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 2, "Same number in different universes should not be deduplicated")
+    }
+
+    @MainActor
+    func testSyncPreparationMergesLastListenedAtFromDuplicate() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let newerDate = Date(timeIntervalSince1970: 1_710_000_000)
+
+        let episodeA = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: true,
+            rating: 5,
+            listenCount: 3,
+            lastListenedAt: olderDate,
+            universe: universe
+        )
+        let episodeB = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: false,
+            lastListenedAt: newerDate,
+            universe: universe
+        )
+
+        context.insert(universe)
+        context.insert(episodeA)
+        context.insert(episodeB)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].lastListenedAt, newerDate, "Should keep the more recent lastListenedAt")
+        XCTAssertEqual(episodes[0].rating, 5, "Should keep the keeper's rating")
+    }
+
+    @MainActor
+    func testSyncPreparationConcatenatesNotesFromBothEpisodes() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+
+        let episodeA = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: "Erste Folge",
+            isListened: true,
+            rating: 4,
+            universe: universe
+        )
+        let episodeB = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: "Klassiker!",
+            isListened: false,
+            universe: universe
+        )
+
+        context.insert(universe)
+        context.insert(episodeA)
+        context.insert(episodeB)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].personalNote, "Erste Folge\nKlassiker!", "Both notes should be concatenated")
+    }
+
+    @MainActor
     func testBootstrapperProvidesDefaultUniverseWhenMissing() throws {
         let schema = Schema([Episode.self, Mood.self, Universe.self])
         let container = try ModelContainer(

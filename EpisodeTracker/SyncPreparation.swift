@@ -1,5 +1,8 @@
 import Foundation
+import os.log
 import SwiftData
+
+private let logger = Logger(subsystem: "com.Digi.EpisodeTracker", category: "SyncPreparation")
 
 enum SyncPreparation {
     @MainActor
@@ -15,12 +18,18 @@ enum SyncPreparation {
         didChange = repairUniverseIDs(allUniverses) || didChange
         didChange = repairMoods(allMoods, in: context) || didChange
         didChange = repairUniverses(allUniverses, in: context) || didChange
+        didChange = deduplicateEpisodes(allEpisodes, in: context) || didChange
 
         let refreshedEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? allEpisodes
         didChange = refreshEpisodes(refreshedEpisodes) || didChange
 
         if didChange {
-            try? context.save()
+            do {
+                try context.save()
+                logger.info("SyncPreparation: saved repairs successfully")
+            } catch {
+                logger.error("SyncPreparation: save failed — \(error.localizedDescription)")
+            }
         }
     }
 
@@ -138,6 +147,94 @@ enum SyncPreparation {
                     didChange = true
                 }
 
+                context.delete(duplicate)
+                didChange = true
+            }
+        }
+
+        return didChange
+    }
+
+    /// Deduplicate episodes that share the same universe and episode number.
+    /// Keeps the entry with the most user data (listened, rated, notes).
+    @MainActor
+    private static func deduplicateEpisodes(
+        _ episodes: [Episode],
+        in context: ModelContext
+    ) -> Bool {
+        guard !episodes.isEmpty else { return false }
+
+        // Group by (universe syncKey, episodeNumber)
+        struct EpisodeKey: Hashable {
+            let universeSyncKey: String
+            let episodeNumber: Int
+        }
+
+        var grouped: [EpisodeKey: [Episode]] = [:]
+        for episode in episodes {
+            let key = EpisodeKey(
+                universeSyncKey: episode.universe?.resolvedSyncKey ?? "",
+                episodeNumber: episode.episodeNumber
+            )
+            // Only group episodes that have a real universe (skip orphans with empty key)
+            guard !key.universeSyncKey.isEmpty, key.episodeNumber > 0 else { continue }
+            grouped[key, default: []].append(episode)
+        }
+
+        var didChange = false
+        for (key, duplicates) in grouped where duplicates.count > 1 {
+            // Sort: prefer listened > rated > has notes > has moods > earlier creation
+            let sorted = duplicates.sorted { a, b in
+                if a.isListened != b.isListened { return a.isListened }
+                if (a.rating != nil) != (b.rating != nil) { return a.rating != nil }
+                if let ra = a.rating, let rb = b.rating, ra != rb { return ra > rb }
+                if a.listenCount != b.listenCount { return a.listenCount > b.listenCount }
+                if (a.personalNote != nil) != (b.personalNote != nil) { return a.personalNote != nil }
+                if a.moods.count != b.moods.count { return a.moods.count > b.moods.count }
+                return false
+            }
+
+            let keeper = sorted[0]
+            for duplicate in sorted.dropFirst() {
+                // Merge any unique moods from the duplicate
+                let keeperMoodKeys = Set(keeper.moods.map(\.resolvedSyncKey))
+                for mood in duplicate.moods where !keeperMoodKeys.contains(mood.resolvedSyncKey) {
+                    keeper.moods.append(mood)
+                }
+
+                // Merge personal notes (concatenate if both exist)
+                if let duplicateNote = duplicate.personalNote, !duplicateNote.isEmpty {
+                    if let keeperNote = keeper.personalNote, !keeperNote.isEmpty {
+                        if keeperNote != duplicateNote {
+                            keeper.personalNote = "\(keeperNote)\n\(duplicateNote)"
+                        }
+                    } else {
+                        keeper.personalNote = duplicateNote
+                    }
+                }
+
+                // Take higher rating if keeper has none
+                if keeper.rating == nil {
+                    keeper.rating = duplicate.rating
+                }
+
+                // Take higher listen count
+                if duplicate.listenCount > keeper.listenCount {
+                    keeper.listenCount = duplicate.listenCount
+                }
+
+                // Keep the most recent lastListenedAt
+                if let duplicateDate = duplicate.lastListenedAt {
+                    if let keeperDate = keeper.lastListenedAt {
+                        if duplicateDate > keeperDate {
+                            keeper.lastListenedAt = duplicateDate
+                        }
+                    } else {
+                        keeper.lastListenedAt = duplicateDate
+                    }
+                }
+
+                logger.info("Dedup: removing duplicate episode #\(key.episodeNumber) in '\(key.universeSyncKey)'")
                 context.delete(duplicate)
                 didChange = true
             }
