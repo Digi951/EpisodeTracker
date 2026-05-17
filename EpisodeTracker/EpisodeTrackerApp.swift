@@ -25,8 +25,7 @@ struct EpisodeTrackerApp: App {
             }
             .task { @MainActor in
                 await AppDataBootstrapper.bootstrap(
-                    container: containerSet.primary,
-                    usesCloudSync: usesCloudSync
+                    containerSet: containerSet
                 )
             }
             .environmentObject(containerAccess)

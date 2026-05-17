@@ -7,12 +7,87 @@ enum AppDataBootstrapper {
 
     @MainActor
     static func bootstrap(
+        containerSet: AppModelContainerSet,
+        userDefaults: UserDefaults = .standard
+    ) async {
+        let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
+
+        if let localContainer = containerSet.localPersistent {
+            prepareContainer(
+                localContainer,
+                usesCloudSync: false,
+                lastSchemaVersion: lastSchemaVersion
+            )
+        }
+
+        let shouldPreparePrimary: Bool
+        if let localContainer = containerSet.localPersistent {
+            shouldPreparePrimary = containerSet.primary !== localContainer
+        } else {
+            shouldPreparePrimary = true
+        }
+
+        if shouldPreparePrimary {
+            prepareContainer(
+                containerSet.primary,
+                usesCloudSync: containerSet.runtimeMode.usesCloudSync,
+                lastSchemaVersion: lastSchemaVersion
+            )
+        }
+
+        if containerSet.runtimeMode.usesCloudSync {
+            attemptAutomaticCloudMigrationIfNeeded(
+                containerSet: containerSet,
+                userDefaults: userDefaults
+            )
+
+            prepareSyncDataIfNeeded(container: containerSet.primary)
+            repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
+        }
+
+        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+        ensureBundledCollectionExists(container: containerSet.primary)
+        prepareSyncDataIfNeeded(container: containerSet.primary)
+
+        if containerSet.runtimeMode.usesCloudSync {
+            repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
+        }
+
+        userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
+        AppModelContainerFactory.removePreMigrationBackup()
+    }
+
+    @MainActor
+    static func bootstrap(
         container: ModelContainer,
         usesCloudSync: Bool,
         userDefaults: UserDefaults = .standard
     ) async {
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
+        prepareContainer(
+            container,
+            usesCloudSync: usesCloudSync,
+            lastSchemaVersion: lastSchemaVersion
+        )
 
+        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+        ensureBundledCollectionExists(container: container)
+        prepareSyncDataIfNeeded(container: container)
+
+        if usesCloudSync {
+            repairCloudSyncReadinessIfNeeded(container: container)
+        }
+
+        userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
+        AppModelContainerFactory.removePreMigrationBackup()
+    }
+
+    @MainActor
+    private static func prepareContainer(
+        _ container: ModelContainer,
+        usesCloudSync: Bool,
+        lastSchemaVersion: Int
+    ) {
         seedMoodsIfNeeded(container: container)
         seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
@@ -26,17 +101,31 @@ enum AppDataBootstrapper {
         if lastSchemaVersion < 2 {
             repairPostMigrationIfNeeded(container: container)
         }
+    }
 
-        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
-        ensureBundledCollectionExists(container: container)
-        prepareSyncDataIfNeeded(container: container)
+    @MainActor
+    private static func attemptAutomaticCloudMigrationIfNeeded(
+        containerSet: AppModelContainerSet,
+        userDefaults: UserDefaults
+    ) {
+        let readiness = SyncMigrationReadinessEvaluator.evaluate(
+            containerSet: containerSet,
+            userDefaults: userDefaults
+        )
 
-        if usesCloudSync {
-            repairCloudSyncReadinessIfNeeded(container: container)
+        guard readiness.canAttemptMigration,
+              let localContainer = containerSet.localPersistent,
+              let cloudContainer = containerSet.cloudPersistent
+        else {
+            return
         }
 
-        userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
-        AppModelContainerFactory.removePreMigrationBackup()
+        let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
+        _ = try? SyncMigrationCoordinator.migrate(
+            snapshot: snapshot,
+            into: cloudContainer.mainContext,
+            userDefaults: userDefaults
+        )
     }
 
     @MainActor
