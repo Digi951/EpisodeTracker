@@ -30,7 +30,10 @@ enum StreamingService: String, CaseIterable, Identifiable {
     }
 
     func directURL(from urlString: String?) -> URL? {
-        guard let urlString, !urlString.isEmpty else { return nil }
-        return URL(string: urlString)
+        guard let urlString else { return nil }
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return URL(string: trimmed)
     }
+
 }

@@ -115,6 +115,20 @@ final class EpisodeTrackerTests: XCTestCase {
         )
     }
 
+    func testManagedCatalogSourcesAreDeduplicatedByIDAndName() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let sources = [
+            ManagedCatalogSource(id: "die-drei-fragezeichen", name: "Die drei ???", url: url),
+            ManagedCatalogSource(id: "DIE-DREI-FRAGEZEICHEN", name: "Die drei ??? Kopie", url: url),
+            ManagedCatalogSource(id: "alternate-id", name: " die drei ??? ", url: url),
+            ManagedCatalogSource(id: "tkkg", name: "TKKG", url: url)
+        ]
+
+        let deduplicated = CatalogSourceRegistry.deduplicatedManagedSources(sources)
+
+        XCTAssertEqual(deduplicated.map(\.id), ["die-drei-fragezeichen", "tkkg"])
+    }
+
     func testContainerFactoryUsesPreviewModeForPreviewEnvironment() {
         let mode = AppModelContainerFactory.resolveMode(
             environment: ["XCODE_RUNNING_FOR_PREVIEWS": "1"]
@@ -915,6 +929,41 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(episodes[0].universe?.resolvedSyncKey, "universe:die drei ???")
         XCTAssertEqual(episodes[0].moods.map(\.resolvedSyncKey), ["mood:gruselig"])
         XCTAssertEqual(episodes[0].resolvedSyncKey, "episode:universe:die drei ???#1")
+    }
+
+    @MainActor
+    func testSyncPreparationDeduplicatesSeededMoodAfterCloudImport() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let seededMood = Mood(name: "Gruselig", iconName: "😱")
+        let cloudMood = Mood(name: "Gruselig", iconName: nil, syncKey: "legacy-cloud:mood:gruselig")
+        let universe = Universe(name: "Die drei ???")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: universe,
+            moods: [cloudMood]
+        )
+
+        context.insert(seededMood)
+        context.insert(cloudMood)
+        context.insert(universe)
+        context.insert(episode)
+
+        SyncPreparation.prepare(context: context)
+
+        let moods = try context.fetch(FetchDescriptor<Mood>())
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+
+        XCTAssertEqual(moods.count, 1)
+        XCTAssertEqual(episodes[0].moods.count, 1)
+        XCTAssertEqual(episodes[0].moods[0].normalizedName, "gruselig")
     }
 
     @MainActor

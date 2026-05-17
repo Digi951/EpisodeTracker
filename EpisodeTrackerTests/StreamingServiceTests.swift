@@ -52,6 +52,19 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
     }
 
+    func testCatalogEntryDetectsStreamingLinks() {
+        let linkedEntry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            appleMusicURL: " https://music.apple.com/de/album/test/123 "
+        )
+        let staleEntry = CatalogEntry(number: 2, title: "Alt", releaseYear: 2001)
+
+        XCTAssertTrue(linkedEntry.hasStreamingLink)
+        XCTAssertFalse(staleEntry.hasStreamingLink)
+    }
+
     // MARK: - Direct URL from Episode
 
     func testDirectURLReturnsValidURL() {
@@ -65,6 +78,11 @@ final class StreamingServiceTests: XCTestCase {
 
     func testDirectURLReturnsNilForEmptyString() {
         XCTAssertNil(StreamingService.spotify.directURL(from: ""))
+    }
+
+    func testDirectURLTrimsWhitespace() {
+        let url = StreamingService.spotify.directURL(from: " https://open.spotify.com/album/abc123 ")
+        XCTAssertEqual(url?.absoluteString, "https://open.spotify.com/album/abc123")
     }
 
     // MARK: - Display Properties

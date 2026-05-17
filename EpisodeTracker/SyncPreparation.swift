@@ -86,11 +86,11 @@ enum SyncPreparation {
             didChange = didChange || before != mood.resolvedSyncKey
         }
 
-        let grouped = Dictionary(grouping: moods, by: \.resolvedSyncKey)
+        let grouped = Dictionary(grouping: moods, by: moodDeduplicationKey)
         for duplicates in grouped.values where duplicates.count > 1 {
-            let keeper = duplicates[0]
+            let keeper = duplicates.sorted(by: preferMoodForDeduplication)[0]
 
-            for duplicate in duplicates.dropFirst() {
+            for duplicate in duplicates where duplicate.id != keeper.id {
                 if (keeper.iconName == nil || keeper.iconName?.isEmpty == true),
                    let iconName = duplicate.iconName,
                    !iconName.isEmpty {
@@ -122,6 +122,27 @@ enum SyncPreparation {
         return didChange
     }
 
+    private static func moodDeduplicationKey(_ mood: Mood) -> String {
+        let normalizedName = mood.name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalizedName.isEmpty ? mood.resolvedSyncKey : "mood-name:\(normalizedName)"
+    }
+
+    private static func preferMoodForDeduplication(_ lhs: Mood, _ rhs: Mood) -> Bool {
+        if lhs.episodes.count != rhs.episodes.count {
+            return lhs.episodes.count > rhs.episodes.count
+        }
+
+        let lhsHasIcon = lhs.iconName?.isEmpty == false
+        let rhsHasIcon = rhs.iconName?.isEmpty == false
+        if lhsHasIcon != rhsHasIcon {
+            return lhsHasIcon
+        }
+
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+    }
+
     @MainActor
     private static func repairUniverses(
         _ universes: [Universe],
@@ -136,11 +157,11 @@ enum SyncPreparation {
             didChange = didChange || before != universe.resolvedSyncKey
         }
 
-        let grouped = Dictionary(grouping: universes, by: \.resolvedSyncKey)
+        let grouped = Dictionary(grouping: universes, by: universeDeduplicationKey)
         for duplicates in grouped.values where duplicates.count > 1 {
-            let keeper = duplicates[0]
+            let keeper = duplicates.sorted(by: preferUniverseForDeduplication)[0]
 
-            for duplicate in duplicates.dropFirst() {
+            for duplicate in duplicates where duplicate.id != keeper.id {
                 for episode in duplicate.episodes {
                     episode.universe = keeper
                     episode.refreshSyncKeyIfPossible()
@@ -153,6 +174,21 @@ enum SyncPreparation {
         }
 
         return didChange
+    }
+
+    private static func universeDeduplicationKey(_ universe: Universe) -> String {
+        let normalizedName = universe.name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalizedName.isEmpty ? universe.resolvedSyncKey : "universe-name:\(normalizedName)"
+    }
+
+    private static func preferUniverseForDeduplication(_ lhs: Universe, _ rhs: Universe) -> Bool {
+        if lhs.episodes.count != rhs.episodes.count {
+            return lhs.episodes.count > rhs.episodes.count
+        }
+
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
     }
 
     /// Deduplicate episodes that share the same universe and episode number.

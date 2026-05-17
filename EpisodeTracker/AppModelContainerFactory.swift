@@ -36,16 +36,23 @@ enum AppModelContainerFactory {
     static let cloudSyncPreferenceKey = "prefersICloudSync"
     static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
     static let cloudContainerIdentifier = "iCloud.com.Digi.EpisodeTracker"
+    static let appGroupIdentifier = "group.com.digi.episodetracker"
     static let runtimeModeDebugTitleKey = "syncRuntimeModeDebugTitle"
     static let cloudStartupErrorKey = "syncCloudStartupError"
 
     private enum CloudStartupPreflightError: LocalizedError {
         case missingICloudAccount
+        case missingAppGroupContainer
+        case appGroupApplicationSupportCreationFailed(URL, Error)
 
         var errorDescription: String? {
             switch self {
             case .missingICloudAccount:
                 return "Kein aktiver iCloud-Account verfügbar. Cloud-Sync bleibt lokal, bis iCloud auf diesem Gerät verfügbar ist."
+            case .missingAppGroupContainer:
+                return "Der App-Group-Container ist nicht verfügbar. Cloud-Sync kann den gemeinsamen Store-Pfad nicht vorbereiten."
+            case .appGroupApplicationSupportCreationFailed(let url, let error):
+                return "Der App-Group-Application-Support-Ordner konnte nicht vorbereitet werden: \(url.path) - \(error.localizedDescription)"
             }
         }
     }
@@ -208,6 +215,13 @@ enum AppModelContainerFactory {
         return storeDirectoryURL.appendingPathComponent("EpisodeTracker.store")
     }
 
+    static func appGroupApplicationSupportDirectoryURL(fileManager: FileManager = .default) -> URL? {
+        fileManager
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)?
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("Application Support", isDirectory: true)
+    }
+
     static func isICloudIdentityAvailable(fileManager: FileManager = .default) -> Bool {
         fileManager.ubiquityIdentityToken != nil
     }
@@ -274,6 +288,8 @@ enum AppModelContainerFactory {
         fileManager: FileManager,
         containerIdentifier: String
     ) throws -> ModelContainer {
+        try prepareAppGroupApplicationSupportDirectory(fileManager: fileManager)
+
         let configuration = ModelConfiguration(
             "Default",
             schema: schema,
@@ -285,6 +301,24 @@ enum AppModelContainerFactory {
             migrationPlan: EpisodeTrackerMigrationPlan.self,
             configurations: [configuration]
         )
+    }
+
+    private static func prepareAppGroupApplicationSupportDirectory(fileManager: FileManager) throws {
+        guard let appGroupApplicationSupportURL = appGroupApplicationSupportDirectoryURL(fileManager: fileManager) else {
+            throw CloudStartupPreflightError.missingAppGroupContainer
+        }
+
+        do {
+            try fileManager.createDirectory(
+                at: appGroupApplicationSupportURL,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            throw CloudStartupPreflightError.appGroupApplicationSupportCreationFailed(
+                appGroupApplicationSupportURL,
+                error
+            )
+        }
     }
 
     private static func makeInMemoryContainer(schema: Schema) -> ModelContainer {

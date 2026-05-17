@@ -18,6 +18,7 @@ struct SettingsView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
 
+    @State private var activeCatalogIDs = ActiveCatalogStore().activeIDs
     @State private var backupStatusMessage: String?
     @State private var backupStatusIsError = false
     @State private var showingImporter = false
@@ -54,8 +55,10 @@ struct SettingsView: View {
                 showsLibrarySnapshot: $showsLibrarySnapshot,
                 prefersCatalogProgressTotals: $prefersCatalogProgressTotals
             )
+            SettingsStreamingSection()
             SettingsManagementSection(
-                universeCount: universes.count,
+                activeCatalogCount: activeCatalogCount,
+                managedCatalogCount: managedCatalogCount,
                 moodCount: moods.count
             )
             SettingsBackupSection(
@@ -65,7 +68,6 @@ struct SettingsView: View {
                 onExport: exportBackup,
                 onImport: { showingImporter = true }
             )
-            SettingsStreamingSection()
 
             SettingsResetSection(
                 onReset: resetDisplaySettings
@@ -154,6 +156,17 @@ struct SettingsView: View {
                 }
             }
         }
+        .onAppear {
+            activeCatalogIDs = ActiveCatalogStore().activeIDs
+        }
+    }
+
+    private var managedCatalogCount: Int {
+        CatalogSourceRegistry.managedSources.count
+    }
+
+    private var activeCatalogCount: Int {
+        CatalogSourceRegistry.managedSources.filter { activeCatalogIDs.contains($0.id) }.count
     }
 
     @MainActor
@@ -369,7 +382,8 @@ private struct SettingsLibrarySection: View {
 }
 
 private struct SettingsManagementSection: View {
-    let universeCount: Int
+    let activeCatalogCount: Int
+    let managedCatalogCount: Int
     let moodCount: Int
 
     var body: some View {
@@ -379,7 +393,7 @@ private struct SettingsManagementSection: View {
             } label: {
                 SettingsNavigationRow(
                     title: "Kataloge",
-                    subtitle: "\(universeCount) Kataloge aktiv",
+                    subtitle: "\(activeCatalogCount) von \(managedCatalogCount) Katalogen aktiv",
                     systemImage: "books.vertical"
                 )
             }
@@ -467,7 +481,7 @@ private struct SettingsStreamingSection: View {
         } header: {
             Text("Streaming")
         } footer: {
-            Text("In der Folgendetailansicht kannst du direkt nach der Folge im gewählten Dienst suchen.")
+            Text("In der Folgendetailansicht kannst du verfügbare Kataloglinks direkt im gewählten Dienst öffnen.")
         }
     }
 }

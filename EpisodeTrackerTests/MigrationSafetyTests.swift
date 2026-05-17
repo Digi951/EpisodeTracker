@@ -248,6 +248,61 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertTrue(episode.resolvedSyncKey.hasPrefix("episode:"))
     }
 
+    func testBootstrapperDeduplicatesMoodsByNameWhenSyncKeysDiffer() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let original = Mood(name: "Spannend", iconName: nil, syncKey: "legacy:mood:spannend")
+        let duplicate = Mood(name: " spannend ", iconName: "⚡", syncKey: "mood:spannend")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            moods: [original, duplicate]
+        )
+
+        context.insert(original)
+        context.insert(duplicate)
+        context.insert(episode)
+
+        SyncPreparation.prepare(context: context)
+
+        let moods = try context.fetch(FetchDescriptor<Mood>())
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+
+        XCTAssertEqual(moods.count, 1, "Moods with the same normalized name should be merged")
+        XCTAssertEqual(moods[0].iconName, "⚡", "The merged mood should keep a non-empty icon")
+        XCTAssertEqual(episodes[0].moods.count, 1, "Episode mood links should point at the merged mood once")
+        XCTAssertEqual(episodes[0].moods[0].id, moods[0].id)
+    }
+
+    func testBootstrapperDeduplicatesUniversesByNameWhenSyncKeysDiffer() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let original = Universe(name: "Die drei ???", syncKey: "legacy:universe:fragezeichen")
+        let duplicate = Universe(name: " die drei ??? ", syncKey: "universe:die drei ???")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: duplicate
+        )
+
+        context.insert(original)
+        context.insert(duplicate)
+        context.insert(episode)
+
+        SyncPreparation.prepare(context: context)
+
+        let universes = try context.fetch(FetchDescriptor<Universe>())
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+
+        XCTAssertEqual(universes.count, 1, "Universes with the same normalized name should be merged")
+        XCTAssertEqual(episodes[0].universe?.id, universes[0].id)
+        XCTAssertEqual(universes[0].episodes.count, 1, "Existing episode assignments must survive the merge")
+    }
+
     // MARK: - Schema Metadata
 
     func testSchemaContainsOriginalNameForRenamedRelationships() throws {

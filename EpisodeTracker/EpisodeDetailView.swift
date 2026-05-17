@@ -4,6 +4,7 @@ struct EpisodeDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
     let episode: Episode
+    @State private var catalog = EpisodeCatalog.shared
     @State private var showingEdit = false
 
     private var streamingService: StreamingService {
@@ -15,7 +16,7 @@ struct EpisodeDetailView: View {
             return (directURL, "In \(streamingService.displayName) öffnen")
         }
 
-        let catalogEntry = EpisodeCatalog.shared.entry(
+        let catalogEntry = catalog.entry(
             for: episode.episodeNumber,
             in: episode.universe?.name
         )

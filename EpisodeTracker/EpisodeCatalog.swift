@@ -115,11 +115,14 @@ final class EpisodeCatalog {
 
     private func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
-        let hasCachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)?.isEmpty == false
-        guard force || !hasCachedEntries || shouldRefresh(previousMetadata) else { return }
+        let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
+        let hasCachedEntries = cachedEntries?.isEmpty == false
+        let hasStreamingLinks = cachedEntries?.contains(where: \.hasStreamingLink) == true
+        let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
+        guard force || !hasCachedEntries || needsStreamingLinkRefresh || shouldRefresh(previousMetadata) else { return }
 
         do {
-            let requestMetadata = hasCachedEntries ? previousMetadata : nil
+            let requestMetadata = hasCachedEntries && !needsStreamingLinkRefresh ? previousMetadata : nil
             let result = try await remoteDataSource.fetch(from: source, metadata: requestMetadata)
             var metadata = previousMetadata ?? RemoteCatalogMetadata()
 

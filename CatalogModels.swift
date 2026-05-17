@@ -23,6 +23,12 @@ struct CatalogEntry: Codable {
         self.spotifyURL = spotifyURL
         self.appleMusicURL = appleMusicURL
     }
+
+    var hasStreamingLink: Bool {
+        [spotifyURL, appleMusicURL].contains { urlString in
+            urlString?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        }
+    }
 }
 
 struct CatalogManifest: Codable {
@@ -81,13 +87,40 @@ enum CatalogSourceRegistry {
     static let manifestMetadataKey = "__catalog_manifest__"
 
     static var managedSources: [ManagedCatalogSource] {
-        CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources
+        deduplicatedManagedSources(CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources)
     }
 
     static func managedSource(named universeName: String) -> ManagedCatalogSource? {
         managedSources.first {
             $0.name.caseInsensitiveCompare(universeName) == .orderedSame
         }
+    }
+
+    static func deduplicatedManagedSources(_ sources: [ManagedCatalogSource]) -> [ManagedCatalogSource] {
+        var seenIDs = Set<String>()
+        var seenNames = Set<String>()
+        var result: [ManagedCatalogSource] = []
+
+        for source in sources {
+            let idKey = source.id
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            let nameKey = source.name
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+
+            guard !idKey.isEmpty,
+                  !nameKey.isEmpty,
+                  seenIDs.insert(idKey).inserted,
+                  seenNames.insert(nameKey).inserted
+            else {
+                continue
+            }
+
+            result.append(source)
+        }
+
+        return result
     }
 
     static let fallbackManagedSources: [ManagedCatalogSource] = [

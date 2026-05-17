@@ -21,6 +21,7 @@ struct EpisodeTrackerApp: App {
             ZStack {
                 ContentView()
                 WidgetSyncObserverView()
+                CloudSyncRepairObserverView(isEnabled: usesCloudSync)
             }
             .task { @MainActor in
                 await AppDataBootstrapper.bootstrap(

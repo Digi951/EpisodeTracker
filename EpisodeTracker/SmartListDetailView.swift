@@ -15,6 +15,7 @@ struct SmartListDetailView: View {
     @State private var episodeFilter: EpisodeFilter = .all
     @State private var catalogAddItem: CatalogAddItem?
     @State private var catalogYearFilter: Int?
+    @State private var pendingCatalogBulkImport: CatalogBulkImportRequest?
 
     private var displayedEpisodes: [Episode] {
         if smartList.isRandomList {
@@ -114,6 +115,13 @@ struct SmartListDetailView: View {
                 )
             }
         }
+        .confirmationDialog(
+            catalogBulkImportConfirmationTitle,
+            isPresented: isShowingCatalogBulkImportConfirmation,
+            titleVisibility: .visible,
+            actions: catalogBulkImportConfirmationActions,
+            message: catalogBulkImportConfirmationMessage
+        )
     }
 
     @ViewBuilder
@@ -135,7 +143,13 @@ struct SmartListDetailView: View {
                 onAddCatalogSuggestion: { suggestion in
                     catalogAddItem = CatalogAddItem(entry: suggestion.entry, universeName: suggestion.universeName)
                 },
-                onAddCatalogSuggestions: addCatalogSuggestions
+                onAddCatalogSuggestions: addCatalogSuggestions,
+                onConfirmCatalogSuggestions: { universeName, suggestions in
+                    pendingCatalogBulkImport = CatalogBulkImportRequest(
+                        universeName: universeName,
+                        suggestions: suggestions
+                    )
+                }
             )
         } else if smartList.isRandomList {
             SmartListGroupedEpisodeContent(
@@ -167,7 +181,17 @@ struct SmartListDetailView: View {
     }
 
     private func addCatalogSuggestions(_ suggestions: [(universeName: String, entry: CatalogEntry)]) {
+        var existingKeys = Set(allEpisodes.map { episodeKey(universeName: $0.universe?.name, number: $0.episodeNumber) })
+        var insertedKeys = Set<String>()
+
         for suggestion in suggestions {
+            let key = episodeKey(universeName: suggestion.universeName, number: suggestion.entry.number)
+            guard !existingKeys.contains(key),
+                  insertedKeys.insert(key).inserted
+            else {
+                continue
+            }
+
             let universe = universes.first {
                 $0.name.caseInsensitiveCompare(suggestion.universeName) == .orderedSame
             }
@@ -178,9 +202,14 @@ struct SmartListDetailView: View {
                 universe: universe
             )
             modelContext.insert(episode)
+            existingKeys.insert(key)
         }
 
         try? modelContext.save()
+    }
+
+    private func episodeKey(universeName: String?, number: Int) -> String {
+        "\(universeName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "")|\(number)"
     }
 
     private func reshuffle() {
@@ -203,6 +232,41 @@ struct SmartListDetailView: View {
             ids.insert(group.id)
         }
         collapsedCatalogGroupIDsRaw = ids.sorted().joined(separator: "\n")
+    }
+
+    private var isShowingCatalogBulkImportConfirmation: Binding<Bool> {
+        Binding {
+            pendingCatalogBulkImport != nil
+        } set: { isPresented in
+            if !isPresented {
+                pendingCatalogBulkImport = nil
+            }
+        }
+    }
+
+    private var catalogBulkImportConfirmationTitle: String {
+        pendingCatalogBulkImport?.title ?? "Folgen übernehmen?"
+    }
+
+    @ViewBuilder
+    private func catalogBulkImportConfirmationActions() -> some View {
+        if let request = pendingCatalogBulkImport {
+            Button(request.confirmationButtonTitle) {
+                addCatalogSuggestions(request.suggestions)
+                pendingCatalogBulkImport = nil
+            }
+        }
+
+        Button("Abbrechen", role: .cancel) {
+            pendingCatalogBulkImport = nil
+        }
+    }
+
+    @ViewBuilder
+    private func catalogBulkImportConfirmationMessage() -> some View {
+        if let request = pendingCatalogBulkImport {
+            Text(request.message)
+        }
     }
 }
 
@@ -234,6 +298,7 @@ private struct SmartListCatalogContent: View {
     let onToggleCatalogGroup: (CatalogSuggestionGroup) -> Void
     let onAddCatalogSuggestion: ((universeName: String, entry: CatalogEntry)) -> Void
     let onAddCatalogSuggestions: ([(universeName: String, entry: CatalogEntry)]) -> Void
+    let onConfirmCatalogSuggestions: (String, [(universeName: String, entry: CatalogEntry)]) -> Void
 
     var body: some View {
         catalogYearFilterSection
@@ -272,7 +337,10 @@ private struct SmartListCatalogContent: View {
                     CatalogGroupHeader(
                         title: group.universeName,
                         count: group.suggestions.count,
-                        isCollapsed: isCatalogGroupCollapsed(group)
+                        isCollapsed: isCatalogGroupCollapsed(group),
+                        onImportVisible: {
+                            onConfirmCatalogSuggestions(group.universeName, group.suggestions)
+                        }
                     ) {
                         onToggleCatalogGroup(group)
                     }
@@ -470,31 +538,44 @@ private struct CatalogGroupHeader: View {
     let title: String
     let count: Int
     let isCollapsed: Bool
+    let onImportVisible: () -> Void
     let action: () -> Void
 
     private var detailText: String {
         count == 1 ? "1 sichtbare fehlende Folge" : "\(count) sichtbare fehlende Folgen"
     }
 
+    private var importLabel: String {
+        count == 1
+            ? "Die sichtbare Folge aus \(title) übernehmen"
+            : "Alle \(count) sichtbaren Folgen aus \(title) übernehmen"
+    }
+
     var body: some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 12, height: 20, alignment: .center)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    Text(detailText)
-                        .font(.caption)
+        HStack(alignment: .top, spacing: 10) {
+            Button(action: action) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        .frame(width: 12, height: 20, alignment: .center)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(detailText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                Spacer()
+            Spacer()
 
+            Button(action: onImportVisible) {
                 Text("\(count)")
                     .font(.caption.weight(.semibold))
                     .monospacedDigit()
@@ -503,10 +584,11 @@ private struct CatalogGroupHeader: View {
                     .padding(.vertical, 4)
                     .background(.tint.opacity(0.12), in: Capsule())
             }
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityLabel(importLabel)
+            .disabled(count == 0)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 2)
         .textCase(nil)
     }
 }
@@ -561,4 +643,26 @@ private struct CatalogAddItem: Identifiable {
     let id = UUID()
     let entry: CatalogEntry
     let universeName: String
+}
+
+private struct CatalogBulkImportRequest: Identifiable {
+    let id = UUID()
+    let universeName: String
+    let suggestions: [(universeName: String, entry: CatalogEntry)]
+
+    var title: String {
+        "Folgen aus \(universeName) übernehmen?"
+    }
+
+    var confirmationButtonTitle: String {
+        suggestions.count == 1
+            ? "1 Folge übernehmen"
+            : "\(suggestions.count) Folgen übernehmen"
+    }
+
+    var message: String {
+        suggestions.count == 1
+            ? "Diese sichtbare fehlende Folge wird im Katalog „\(universeName)“ angelegt."
+            : "Alle \(suggestions.count) aktuell sichtbaren fehlenden Folgen werden im Katalog „\(universeName)“ angelegt."
+    }
 }

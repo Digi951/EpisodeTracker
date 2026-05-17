@@ -82,14 +82,31 @@ struct EpisodeListView: View {
         }
         .searchable(text: $controls.searchText, prompt: "Folge suchen…")
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
                 EpisodeListSortFilterMenu(
                     controls: $controls,
                     universes: universes
                 )
-                NavigationLink(value: NavigationDestination.addEpisode) {
-                    Label("Neue Folge", systemImage: "plus")
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !episodes.isEmpty {
+                HStack {
+                    Spacer()
+                    NavigationLink(value: NavigationDestination.addEpisode) {
+                        Image(systemName: "plus")
+                            .font(.title2.weight(.semibold))
+                            .frame(width: 58, height: 58)
+                            .foregroundStyle(.white)
+                            .background(Color.accentColor, in: Circle())
+                            .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
+                            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                    }
+                    .accessibilityLabel("Neue Folge")
+                    .padding(.trailing, 18)
+                    .padding(.bottom, 8)
                 }
+                .listRowBackground(Color.clear)
             }
         }
         .confirmationDialog(
