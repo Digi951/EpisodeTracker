@@ -73,6 +73,27 @@ final class BootstrapReportTests: XCTestCase {
         XCTAssertTrue(description.contains("cloudMigration=completed"))
     }
 
+    func testContainerSetBootstrapReturnsReport() async throws {
+        let container = try makeInMemoryContainer()
+        let suiteName = "test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+
+        let containerSet = AppModelContainerSet(
+            primary: container,
+            localPersistent: nil,
+            cloudPersistent: nil,
+            runtimeMode: .localPersistent
+        )
+
+        let report = await AppDataBootstrapper.bootstrap(
+            containerSet: containerSet,
+            userDefaults: defaults
+        )
+
+        XCTAssertTrue(report.seededMoods)
+        XCTAssertTrue(report.seededCollections)
+    }
+
     func testSecondBootstrapDoesNotReseed() async throws {
         let container = try makeInMemoryContainer()
         let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!

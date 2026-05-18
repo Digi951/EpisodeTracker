@@ -12,15 +12,17 @@ enum AppDataBootstrapper {
     static let currentSchemaVersion = 3
     static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
 
+    @discardableResult
     @MainActor
     static func bootstrap(
         containerSet: AppModelContainerSet,
         userDefaults: UserDefaults = .standard
-    ) async {
+    ) async -> BootstrapReport {
+        var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
         if let localContainer = containerSet.localPersistent {
-            _ = prepareContainer(
+            report = prepareContainer(
                 localContainer,
                 usesCloudSync: false,
                 lastSchemaVersion: lastSchemaVersion
@@ -35,7 +37,7 @@ enum AppDataBootstrapper {
         }
 
         if shouldPreparePrimary {
-            _ = prepareContainer(
+            report = prepareContainer(
                 containerSet.primary,
                 usesCloudSync: containerSet.runtimeMode.usesCloudSync,
                 lastSchemaVersion: lastSchemaVersion
@@ -45,16 +47,20 @@ enum AppDataBootstrapper {
         if containerSet.runtimeMode.usesCloudSync {
             attemptAutomaticCloudMigrationIfNeeded(
                 containerSet: containerSet,
-                userDefaults: userDefaults
+                userDefaults: userDefaults,
+                report: &report
             )
 
-            prepareSyncDataIfNeeded(container: containerSet.primary)
+            let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
+            report.syncPreparationSummary = syncSummary
             repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
         }
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
-        prepareSyncDataIfNeeded(container: containerSet.primary)
+
+        let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
+        report.syncPreparationSummary = syncSummary
 
         if containerSet.runtimeMode.usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
@@ -62,6 +68,9 @@ enum AppDataBootstrapper {
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
+
+        bootstrapLogger.info("Bootstrap complete: \(report.logDescription, privacy: .public)")
+        return report
     }
 
     @discardableResult
@@ -122,7 +131,8 @@ enum AppDataBootstrapper {
     @MainActor
     private static func attemptAutomaticCloudMigrationIfNeeded(
         containerSet: AppModelContainerSet,
-        userDefaults: UserDefaults
+        userDefaults: UserDefaults,
+        report: inout BootstrapReport
     ) {
         let readiness = SyncMigrationReadinessEvaluator.evaluate(
             containerSet: containerSet,
@@ -133,19 +143,23 @@ enum AppDataBootstrapper {
               let localContainer = containerSet.localPersistent,
               let cloudContainer = containerSet.cloudPersistent
         else {
+            let statusMessage: String
             if readiness.hasCompletedMigration {
-                userDefaults.set("Automatische Cloud-Migration bereits abgeschlossen.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration bereits abgeschlossen."
             } else if !readiness.hasCloudPersistentContainer {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: Cloud-Ziel ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: Cloud-Ziel ist nicht verfügbar."
             } else if !readiness.hasLocalPersistentContainer {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar."
             } else if !readiness.hasLocalData {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: keine lokalen Daten gefunden.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: keine lokalen Daten gefunden."
             } else if !readiness.localValidationIssues.isEmpty {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: \(readiness.localValidationIssues.count) Validierungshinweise im lokalen Bestand.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: \(readiness.localValidationIssues.count) Validierungshinweise im lokalen Bestand."
             } else {
-                userDefaults.set("Automatische Cloud-Migration übersprungen.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen."
             }
+
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
 
             bootstrapLogger.info(
                 "Automatic cloud migration skipped: completed=\(readiness.hasCompletedMigration, privacy: .public), localContainer=\(readiness.hasLocalPersistentContainer, privacy: .public), cloudContainer=\(readiness.hasCloudPersistentContainer, privacy: .public), hasLocalData=\(readiness.hasLocalData, privacy: .public), issues=\(readiness.localValidationIssues.count, privacy: .public)"
@@ -155,31 +169,30 @@ enum AppDataBootstrapper {
 
         let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
         do {
-            let report = try SyncMigrationCoordinator.migrate(
+            let migrationReport = try SyncMigrationCoordinator.migrate(
                 snapshot: snapshot,
                 into: cloudContainer.mainContext,
                 userDefaults: userDefaults
             )
 
-            if report.validationIssues.isEmpty {
-                userDefaults.set(
-                    "Automatische Cloud-Migration erfolgreich: \(report.migratedEpisodeCount) Folgen, \(report.migratedUniverseCount) Sammlungen, \(report.migratedMoodCount) Stimmungen.",
-                    forKey: automaticCloudMigrationStatusKey
-                )
+            let statusMessage: String
+            if migrationReport.validationIssues.isEmpty {
+                statusMessage = "Automatische Cloud-Migration erfolgreich: \(migrationReport.migratedEpisodeCount) Folgen, \(migrationReport.migratedUniverseCount) Sammlungen, \(migrationReport.migratedMoodCount) Stimmungen."
             } else {
-                userDefaults.set(
-                    "Automatische Cloud-Migration beendet mit \(report.validationIssues.count) Validierungshinweisen.",
-                    forKey: automaticCloudMigrationStatusKey
-                )
+                statusMessage = "Automatische Cloud-Migration beendet mit \(migrationReport.validationIssues.count) Validierungshinweisen."
             }
 
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+
             bootstrapLogger.info(
-                "Automatic cloud migration finished: episodes=\(report.migratedEpisodeCount, privacy: .public), universes=\(report.migratedUniverseCount, privacy: .public), moods=\(report.migratedMoodCount, privacy: .public), issues=\(report.validationIssues.count, privacy: .public), markedCompleted=\(report.markedCompleted, privacy: .public)"
+                "Automatic cloud migration finished: episodes=\(migrationReport.migratedEpisodeCount, privacy: .public), universes=\(migrationReport.migratedUniverseCount, privacy: .public), moods=\(migrationReport.migratedMoodCount, privacy: .public), issues=\(migrationReport.validationIssues.count, privacy: .public), markedCompleted=\(migrationReport.markedCompleted, privacy: .public)"
             )
         } catch {
-            let message = "Automatische Cloud-Migration fehlgeschlagen: \(error.localizedDescription)"
-            userDefaults.set(message, forKey: automaticCloudMigrationStatusKey)
-            bootstrapLogger.error("\(message, privacy: .public)")
+            let statusMessage = "Automatische Cloud-Migration fehlgeschlagen: \(error.localizedDescription)"
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+            bootstrapLogger.error("\(statusMessage, privacy: .public)")
         }
     }
 
