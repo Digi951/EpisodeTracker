@@ -79,17 +79,17 @@ struct EpisodeListView: View {
     }
 
     var body: some View {
-        List(selection: isEditing ? $multiSelection : nil) {
+        List(selection: $multiSelection) {
             librarySnapshotRow
             moodFilterRow
             contentRows
         }
         .environment(\.editMode, isEditing ? .constant(.active) : .constant(.inactive))
-        .searchable(text: $controls.searchText, prompt: "Folge suchen…")
+        .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if !episodes.isEmpty {
-                    Button(isEditing ? "Fertig" : "Auswählen") {
+                    Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
                         isEditing.toggle()
                         if !isEditing {
                             multiSelection.removeAll()
@@ -99,7 +99,11 @@ struct EpisodeListView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 if isEditing {
-                    batchActionsMenu
+                    Button {
+                        selectAllVisible()
+                    } label: {
+                        Text(multiSelection.count == filteredEpisodes.count ? "Keine" : "Alle")
+                    }
                 } else {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
@@ -109,7 +113,20 @@ struct EpisodeListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if !episodes.isEmpty && !isEditing {
+            if isEditing && !multiSelection.isEmpty {
+                Button(role: .destructive) {
+                    requestDeleteSelected()
+                } label: {
+                    Text("\(multiSelection.count) Folge\(multiSelection.count == 1 ? "" : "n") l\u{00F6}schen")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            } else if !episodes.isEmpty && !isEditing {
                 HStack {
                     Spacer()
                     NavigationLink(value: NavigationDestination.addEpisode) {
@@ -133,7 +150,7 @@ struct EpisodeListView: View {
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Löschen", role: .destructive) {
+            Button("L\u{00F6}schen", role: .destructive) {
                 confirmDeleteEpisodes()
                 isEditing = false
             }
@@ -142,27 +159,6 @@ struct EpisodeListView: View {
             }
         } message: {
             Text(deleteState.message(usesCloudSync: prefersICloudSync))
-        }
-    }
-
-    @ViewBuilder
-    private var batchActionsMenu: some View {
-        Menu {
-            Button {
-                selectAllVisible()
-            } label: {
-                Label("Alle auswählen", systemImage: "checkmark.circle")
-            }
-
-            if !multiSelection.isEmpty {
-                Button(role: .destructive) {
-                    requestDeleteSelected()
-                } label: {
-                    Label("Auswahl löschen (\(multiSelection.count))", systemImage: "trash")
-                }
-            }
-        } label: {
-            Image(systemName: "ellipsis.circle")
         }
     }
 
@@ -249,38 +245,43 @@ struct EpisodeListView: View {
 
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
-        NavigationLink(value: episode) {
+        if isEditing {
             EpisodeRowView(episode: episode)
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                episode.isListened.toggle()
-                if episode.isListened {
+                .tag(episode.persistentModelID)
+        } else {
+            NavigationLink(value: episode) {
+                EpisodeRowView(episode: episode)
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    episode.isListened.toggle()
+                    if episode.isListened {
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isListened ? "Nochmal" : "Gehört",
+                        systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+                    )
+                }
+                .tint(episode.isListened ? .gray : .green)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    episode.isListened = true
                     episode.listenCount += 1
                     episode.lastListenedAt = .now
+                } label: {
+                    Label("Hördurchgang zählen", systemImage: "plus")
                 }
-            } label: {
-                Label(
-                    episode.isListened ? "Nochmal" : "Gehört",
-                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
-                )
-            }
-            .tint(episode.isListened ? .gray : .green)
-        }
-        .swipeActions(edge: .trailing) {
-            Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
-            } label: {
-                Label("Hördurchgang zählen", systemImage: "plus")
-            }
-            .tint(.blue)
+                .tint(.blue)
 
-            Button(role: .destructive) {
-                requestDeleteEpisode(episode)
-            } label: {
-                Label("Löschen", systemImage: "trash")
+                Button(role: .destructive) {
+                    requestDeleteEpisode(episode)
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
             }
         }
     }
@@ -304,7 +305,12 @@ struct EpisodeListView: View {
     }
 
     private func selectAllVisible() {
-        multiSelection = Set(filteredEpisodes.map(\.persistentModelID))
+        let allIDs = Set(filteredEpisodes.map(\.persistentModelID))
+        if multiSelection == allIDs {
+            multiSelection.removeAll()
+        } else {
+            multiSelection = allIDs
+        }
     }
 
     private func requestDeleteSelected() {

@@ -259,18 +259,23 @@ private struct IPadEpisodeListView: View {
     var body: some View {
         Group {
             if isEditing {
-                multiSelectList
+                List(selection: $multiSelection) {
+                    listContent
+                }
+                .environment(\.editMode, .constant(.active))
             } else {
-                navigationList
+                List(selection: $selection) {
+                    listContent
+                }
             }
         }
         .listStyle(.sidebar)
-        .searchable(text: $controls.searchText, prompt: "Folge suchen…")
+        .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if !episodes.isEmpty {
-                    Button(isEditing ? "Fertig" : "Auswählen") {
+                    Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
                         isEditing.toggle()
                         if !isEditing {
                             multiSelection.removeAll()
@@ -280,7 +285,11 @@ private struct IPadEpisodeListView: View {
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if isEditing {
-                    ipadBatchActionsMenu
+                    Button {
+                        selectAllVisible()
+                    } label: {
+                        Text(multiSelection.count == filteredEpisodes.count ? "Keine" : "Alle")
+                    }
                 } else {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
@@ -295,6 +304,22 @@ private struct IPadEpisodeListView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if isEditing && !multiSelection.isEmpty {
+                Button(role: .destructive) {
+                    requestDeleteSelected()
+                } label: {
+                    Text("\(multiSelection.count) Folge\(multiSelection.count == 1 ? "" : "n") l\u{00F6}schen")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
+        }
         .sheet(isPresented: $showingAddEpisode) {
             NavigationStack {
                 EpisodeEditView()
@@ -305,7 +330,7 @@ private struct IPadEpisodeListView: View {
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Löschen", role: .destructive) {
+            Button("L\u{00F6}schen", role: .destructive) {
                 confirmDeleteEpisodes()
                 isEditing = false
             }
@@ -329,19 +354,6 @@ private struct IPadEpisodeListView: View {
                 self.selection = episodes.first
             }
         }
-    }
-
-    private var navigationList: some View {
-        List(selection: $selection) {
-            listContent
-        }
-    }
-
-    private var multiSelectList: some View {
-        List(selection: $multiSelection) {
-            listContent
-        }
-        .environment(\.editMode, .constant(.active))
     }
 
     @ViewBuilder
@@ -372,7 +384,7 @@ private struct IPadEpisodeListView: View {
                 Section {
                     if !isCollapsed(group) {
                         ForEach(group.episodes) { episode in
-                            episodeNavigationLink(episode)
+                            episodeRow(episode)
                         }
                         .onDelete { offsets in
                             requestDeleteEpisodes(group.episodes, at: offsets)
@@ -389,7 +401,7 @@ private struct IPadEpisodeListView: View {
             }
         } else {
             ForEach(filteredEpisodes) { episode in
-                episodeNavigationLink(episode)
+                episodeRow(episode)
             }
             .onDelete { offsets in
                 requestDeleteEpisodes(filteredEpisodes, at: offsets)
@@ -398,59 +410,44 @@ private struct IPadEpisodeListView: View {
     }
 
     @ViewBuilder
-    private var ipadBatchActionsMenu: some View {
-        Menu {
-            Button {
-                selectAllVisible()
-            } label: {
-                Label("Alle auswählen", systemImage: "checkmark.circle")
-            }
-
-            if !multiSelection.isEmpty {
-                Button(role: .destructive) {
-                    requestDeleteSelected()
-                } label: {
-                    Label("Auswahl löschen (\(multiSelection.count))", systemImage: "trash")
-                }
-            }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-        }
-    }
-
-    private func episodeNavigationLink(_ episode: Episode) -> some View {
-        NavigationLink(value: episode) {
+    private func episodeRow(_ episode: Episode) -> some View {
+        if isEditing {
             EpisodeRowView(episode: episode)
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                episode.isListened.toggle()
-                if episode.isListened {
+                .tag(episode.persistentModelID)
+        } else {
+            NavigationLink(value: episode) {
+                EpisodeRowView(episode: episode)
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    episode.isListened.toggle()
+                    if episode.isListened {
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isListened ? "Nochmal" : "Gehört",
+                        systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+                    )
+                }
+                .tint(episode.isListened ? .gray : .green)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    episode.isListened = true
                     episode.listenCount += 1
                     episode.lastListenedAt = .now
+                } label: {
+                    Label("Hördurchgang zählen", systemImage: "plus")
                 }
-            } label: {
-                Label(
-                    episode.isListened ? "Nochmal" : "Gehört",
-                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
-                )
-            }
-            .tint(episode.isListened ? .gray : .green)
-        }
-        .swipeActions(edge: .trailing) {
-            Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
-            } label: {
-                Label("Hördurchgang zählen", systemImage: "plus")
-            }
-            .tint(.blue)
+                .tint(.blue)
 
-            Button(role: .destructive) {
-                requestDeleteEpisode(episode)
-            } label: {
-                Label("Löschen", systemImage: "trash")
+                Button(role: .destructive) {
+                    requestDeleteEpisode(episode)
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
             }
         }
     }
@@ -477,7 +474,12 @@ private struct IPadEpisodeListView: View {
     }
 
     private func selectAllVisible() {
-        multiSelection = Set(filteredEpisodes.map(\.persistentModelID))
+        let allIDs = Set(filteredEpisodes.map(\.persistentModelID))
+        if multiSelection == allIDs {
+            multiSelection.removeAll()
+        } else {
+            multiSelection = allIDs
+        }
     }
 
     private func requestDeleteSelected() {
