@@ -324,6 +324,81 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(episode.resolvedCoverImageName(), "episode-cover")
     }
 
+    // MARK: - Cover Field Persistence
+
+    func testCoverFieldsStartNilAfterUpgrade() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "Der Super-Papagei",
+            releaseYear: 1979,
+            universe: universe,
+            moods: [mood]
+        )
+
+        context.insert(universe)
+        context.insert(mood)
+        context.insert(episode)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertNil(fetched[0].coverImageName)
+        XCTAssertNil(fetched[0].universe?.coverImageName)
+        XCTAssertEqual(fetched[0].resolvedCoverImageName(), nil)
+
+        // Existing data untouched
+        XCTAssertEqual(fetched[0].title, "Der Super-Papagei")
+        XCTAssertEqual(fetched[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(fetched[0].moods.count, 1)
+    }
+
+    func testCoverNamePersistsThroughSaveFetch() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "TKKG")
+        universe.coverImageName = "universe-\(universe.id.uuidString)"
+        let episode = Episode(episodeNumber: 1, title: "Test", releaseYear: 2020, universe: universe)
+        episode.coverImageName = "\(episode.id.uuidString)"
+
+        context.insert(universe)
+        context.insert(episode)
+        try context.save()
+
+        let fetchedEpisodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetchedEpisodes[0].coverImageName, "\(episode.id.uuidString)")
+
+        let fetchedUniverses = try context.fetch(FetchDescriptor<Universe>())
+        let tkkg = fetchedUniverses.first(where: { $0.name == "TKKG" })!
+        XCTAssertEqual(tkkg.coverImageName, "universe-\(universe.id.uuidString)")
+    }
+
+    func testSyncPreparationPreservesCoverFields() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Test")
+        universe.coverImageName = "uni-cover"
+        let episode = Episode(episodeNumber: 1, title: "E1", releaseYear: 2020, universe: universe)
+        episode.coverImageName = "ep-cover"
+
+        context.insert(universe)
+        context.insert(episode)
+        try context.save()
+
+        let summary = SyncPreparation.prepare(context: context)
+        XCTAssertFalse(summary.hasChanges)
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched[0].coverImageName, "ep-cover")
+        XCTAssertEqual(fetched[0].universe?.coverImageName, "uni-cover")
+    }
+
     // MARK: - Schema Metadata
 
     func testSchemaContainsOriginalNameForRenamedRelationships() throws {
