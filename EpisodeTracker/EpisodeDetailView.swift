@@ -44,6 +44,16 @@ struct EpisodeDetailView: View {
 
     var body: some View {
         List {
+            if let coverName = episode.resolvedCoverImageName() {
+                Section {
+                    CoverImageView(name: coverName, maxHeight: 280)
+                        .frame(maxWidth: .infinity)
+                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+
             Section {
                 VStack(alignment: .leading, spacing: 16) {
                     // Katalog + Jahr

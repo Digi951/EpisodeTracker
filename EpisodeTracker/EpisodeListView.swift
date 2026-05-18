@@ -299,9 +299,7 @@ struct EpisodeListView: View {
     }
 
     private func confirmDeleteEpisodes() {
-        for episode in deleteState.pendingEpisodes {
-            modelContext.delete(episode)
-        }
+        EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
         multiSelection.removeAll()
     }
@@ -529,6 +527,10 @@ struct EpisodeRowView: View {
 
     var body: some View {
         HStack {
+            if let coverName = episode.resolvedCoverImageName() {
+                CoverImageThumbnail(name: coverName)
+            }
+
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
@@ -569,6 +571,21 @@ struct EpisodeRowView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             }
+        }
+    }
+}
+
+private struct CoverImageThumbnail: View {
+    let name: String
+    private let store = CoverImageStore()
+
+    var body: some View {
+        if let image = store.load(name: name) {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
     }
 }
