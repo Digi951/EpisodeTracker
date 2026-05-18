@@ -42,6 +42,7 @@ struct SettingsView: View {
         AppModelContainerFactory.showsInternalSyncControls()
     }
 
+#if DEBUG
     private var syncDiagnosticsContext: SettingsSyncDiagnosticsContext {
         SettingsSyncDiagnosticsContext(
             requestedModeTitle: containerMode.debugTitle,
@@ -56,6 +57,7 @@ struct SettingsView: View {
             )
         )
     }
+#endif
 
     var body: some View {
         List {
@@ -186,15 +188,17 @@ struct SettingsView: View {
         CatalogSourceRegistry.managedSources.filter { activeCatalogIDs.contains($0.id) }.count
     }
 
+#if DEBUG
     @MainActor
     private func runInternalSyncMigration() {
         let result = SettingsSyncDiagnosticsRunner.runMigration(
             containerSet: containerAccess.containerSet,
-            userDefaults: .standard
+            userDefaults: UserDefaults.standard
         )
         syncMigrationStatusIsError = result.isError
         syncMigrationStatusMessage = result.message
     }
+#endif
 
     private var backupFileName: String {
         let formatter = DateFormatter()
