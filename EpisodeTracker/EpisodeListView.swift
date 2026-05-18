@@ -79,12 +79,22 @@ struct EpisodeListView: View {
     }
 
     var body: some View {
-        List(selection: $multiSelection) {
-            librarySnapshotRow
-            moodFilterRow
-            contentRows
+        Group {
+            if isEditing {
+                List(selection: $multiSelection) {
+                    librarySnapshotRow
+                    moodFilterRow
+                    contentRows
+                }
+                .environment(\.editMode, .constant(.active))
+            } else {
+                List {
+                    librarySnapshotRow
+                    moodFilterRow
+                    contentRows
+                }
+            }
         }
-        .environment(\.editMode, isEditing ? .constant(.active) : .constant(.inactive))
         .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
