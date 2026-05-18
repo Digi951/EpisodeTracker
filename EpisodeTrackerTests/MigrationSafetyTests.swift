@@ -303,6 +303,27 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(universes[0].episodes.count, 1, "Existing episode assignments must survive the merge")
     }
 
+    // MARK: - Cover Image Fallback
+
+    func testEpisodeCoverFallsBackToUniverse() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Test")
+        universe.coverImageName = "universe-cover"
+        let episode = Episode(episodeNumber: 1, title: "E1", releaseYear: 2020, universe: universe)
+
+        context.insert(universe)
+        context.insert(episode)
+        try context.save()
+
+        XCTAssertNil(episode.coverImageName)
+        XCTAssertEqual(episode.resolvedCoverImageName(), "universe-cover")
+
+        episode.coverImageName = "episode-cover"
+        XCTAssertEqual(episode.resolvedCoverImageName(), "episode-cover")
+    }
+
     // MARK: - Schema Metadata
 
     func testSchemaContainsOriginalNameForRenamedRelationships() throws {
