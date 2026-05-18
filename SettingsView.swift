@@ -683,6 +683,7 @@ private struct CatalogManagementView: View {
     @State private var activeCatalogIDs: Set<String> = []
     @State private var selectedUniverseForCover: Universe?
     @State private var universePhotoItem: PhotosPickerItem?
+    @State private var coverRefreshTrigger = UUID()
 
     private let activeCatalogStore = ActiveCatalogStore()
 
@@ -733,6 +734,7 @@ private struct CatalogManagementView: View {
             } footer: {
                 Text("Aktivierte Kataloge werden automatisch aktualisiert und liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
             }
+            .id(coverRefreshTrigger)
 
             Section {
                 ForEach(universes.filter { universe in
@@ -774,6 +776,7 @@ private struct CatalogManagementView: View {
             } footer: {
                 Text("Nur leere Kataloge können gelöscht werden.")
             }
+            .id(coverRefreshTrigger)
 
             Section {
                 Button {
@@ -807,7 +810,7 @@ private struct CatalogManagementView: View {
         )
         .onChange(of: universePhotoItem) { _, newItem in
             guard let newItem, let universe = selectedUniverseForCover else { return }
-            Task {
+            Task { @MainActor in
                 if let data = try? await newItem.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
                     saveUniverseCover(uiImage, for: universe)
@@ -886,6 +889,8 @@ private struct CatalogManagementView: View {
         do {
             try store.save(image, name: coverName)
             universe.coverImageName = coverName
+            try? modelContext.save()
+            coverRefreshTrigger = UUID()
         } catch {
             // Cover is non-critical
         }
@@ -897,6 +902,8 @@ private struct CatalogManagementView: View {
             try? store.delete(name: coverName)
         }
         universe.coverImageName = nil
+        try? modelContext.save()
+        coverRefreshTrigger = UUID()
     }
 }
 
