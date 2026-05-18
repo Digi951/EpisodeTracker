@@ -576,7 +576,7 @@ private struct CatalogGroupHeader: View {
             Spacer()
 
             Button(action: onImportVisible) {
-                Text("\(count)")
+                Text("+\(count)")
                     .font(.caption.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(.tint)

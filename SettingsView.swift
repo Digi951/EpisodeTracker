@@ -26,6 +26,7 @@ struct SettingsView: View {
     @State private var showingExporter = false
     @State private var exportDocument: JSONBackupDocument?
     @State private var pendingImportURL: URL?
+    @State private var showingResetConfirmation = false
     @State private var syncMigrationStatusMessage: String?
     @State private var syncMigrationStatusIsError = false
 
@@ -79,7 +80,7 @@ struct SettingsView: View {
             )
 
             SettingsResetSection(
-                onReset: resetDisplaySettings
+                onReset: { showingResetConfirmation = true }
             )
 
             SettingsSyncSection(
@@ -151,6 +152,18 @@ struct SettingsView: View {
             }
         } message: {
             Text("Bestehende Folgen mit gleicher Nummer werden aktualisiert, neue ergänzt.")
+        }
+        .confirmationDialog(
+            "Darstellung zurücksetzen?",
+            isPresented: $showingResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Zurücksetzen", role: .destructive) {
+                resetDisplaySettings()
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Zurückgesetzt werden Sammlungsname, Darstellung, sichtbarer Hörstand und die Katalogfortschritts-Anzeige.")
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
