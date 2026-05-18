@@ -10,9 +10,13 @@ struct EpisodeListView: View {
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
 
+    @AppStorage("prefersICloudSync") private var prefersICloudSync = false
+
     @State private var controls = EpisodeListControlsState()
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
+    @State private var multiSelection: Set<PersistentIdentifier> = []
+    @State private var isEditing = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -75,22 +79,37 @@ struct EpisodeListView: View {
     }
 
     var body: some View {
-        List {
+        List(selection: isEditing ? $multiSelection : nil) {
             librarySnapshotRow
             moodFilterRow
             contentRows
         }
+        .environment(\.editMode, isEditing ? .constant(.active) : .constant(.inactive))
         .searchable(text: $controls.searchText, prompt: "Folge suchen…")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if !episodes.isEmpty {
+                    Button(isEditing ? "Fertig" : "Auswählen") {
+                        isEditing.toggle()
+                        if !isEditing {
+                            multiSelection.removeAll()
+                        }
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                EpisodeListSortFilterMenu(
-                    controls: $controls,
-                    universes: universes
-                )
+                if isEditing {
+                    batchActionsMenu
+                } else {
+                    EpisodeListSortFilterMenu(
+                        controls: $controls,
+                        universes: universes
+                    )
+                }
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if !episodes.isEmpty {
+            if !episodes.isEmpty && !isEditing {
                 HStack {
                     Spacer()
                     NavigationLink(value: NavigationDestination.addEpisode) {
@@ -116,12 +135,34 @@ struct EpisodeListView: View {
         ) {
             Button("Löschen", role: .destructive) {
                 confirmDeleteEpisodes()
+                isEditing = false
             }
             Button("Abbrechen", role: .cancel) {
                 deleteState.clear()
             }
         } message: {
-            Text(deleteState.message)
+            Text(deleteState.message(usesCloudSync: prefersICloudSync))
+        }
+    }
+
+    @ViewBuilder
+    private var batchActionsMenu: some View {
+        Menu {
+            Button {
+                selectAllVisible()
+            } label: {
+                Label("Alle auswählen", systemImage: "checkmark.circle")
+            }
+
+            if !multiSelection.isEmpty {
+                Button(role: .destructive) {
+                    requestDeleteSelected()
+                } label: {
+                    Label("Auswahl löschen (\(multiSelection.count))", systemImage: "trash")
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
         }
     }
 
@@ -259,6 +300,18 @@ struct EpisodeListView: View {
             modelContext.delete(episode)
         }
         deleteState.clear()
+        multiSelection.removeAll()
+    }
+
+    private func selectAllVisible() {
+        multiSelection = Set(filteredEpisodes.map(\.persistentModelID))
+    }
+
+    private func requestDeleteSelected() {
+        let selected = filteredEpisodes.filter { multiSelection.contains($0.persistentModelID) }
+        guard !selected.isEmpty else { return }
+        deleteState.requestBatch(selected)
+        showingDeleteConfirmation = true
     }
 
     private func isCollapsed(_ group: EpisodeListGroup) -> Bool {
