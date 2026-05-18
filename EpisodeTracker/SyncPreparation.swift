@@ -5,8 +5,9 @@ import SwiftData
 private let logger = Logger(subsystem: "com.Digi.EpisodeTracker", category: "SyncPreparation")
 
 enum SyncPreparation {
+    @discardableResult
     @MainActor
-    static func prepare(context: ModelContext) {
+    static func prepare(context: ModelContext) -> ChangeSummary {
         let allMoods = (try? context.fetch(FetchDescriptor<Mood>())) ?? []
         let allUniverses = (try? context.fetch(FetchDescriptor<Universe>())) ?? []
         let allEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
@@ -38,17 +39,30 @@ enum SyncPreparation {
         } else {
             logger.info("SyncPreparation: no repairs required")
         }
+
+        return changeSummary
     }
 
-    private struct ChangeSummary {
-        var repairedEpisodeIDs = 0
-        var repairedMoodIDs = 0
-        var repairedUniverseIDs = 0
-        var mergedMoods = 0
-        var mergedUniverses = 0
-        var deduplicatedEpisodes = 0
-        var refreshedEpisodeSyncKeys = 0
-        var deduplicatedEpisodeMoods = 0
+    struct ChangeSummary {
+        fileprivate(set) var repairedEpisodeIDs = 0
+        fileprivate(set) var repairedMoodIDs = 0
+        fileprivate(set) var repairedUniverseIDs = 0
+        fileprivate(set) var mergedMoods = 0
+        fileprivate(set) var mergedUniverses = 0
+        fileprivate(set) var deduplicatedEpisodes = 0
+        fileprivate(set) var refreshedEpisodeSyncKeys = 0
+        fileprivate(set) var deduplicatedEpisodeMoods = 0
+
+        var hasChanges: Bool {
+            repairedEpisodeIDs > 0 ||
+            repairedMoodIDs > 0 ||
+            repairedUniverseIDs > 0 ||
+            mergedMoods > 0 ||
+            mergedUniverses > 0 ||
+            deduplicatedEpisodes > 0 ||
+            refreshedEpisodeSyncKeys > 0 ||
+            deduplicatedEpisodeMoods > 0
+        }
 
         var logDescription: String {
             "episodeIDs=\(repairedEpisodeIDs), moodIDs=\(repairedMoodIDs), universeIDs=\(repairedUniverseIDs), mergedMoods=\(mergedMoods), mergedUniverses=\(mergedUniverses), deduplicatedEpisodes=\(deduplicatedEpisodes), refreshedEpisodeSyncKeys=\(refreshedEpisodeSyncKeys), deduplicatedEpisodeMoods=\(deduplicatedEpisodeMoods)"
