@@ -1085,7 +1085,7 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertTrue(deleteState.isActive)
         XCTAssertEqual(deleteState.title, "Folge löschen?")
-        XCTAssertTrue(deleteState.message.contains("Super-Papagei"))
+        XCTAssertTrue(deleteState.message(usesCloudSync: false).contains("Super-Papagei"))
     }
 
     func testEpisodeDeleteStateCanCollectMultipleEpisodesFromOffsets() {
