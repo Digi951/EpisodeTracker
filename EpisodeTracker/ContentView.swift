@@ -469,8 +469,8 @@ private struct IPadEpisodeListView: View {
             if episode == selection {
                 selection = nil
             }
-            modelContext.delete(episode)
         }
+        EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
         multiSelection.removeAll()
     }

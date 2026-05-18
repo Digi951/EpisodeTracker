@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct EpisodeEditView: View {
     @Environment(\.dismiss) private var dismiss
@@ -30,8 +31,15 @@ struct EpisodeEditView: View {
     @State private var streamingURL: String = ""
     @State private var showingDeleteConfirmation = false
     @State private var pendingCatalogRefreshKey: String?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var coverImage: UIImage?
+    @State private var removeCover = false
 
     private var isNew: Bool { episode == nil }
+    private var hasVisibleCover: Bool {
+        if removeCover { return false }
+        return coverImage != nil || (episode?.coverImageName != nil && !(episode?.coverImageName?.isEmpty ?? true))
+    }
     private var parsedEpisodeNumber: Int? {
         Int(episodeNumberText.trimmingCharacters(in: .whitespacesAndNewlines))
     }
@@ -105,6 +113,42 @@ struct EpisodeEditView: View {
                 onSelectSuggestedEntry: applySuggestedEntry
             )
 
+            Section {
+                if let coverImage {
+                    Image(uiImage: coverImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .frame(maxWidth: .infinity)
+                } else if !removeCover, let existingName = episode?.coverImageName, !existingName.isEmpty {
+                    CoverImageView(name: existingName, maxHeight: 200)
+                        .frame(maxWidth: .infinity)
+                }
+
+                PhotosPicker(
+                    selection: $selectedPhotoItem,
+                    matching: .images
+                ) {
+                    Label(
+                        hasVisibleCover ? "Cover ersetzen" : "Cover hinzufügen",
+                        systemImage: hasVisibleCover ? "photo.badge.arrow.down" : "photo.badge.plus"
+                    )
+                }
+
+                if hasVisibleCover {
+                    Button(role: .destructive) {
+                        coverImage = nil
+                        selectedPhotoItem = nil
+                        removeCover = true
+                    } label: {
+                        Label("Cover entfernen", systemImage: "trash")
+                    }
+                }
+            } header: {
+                Text("Cover")
+            }
+
             EpisodeStatusSection(
                 isListened: $isListened,
                 rating: $rating
@@ -165,7 +209,7 @@ struct EpisodeEditView: View {
         ) {
             Button("Löschen", role: .destructive) {
                 if let episode {
-                    modelContext.delete(episode)
+                    EpisodeDeleteHelper.delete(episode, from: modelContext)
                 }
                 dismiss()
             }
@@ -198,6 +242,16 @@ struct EpisodeEditView: View {
         .onAppear {
             populateInitialState()
             refreshCatalogMatch()
+        }
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            guard let newItem else { return }
+            Task {
+                if let data = try? await newItem.loadTransferable(type: Data.self),
+                   let uiImage = UIImage(data: data) {
+                    coverImage = uiImage
+                    removeCover = false
+                }
+            }
         }
     }
 
@@ -257,6 +311,7 @@ struct EpisodeEditView: View {
             episode.moods = Array(selectedMoods)
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             episode.refreshSyncKeyIfPossible()
+            saveCoverImage(for: episode)
 
             if isListened && !wasListened {
                 episode.listenCount += 1
@@ -278,6 +333,7 @@ struct EpisodeEditView: View {
                 newEpisode.listenCount = 1
                 newEpisode.lastListenedAt = .now
             }
+            saveCoverImage(for: newEpisode)
             modelContext.insert(newEpisode)
         }
 
@@ -287,6 +343,23 @@ struct EpisodeEditView: View {
         } catch {
             formValidationMessage = "Speichern fehlgeschlagen. Bitte versuche es erneut."
             return false
+        }
+    }
+
+    private func saveCoverImage(for episode: Episode) {
+        let store = CoverImageStore()
+        let coverName = CoverImageStore.coverName(for: episode.id)
+
+        if removeCover {
+            try? store.delete(name: coverName)
+            episode.coverImageName = nil
+        } else if let coverImage {
+            do {
+                try store.save(coverImage, name: coverName)
+                episode.coverImageName = coverName
+            } catch {
+                // Cover is non-critical
+            }
         }
     }
 
