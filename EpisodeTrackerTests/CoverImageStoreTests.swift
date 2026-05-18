@@ -91,6 +91,23 @@ final class CoverImageStoreTests: XCTestCase {
         XCTAssertEqual(size.height, 150, accuracy: 1)
     }
 
+    func testCoverNameForEpisode() {
+        let id = UUID(uuidString: "12345678-1234-1234-1234-123456789ABC")!
+        let name = CoverImageStore.coverName(for: id)
+        XCTAssertEqual(name, "12345678-1234-1234-1234-123456789ABC")
+    }
+
+    func testUniverseCoverName() {
+        let id = UUID(uuidString: "ABCDEF01-2345-6789-ABCD-EF0123456789")!
+        let name = CoverImageStore.universeCoverName(for: id)
+        XCTAssertEqual(name, "universe-ABCDEF01-2345-6789-ABCD-EF0123456789")
+    }
+
+    func testLoadNonexistentReturnsNil() {
+        let result = store.load(name: "nonexistent")
+        XCTAssertNil(result)
+    }
+
     private func makeTestImage(width: Int, height: Int, color: UIColor = .blue) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0

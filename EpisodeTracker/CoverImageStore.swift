@@ -49,6 +49,14 @@ struct CoverImageStore {
         try FileManager.default.removeItem(at: url)
     }
 
+    static func coverName(for episodeID: UUID) -> String {
+        episodeID.uuidString
+    }
+
+    static func universeCoverName(for universeID: UUID) -> String {
+        "universe-\(universeID.uuidString)"
+    }
+
     private func fileURL(for name: String) -> URL {
         coverDirectory.appendingPathComponent("\(name).jpg")
     }
