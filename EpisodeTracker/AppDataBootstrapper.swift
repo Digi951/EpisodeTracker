@@ -20,7 +20,7 @@ enum AppDataBootstrapper {
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
         if let localContainer = containerSet.localPersistent {
-            prepareContainer(
+            _ = prepareContainer(
                 localContainer,
                 usesCloudSync: false,
                 lastSchemaVersion: lastSchemaVersion
@@ -35,7 +35,7 @@ enum AppDataBootstrapper {
         }
 
         if shouldPreparePrimary {
-            prepareContainer(
+            _ = prepareContainer(
                 containerSet.primary,
                 usesCloudSync: containerSet.runtimeMode.usesCloudSync,
                 lastSchemaVersion: lastSchemaVersion
@@ -64,14 +64,15 @@ enum AppDataBootstrapper {
         AppModelContainerFactory.removePreMigrationBackup()
     }
 
+    @discardableResult
     @MainActor
     static func bootstrap(
         container: ModelContainer,
         usesCloudSync: Bool,
         userDefaults: UserDefaults = .standard
-    ) async {
+    ) async -> BootstrapReport {
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
-        prepareContainer(
+        let report = prepareContainer(
             container,
             usesCloudSync: usesCloudSync,
             lastSchemaVersion: lastSchemaVersion
@@ -87,6 +88,9 @@ enum AppDataBootstrapper {
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
+
+        bootstrapLogger.info("Bootstrap completed: \(report.logDescription, privacy: .public)")
+        return report
     }
 
     @MainActor
@@ -94,20 +98,25 @@ enum AppDataBootstrapper {
         _ container: ModelContainer,
         usesCloudSync: Bool,
         lastSchemaVersion: Int
-    ) {
-        seedMoodsIfNeeded(container: container)
-        seedCollectionsIfNeeded(container: container)
+    ) -> BootstrapReport {
+        var report = BootstrapReport()
+
+        report.seededMoods = seedMoodsIfNeeded(container: container)
+        report.seededCollections = seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
-        assignMissingCollectionsIfNeeded(container: container)
-        prepareSyncDataIfNeeded(container: container)
+        report.assignedOrphanEpisodes = assignMissingCollectionsIfNeeded(container: container)
+        let syncSummary = SyncPreparation.prepare(context: container.mainContext)
+        report.syncPreparationSummary = syncSummary
 
         if usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: container)
         }
 
         if lastSchemaVersion < 2 {
-            repairPostMigrationIfNeeded(container: container)
+            report.repairedPostMigrationIDs = repairPostMigrationIfNeeded(container: container)
         }
+
+        return report
     }
 
     @MainActor
@@ -174,44 +183,50 @@ enum AppDataBootstrapper {
         }
     }
 
+    @discardableResult
     @MainActor
-    static func repairPostMigrationIfNeeded(container: ModelContainer) {
+    static func repairPostMigrationIfNeeded(container: ModelContainer) -> Int {
         let context = container.mainContext
         let episodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
 
-        var didChange = false
+        var repairedCount = 0
         for episode in episodes where episode.id == UUID(uuidString: "00000000-0000-0000-0000-000000000000") {
             episode.id = UUID()
-            didChange = true
+            repairedCount += 1
         }
-        if didChange {
+        if repairedCount > 0 {
             try? context.save()
         }
+        return repairedCount
     }
 
+    @discardableResult
     @MainActor
-    static func seedMoodsIfNeeded(container: ModelContainer) {
+    static func seedMoodsIfNeeded(container: ModelContainer) -> Bool {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Mood>()
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+        guard existingCount == 0 else { return false }
 
         for suggestion in Mood.defaultSuggestions {
             context.insert(Mood(name: suggestion.name, iconName: suggestion.icon))
         }
+        return true
     }
 
+    @discardableResult
     @MainActor
-    static func seedCollectionsIfNeeded(container: ModelContainer) {
+    static func seedCollectionsIfNeeded(container: ModelContainer) -> Bool {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Universe>()
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+        guard existingCount == 0 else { return false }
 
         context.insert(Universe(name: "Allgemein"))
         for universeName in CatalogSourceRegistry.managedSources.map(\.name) {
             context.insert(Universe(name: universeName))
         }
+        return true
     }
 
     @MainActor
@@ -226,23 +241,25 @@ enum AppDataBootstrapper {
         }
     }
 
+    @discardableResult
     @MainActor
-    static func assignMissingCollectionsIfNeeded(container: ModelContainer) {
+    static func assignMissingCollectionsIfNeeded(container: ModelContainer) -> Int {
         let context = container.mainContext
-        guard let defaultUniverse = ensureDefaultUniverse(in: context) else { return }
+        guard let defaultUniverse = ensureDefaultUniverse(in: context) else { return 0 }
 
         let descriptor = FetchDescriptor<Episode>()
-        guard let allEpisodes = try? context.fetch(descriptor) else { return }
+        guard let allEpisodes = try? context.fetch(descriptor) else { return 0 }
 
-        var didChange = false
+        var assignedCount = 0
         for episode in allEpisodes where episode.universe == nil {
             episode.universe = defaultUniverse
-            didChange = true
+            assignedCount += 1
         }
 
-        if didChange {
+        if assignedCount > 0 {
             try? context.save()
         }
+        return assignedCount
     }
 
     @MainActor

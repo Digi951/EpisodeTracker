@@ -43,7 +43,7 @@ enum SyncPreparation {
         return changeSummary
     }
 
-    struct ChangeSummary {
+    struct ChangeSummary: Sendable {
         fileprivate(set) var repairedEpisodeIDs = 0
         fileprivate(set) var repairedMoodIDs = 0
         fileprivate(set) var repairedUniverseIDs = 0
