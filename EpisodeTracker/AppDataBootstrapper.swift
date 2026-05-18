@@ -1,9 +1,16 @@
 import Foundation
+import os.log
 import SwiftData
+
+private let bootstrapLogger = Logger(
+    subsystem: "com.Digi.EpisodeTracker",
+    category: "AppDataBootstrapper"
+)
 
 enum AppDataBootstrapper {
     static let schemaVersionKey = "schemaVersion"
     static let currentSchemaVersion = 3
+    static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
 
     @MainActor
     static func bootstrap(
@@ -117,15 +124,54 @@ enum AppDataBootstrapper {
               let localContainer = containerSet.localPersistent,
               let cloudContainer = containerSet.cloudPersistent
         else {
+            if readiness.hasCompletedMigration {
+                userDefaults.set("Automatische Cloud-Migration bereits abgeschlossen.", forKey: automaticCloudMigrationStatusKey)
+            } else if !readiness.hasCloudPersistentContainer {
+                userDefaults.set("Automatische Cloud-Migration übersprungen: Cloud-Ziel ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+            } else if !readiness.hasLocalPersistentContainer {
+                userDefaults.set("Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+            } else if !readiness.hasLocalData {
+                userDefaults.set("Automatische Cloud-Migration übersprungen: keine lokalen Daten gefunden.", forKey: automaticCloudMigrationStatusKey)
+            } else if !readiness.localValidationIssues.isEmpty {
+                userDefaults.set("Automatische Cloud-Migration übersprungen: \(readiness.localValidationIssues.count) Validierungshinweise im lokalen Bestand.", forKey: automaticCloudMigrationStatusKey)
+            } else {
+                userDefaults.set("Automatische Cloud-Migration übersprungen.", forKey: automaticCloudMigrationStatusKey)
+            }
+
+            bootstrapLogger.info(
+                "Automatic cloud migration skipped: completed=\(readiness.hasCompletedMigration, privacy: .public), localContainer=\(readiness.hasLocalPersistentContainer, privacy: .public), cloudContainer=\(readiness.hasCloudPersistentContainer, privacy: .public), hasLocalData=\(readiness.hasLocalData, privacy: .public), issues=\(readiness.localValidationIssues.count, privacy: .public)"
+            )
             return
         }
 
         let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
-        _ = try? SyncMigrationCoordinator.migrate(
-            snapshot: snapshot,
-            into: cloudContainer.mainContext,
-            userDefaults: userDefaults
-        )
+        do {
+            let report = try SyncMigrationCoordinator.migrate(
+                snapshot: snapshot,
+                into: cloudContainer.mainContext,
+                userDefaults: userDefaults
+            )
+
+            if report.validationIssues.isEmpty {
+                userDefaults.set(
+                    "Automatische Cloud-Migration erfolgreich: \(report.migratedEpisodeCount) Folgen, \(report.migratedUniverseCount) Sammlungen, \(report.migratedMoodCount) Stimmungen.",
+                    forKey: automaticCloudMigrationStatusKey
+                )
+            } else {
+                userDefaults.set(
+                    "Automatische Cloud-Migration beendet mit \(report.validationIssues.count) Validierungshinweisen.",
+                    forKey: automaticCloudMigrationStatusKey
+                )
+            }
+
+            bootstrapLogger.info(
+                "Automatic cloud migration finished: episodes=\(report.migratedEpisodeCount, privacy: .public), universes=\(report.migratedUniverseCount, privacy: .public), moods=\(report.migratedMoodCount, privacy: .public), issues=\(report.validationIssues.count, privacy: .public), markedCompleted=\(report.markedCompleted, privacy: .public)"
+            )
+        } catch {
+            let message = "Automatische Cloud-Migration fehlgeschlagen: \(error.localizedDescription)"
+            userDefaults.set(message, forKey: automaticCloudMigrationStatusKey)
+            bootstrapLogger.error("\(message, privacy: .public)")
+        }
     }
 
     @MainActor
@@ -226,8 +272,12 @@ enum AppDataBootstrapper {
         let descriptor = FetchDescriptor<Universe>(
             sortBy: [SortDescriptor(\.name)]
         )
-        if let first = (try? context.fetch(descriptor))?.first {
-            return first
+        let universes = (try? context.fetch(descriptor)) ?? []
+        if let existingDefault = universes.first(where: {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                .caseInsensitiveCompare("Allgemein") == .orderedSame
+        }) {
+            return existingDefault
         }
 
         let newUniverse = Universe(name: "Allgemein")

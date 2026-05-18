@@ -689,6 +689,10 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertTrue(cloudSnapshot.universes.contains(where: { $0.name == "Bibi Blocksberg" }))
         XCTAssertEqual(migratedEpisode.syncKey, "episode:universe:bibi blocksberg#1")
         XCTAssertTrue(SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: defaults))
+        XCTAssertTrue(
+            defaults.string(forKey: AppDataBootstrapper.automaticCloudMigrationStatusKey)?
+                .hasPrefix("Automatische Cloud-Migration erfolgreich: 1 Folgen") == true
+        )
     }
 
     @MainActor
@@ -1469,6 +1473,46 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertEqual(universe?.name, "Allgemein")
         XCTAssertEqual(universe?.resolvedSyncKey, "universe:allgemein")
+    }
+
+    @MainActor
+    func testBootstrapperCreatesAllgemeinUniverseWhenOtherUniverseExists() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        context.insert(Universe(name: "Bibi Blocksberg"))
+
+        let universe = AppDataBootstrapper.ensureDefaultUniverse(in: context)
+        let universes = try context.fetch(FetchDescriptor<Universe>())
+
+        XCTAssertEqual(universe?.name, "Allgemein")
+        XCTAssertTrue(universes.contains(where: { $0.name == "Allgemein" }))
+    }
+
+    @MainActor
+    func testBootstrapRecordsAutomaticCloudMigrationSkipReasonWhenLocalContainerIsUnavailable() async throws {
+        let cloudContainer = try makeInMemoryContainer()
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        await AppDataBootstrapper.bootstrap(
+            containerSet: AppModelContainerSet(
+                primary: cloudContainer,
+                localPersistent: nil,
+                cloudPersistent: cloudContainer,
+                runtimeMode: .cloudPersistent(containerIdentifier: "iCloud.com.Digi.EpisodeTracker")
+            ),
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(
+            defaults.string(forKey: AppDataBootstrapper.automaticCloudMigrationStatusKey),
+            "Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar."
+        )
     }
 
     @MainActor

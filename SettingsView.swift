@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage(AppModelContainerFactory.cloudSyncPreferenceKey) private var prefersICloudSync = false
     @AppStorage(AppModelContainerFactory.runtimeModeDebugTitleKey) private var runtimeModeDebugTitle = "Unbekannt"
     @AppStorage(AppModelContainerFactory.cloudStartupErrorKey) private var cloudStartupError = ""
+    @AppStorage(AppDataBootstrapper.automaticCloudMigrationStatusKey) private var automaticCloudMigrationStatus = ""
     @AppStorage(SyncMigrationStateStore.completedMigrationMarkerKey) private var hasCompletedSyncMigration = false
     @Query(sort: \Universe.name) private var universes: [Universe]
     @Query(sort: \Mood.name) private var moods: [Mood]
@@ -47,6 +48,7 @@ struct SettingsView: View {
             cloudGuardEnabled: cloudGuardEnabled,
             cloudContainerIdentifier: AppModelContainerFactory.cloudContainerIdentifier,
             cloudStartupError: cloudStartupError,
+            automaticCloudMigrationStatus: automaticCloudMigrationStatus,
             migrationReadiness: SyncMigrationReadinessEvaluator.evaluate(
                 containerSet: containerAccess.containerSet,
                 userDefaults: .standard
@@ -483,6 +485,7 @@ private struct SettingsSyncDiagnosticsContext {
     let cloudGuardEnabled: Bool
     let cloudContainerIdentifier: String
     let cloudStartupError: String
+    let automaticCloudMigrationStatus: String
     let migrationReadiness: SyncMigrationReadiness
 }
 
@@ -572,6 +575,12 @@ private struct SettingsSyncDiagnosticsSection: View {
                 Text(migrationStatusMessage)
                     .font(.footnote)
                     .foregroundStyle(migrationStatusIsError ? .red : .secondary)
+            }
+            if !diagnostics.automaticCloudMigrationStatus.isEmpty {
+                Text(diagnostics.automaticCloudMigrationStatus)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
             }
             if !diagnostics.cloudStartupError.isEmpty {
                 Text(diagnostics.cloudStartupError)
