@@ -1235,7 +1235,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(universes.count, 1)
         XCTAssertEqual(moods.count, 1)
         XCTAssertEqual(episodes.count, 1)
-        XCTAssertEqual(episodes[0].universe?.normalizedName, "bibi blocksberg")
+        XCTAssertEqual(episodes[0].universe?.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), "bibi blocksberg")
         XCTAssertEqual(episodes[0].moods.map(\.normalizedName), ["witzig"])
     }
 

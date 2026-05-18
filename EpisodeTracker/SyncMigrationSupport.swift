@@ -289,6 +289,8 @@ enum SyncMigrationCoordinator {
         into context: ModelContext,
         userDefaults: UserDefaults = .standard
     ) throws -> SyncMigrationReport {
+        let sourceValidationIssues = SyncMigrationValidator.validate(snapshot: snapshot)
+
         var universesBySyncKey = Dictionary(
             uniqueKeysWithValues: ((try? context.fetch(FetchDescriptor<Universe>())) ?? []).map {
                 ($0.resolvedSyncKey, $0)
@@ -354,8 +356,11 @@ enum SyncMigrationCoordinator {
         try context.save()
 
         let migratedSnapshot = LocalLibrarySnapshot.capture(context: context)
-        let validationIssues = SyncMigrationValidator.validate(snapshot: migratedSnapshot)
-        let markedCompleted = validationIssues.isEmpty
+        let migratedValidationIssues = SyncMigrationValidator.validate(snapshot: migratedSnapshot)
+        let validationIssues = deduplicatedIssues(
+            sourceValidationIssues + migratedValidationIssues
+        )
+        let markedCompleted = sourceValidationIssues.isEmpty && migratedValidationIssues.isEmpty
 
         if markedCompleted {
             SyncMigrationStateStore.markLocalToCloudMigrationCompleted(userDefaults: userDefaults)
@@ -368,6 +373,19 @@ enum SyncMigrationCoordinator {
             validationIssues: validationIssues,
             markedCompleted: markedCompleted
         )
+    }
+
+    private static func deduplicatedIssues(
+        _ issues: [SyncMigrationIssue]
+    ) -> [SyncMigrationIssue] {
+        var seen = Set<SyncMigrationIssue>()
+        var deduplicated: [SyncMigrationIssue] = []
+
+        for issue in issues where seen.insert(issue).inserted {
+            deduplicated.append(issue)
+        }
+
+        return deduplicated
     }
 
     @MainActor
