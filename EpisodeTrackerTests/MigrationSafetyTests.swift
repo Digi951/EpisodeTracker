@@ -444,15 +444,43 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 3)
+        XCTAssertEqual(schemas.count, 4)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
+        XCTAssertTrue(schemas[3] == SchemaV4.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 2, "Should have V1→V2 and V2→V3 stages")
+        XCTAssertEqual(stages.count, 3, "Should have V1→V2, V2→V3, and V3→V4 stages")
+    }
+
+    func testMigrationPlanIncludesV4() {
+        let schemas = EpisodeTrackerMigrationPlan.schemas
+        XCTAssertEqual(schemas.count, 4)
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(4, 0, 0) }))
+
+        let stages = EpisodeTrackerMigrationPlan.stages
+        XCTAssertEqual(stages.count, 3)
+    }
+
+    func testSchemaV4ReferencesCurrentModels() {
+        XCTAssertEqual(SchemaV4.models.count, 3)
+    }
+
+    func testSchemaVersionIsFour() async throws {
+        let container = try makeInMemoryContainer()
+        let suiteName = "test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+
+        await AppDataBootstrapper.bootstrap(
+            container: container,
+            usesCloudSync: false,
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 4)
     }
 
     func testSchemaV1ModelsMatchV1Release() {

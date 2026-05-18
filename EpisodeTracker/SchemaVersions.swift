@@ -165,3 +165,11 @@ enum SchemaV3: VersionedSchema {
         init() {}
     }
 }
+
+enum SchemaV4: VersionedSchema {
+    static var versionIdentifier = Schema.Version(4, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [Episode.self, Mood.self, Universe.self]
+    }
+}
