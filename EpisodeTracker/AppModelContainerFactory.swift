@@ -20,7 +20,7 @@ enum AppModelContainerMode: Equatable {
         case .localPersistent:
             "Lokal"
         case .cloudPersistent:
-            "Cloud PoC"
+            "Cloud"
         }
     }
 }
@@ -34,7 +34,8 @@ struct AppModelContainerSet {
 
 enum AppModelContainerFactory {
     static let cloudSyncPreferenceKey = "prefersICloudSync"
-    static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
+    static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC"
+    static let legacyCloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
     static let cloudContainerIdentifier = "iCloud.com.Digi.EpisodeTracker"
     static let appGroupIdentifier = "group.com.digi.episodetracker"
     static let runtimeModeDebugTitleKey = "syncRuntimeModeDebugTitle"
@@ -84,7 +85,10 @@ enum AppModelContainerFactory {
     static func isCloudSyncGuardEnabled(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> Bool {
-        let rawValue = environment[cloudSyncGuardEnvironmentKey]?
+        let rawValue = (
+            environment[cloudSyncGuardEnvironmentKey]
+            ?? environment[legacyCloudSyncGuardEnvironmentKey]
+        )?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
 

@@ -40,10 +40,17 @@ struct SettingsView: View {
         AppModelContainerFactory.showsInternalSyncControls()
     }
 
-    private var syncMigrationReadiness: SyncMigrationReadiness {
-        SyncMigrationReadinessEvaluator.evaluate(
-            containerSet: containerAccess.containerSet,
-            userDefaults: .standard
+    private var syncDiagnosticsContext: SettingsSyncDiagnosticsContext {
+        SettingsSyncDiagnosticsContext(
+            requestedModeTitle: containerMode.debugTitle,
+            runtimeModeDebugTitle: runtimeModeDebugTitle,
+            cloudGuardEnabled: cloudGuardEnabled,
+            cloudContainerIdentifier: AppModelContainerFactory.cloudContainerIdentifier,
+            cloudStartupError: cloudStartupError,
+            migrationReadiness: SyncMigrationReadinessEvaluator.evaluate(
+                containerSet: containerAccess.containerSet,
+                userDefaults: .standard
+            )
         )
     }
 
@@ -80,12 +87,7 @@ struct SettingsView: View {
 #if DEBUG
             if showsInternalSyncControls {
                 SettingsSyncDiagnosticsSection(
-                    containerModeTitle: containerMode.debugTitle,
-                    runtimeModeDebugTitle: runtimeModeDebugTitle,
-                    cloudGuardEnabled: cloudGuardEnabled,
-                    cloudContainerIdentifier: AppModelContainerFactory.cloudContainerIdentifier,
-                    cloudStartupError: cloudStartupError,
-                    migrationReadiness: syncMigrationReadiness,
+                    diagnostics: syncDiagnosticsContext,
                     migrationStatusMessage: syncMigrationStatusMessage,
                     migrationStatusIsError: syncMigrationStatusIsError,
                     onRunMigration: runInternalSyncMigration
@@ -171,38 +173,12 @@ struct SettingsView: View {
 
     @MainActor
     private func runInternalSyncMigration() {
-        guard let localContainer = containerAccess.containerSet.localPersistent,
-              let cloudContainer = containerAccess.containerSet.cloudPersistent else {
-            syncMigrationStatusIsError = true
-            syncMigrationStatusMessage = "Migration ist nur moeglich, wenn lokaler und Cloud-Container verfuegbar sind."
-            return
-        }
-
-        let readiness = syncMigrationReadiness
-        guard readiness.canAttemptMigration else {
-            syncMigrationStatusIsError = true
-            syncMigrationStatusMessage = "Migration ist derzeit nicht freigegeben."
-            return
-        }
-
-        let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
-
-        do {
-            let report = try SyncMigrationCoordinator.migrate(
-                snapshot: snapshot,
-                into: cloudContainer.mainContext,
-                userDefaults: .standard
-            )
-            syncMigrationStatusIsError = !report.validationIssues.isEmpty
-            if report.validationIssues.isEmpty {
-                syncMigrationStatusMessage = "Migration abgeschlossen: \(report.migratedEpisodeCount) Folgen, \(report.migratedUniverseCount) Sammlungen, \(report.migratedMoodCount) Stimmungen."
-            } else {
-                syncMigrationStatusMessage = "Migration beendet mit \(report.validationIssues.count) Validierungshinweisen."
-            }
-        } catch {
-            syncMigrationStatusIsError = true
-            syncMigrationStatusMessage = "Migration fehlgeschlagen: \(error.localizedDescription)"
-        }
+        let result = SettingsSyncDiagnosticsRunner.runMigration(
+            containerSet: containerAccess.containerSet,
+            userDefaults: .standard
+        )
+        syncMigrationStatusIsError = result.isError
+        syncMigrationStatusMessage = result.message
     }
 
     private var backupFileName: String {
@@ -501,33 +477,95 @@ private struct SettingsSyncSection: View {
 }
 
 #if DEBUG
-private struct SettingsSyncDiagnosticsSection: View {
-    let containerModeTitle: String
+private struct SettingsSyncDiagnosticsContext {
+    let requestedModeTitle: String
     let runtimeModeDebugTitle: String
     let cloudGuardEnabled: Bool
     let cloudContainerIdentifier: String
     let cloudStartupError: String
     let migrationReadiness: SyncMigrationReadiness
+}
+
+private enum SettingsSyncDiagnosticsRunner {
+    struct Result {
+        let isError: Bool
+        let message: String
+    }
+
+    @MainActor
+    static func runMigration(
+        containerSet: AppModelContainerSet,
+        userDefaults: UserDefaults
+    ) -> Result {
+        guard let localContainer = containerSet.localPersistent,
+              let cloudContainer = containerSet.cloudPersistent else {
+            return Result(
+                isError: true,
+                message: "Migration ist nur moeglich, wenn lokaler und Cloud-Container verfuegbar sind."
+            )
+        }
+
+        let readiness = SyncMigrationReadinessEvaluator.evaluate(
+            containerSet: containerSet,
+            userDefaults: userDefaults
+        )
+        guard readiness.canAttemptMigration else {
+            return Result(
+                isError: true,
+                message: "Migration ist derzeit nicht freigegeben."
+            )
+        }
+
+        let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
+
+        do {
+            let report = try SyncMigrationCoordinator.migrate(
+                snapshot: snapshot,
+                into: cloudContainer.mainContext,
+                userDefaults: userDefaults
+            )
+            if report.validationIssues.isEmpty {
+                return Result(
+                    isError: false,
+                    message: "Migration abgeschlossen: \(report.migratedEpisodeCount) Folgen, \(report.migratedUniverseCount) Sammlungen, \(report.migratedMoodCount) Stimmungen."
+                )
+            }
+
+            return Result(
+                isError: true,
+                message: "Migration beendet mit \(report.validationIssues.count) Validierungshinweisen."
+            )
+        } catch {
+            return Result(
+                isError: true,
+                message: "Migration fehlgeschlagen: \(error.localizedDescription)"
+            )
+        }
+    }
+}
+
+private struct SettingsSyncDiagnosticsSection: View {
+    let diagnostics: SettingsSyncDiagnosticsContext
     let migrationStatusMessage: String?
     let migrationStatusIsError: Bool
     let onRunMigration: () -> Void
 
     var body: some View {
         Section {
-            SettingsValueRow(label: "Angeforderter Modus", value: containerModeTitle)
-            SettingsValueRow(label: "Aktiver Modus", value: runtimeModeDebugTitle)
-            SettingsValueRow(label: "Interner Schutzschalter", value: cloudGuardEnabled ? "Aktiv" : "Aus")
-            SettingsValueRow(label: "Container", value: cloudContainerIdentifier)
-            SettingsValueRow(label: "Migration abgeschlossen", value: migrationReadiness.hasCompletedMigration ? "Ja" : "Nein")
-            SettingsValueRow(label: "Lokale Daten", value: "\(migrationReadiness.localEpisodeCount) Folgen, \(migrationReadiness.localUniverseCount) Sammlungen, \(migrationReadiness.localMoodCount) Stimmungen")
-            SettingsValueRow(label: "Cloud-Ziel aktiv", value: migrationReadiness.hasCloudPersistentContainer ? "Ja" : "Nein")
-            SettingsValueRow(label: "Migration moeglich", value: migrationReadiness.canAttemptMigration ? "Ja" : "Nein")
-            if !migrationReadiness.localValidationIssues.isEmpty {
-                Text("Validierung: \(migrationReadiness.localValidationIssues.count) Hinweis(e)")
+            SettingsValueRow(label: "Angeforderter Modus", value: diagnostics.requestedModeTitle)
+            SettingsValueRow(label: "Aktiver Modus", value: diagnostics.runtimeModeDebugTitle)
+            SettingsValueRow(label: "Interner Schutzschalter", value: diagnostics.cloudGuardEnabled ? "Aktiv" : "Aus")
+            SettingsValueRow(label: "Container", value: diagnostics.cloudContainerIdentifier)
+            SettingsValueRow(label: "Migration abgeschlossen", value: diagnostics.migrationReadiness.hasCompletedMigration ? "Ja" : "Nein")
+            SettingsValueRow(label: "Lokale Daten", value: "\(diagnostics.migrationReadiness.localEpisodeCount) Folgen, \(diagnostics.migrationReadiness.localUniverseCount) Sammlungen, \(diagnostics.migrationReadiness.localMoodCount) Stimmungen")
+            SettingsValueRow(label: "Cloud-Ziel aktiv", value: diagnostics.migrationReadiness.hasCloudPersistentContainer ? "Ja" : "Nein")
+            SettingsValueRow(label: "Migration moeglich", value: diagnostics.migrationReadiness.canAttemptMigration ? "Ja" : "Nein")
+            if !diagnostics.migrationReadiness.localValidationIssues.isEmpty {
+                Text("Validierung: \(diagnostics.migrationReadiness.localValidationIssues.count) Hinweis(e)")
                     .font(.footnote)
                     .foregroundStyle(.orange)
             }
-            if migrationReadiness.canAttemptMigration {
+            if diagnostics.migrationReadiness.canAttemptMigration {
                 Button("Lokale Daten intern in Cloud uebernehmen", action: onRunMigration)
             }
             if let migrationStatusMessage {
@@ -535,8 +573,8 @@ private struct SettingsSyncDiagnosticsSection: View {
                     .font(.footnote)
                     .foregroundStyle(migrationStatusIsError ? .red : .secondary)
             }
-            if !cloudStartupError.isEmpty {
-                Text(cloudStartupError)
+            if !diagnostics.cloudStartupError.isEmpty {
+                Text(diagnostics.cloudStartupError)
                     .font(.footnote)
                     .foregroundStyle(.red)
                     .textSelection(.enabled)

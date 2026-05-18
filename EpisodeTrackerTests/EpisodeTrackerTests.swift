@@ -215,6 +215,11 @@ final class EpisodeTrackerTests: XCTestCase {
                 environment: [AppModelContainerFactory.cloudSyncGuardEnvironmentKey: "0"]
             )
         )
+        XCTAssertTrue(
+            AppModelContainerFactory.isCloudSyncGuardEnabled(
+                environment: [AppModelContainerFactory.legacyCloudSyncGuardEnvironmentKey: "1"]
+            )
+        )
     }
 
     func testContainerModeProvidesDebugTitles() {
@@ -222,7 +227,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(AppModelContainerMode.localPersistent.debugTitle, "Lokal")
         XCTAssertEqual(
             AppModelContainerMode.cloudPersistent(containerIdentifier: "iCloud.example").debugTitle,
-            "Cloud PoC"
+            "Cloud"
         )
     }
 

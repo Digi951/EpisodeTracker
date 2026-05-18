@@ -11,62 +11,96 @@ enum SyncPreparation {
         let allUniverses = (try? context.fetch(FetchDescriptor<Universe>())) ?? []
         let allEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
 
-        var didChange = false
+        logger.info(
+            "SyncPreparation: start with episodes=\(allEpisodes.count), universes=\(allUniverses.count), moods=\(allMoods.count)"
+        )
 
-        didChange = repairEpisodeIDs(allEpisodes) || didChange
-        didChange = repairMoodIDs(allMoods) || didChange
-        didChange = repairUniverseIDs(allUniverses) || didChange
-        didChange = repairMoods(allMoods, in: context) || didChange
-        didChange = repairUniverses(allUniverses, in: context) || didChange
-        didChange = deduplicateEpisodes(allEpisodes, in: context) || didChange
+        var didChange = false
+        var changeSummary = ChangeSummary()
+
+        didChange = repairEpisodeIDs(allEpisodes, summary: &changeSummary) || didChange
+        didChange = repairMoodIDs(allMoods, summary: &changeSummary) || didChange
+        didChange = repairUniverseIDs(allUniverses, summary: &changeSummary) || didChange
+        didChange = repairMoods(allMoods, in: context, summary: &changeSummary) || didChange
+        didChange = repairUniverses(allUniverses, in: context, summary: &changeSummary) || didChange
+        didChange = deduplicateEpisodes(allEpisodes, in: context, summary: &changeSummary) || didChange
 
         let refreshedEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? allEpisodes
-        didChange = refreshEpisodes(refreshedEpisodes) || didChange
+        didChange = refreshEpisodes(refreshedEpisodes, summary: &changeSummary) || didChange
 
         if didChange {
             do {
                 try context.save()
-                logger.info("SyncPreparation: saved repairs successfully")
+                logger.info("SyncPreparation: saved repairs successfully (\(changeSummary.logDescription, privacy: .public))")
             } catch {
                 logger.error("SyncPreparation: save failed — \(error.localizedDescription)")
             }
+        } else {
+            logger.info("SyncPreparation: no repairs required")
+        }
+    }
+
+    private struct ChangeSummary {
+        var repairedEpisodeIDs = 0
+        var repairedMoodIDs = 0
+        var repairedUniverseIDs = 0
+        var mergedMoods = 0
+        var mergedUniverses = 0
+        var deduplicatedEpisodes = 0
+        var refreshedEpisodeSyncKeys = 0
+        var deduplicatedEpisodeMoods = 0
+
+        var logDescription: String {
+            "episodeIDs=\(repairedEpisodeIDs), moodIDs=\(repairedMoodIDs), universeIDs=\(repairedUniverseIDs), mergedMoods=\(mergedMoods), mergedUniverses=\(mergedUniverses), deduplicatedEpisodes=\(deduplicatedEpisodes), refreshedEpisodeSyncKeys=\(refreshedEpisodeSyncKeys), deduplicatedEpisodeMoods=\(deduplicatedEpisodeMoods)"
         }
     }
 
     @MainActor
-    private static func repairEpisodeIDs(_ episodes: [Episode]) -> Bool {
+    private static func repairEpisodeIDs(
+        _ episodes: [Episode],
+        summary: inout ChangeSummary
+    ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
 
         for episode in episodes where !seenIDs.insert(episode.id).inserted {
             episode.id = UUID()
             didChange = true
+            summary.repairedEpisodeIDs += 1
         }
 
         return didChange
     }
 
     @MainActor
-    private static func repairMoodIDs(_ moods: [Mood]) -> Bool {
+    private static func repairMoodIDs(
+        _ moods: [Mood],
+        summary: inout ChangeSummary
+    ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
 
         for mood in moods where !seenIDs.insert(mood.id).inserted {
             mood.id = UUID()
             didChange = true
+            summary.repairedMoodIDs += 1
         }
 
         return didChange
     }
 
     @MainActor
-    private static func repairUniverseIDs(_ universes: [Universe]) -> Bool {
+    private static func repairUniverseIDs(
+        _ universes: [Universe],
+        summary: inout ChangeSummary
+    ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
 
         for universe in universes where !seenIDs.insert(universe.id).inserted {
             universe.id = UUID()
             didChange = true
+            summary.repairedUniverseIDs += 1
         }
 
         return didChange
@@ -75,7 +109,8 @@ enum SyncPreparation {
     @MainActor
     private static func repairMoods(
         _ moods: [Mood],
-        in context: ModelContext
+        in context: ModelContext,
+        summary: inout ChangeSummary
     ) -> Bool {
         guard !moods.isEmpty else { return false }
 
@@ -116,6 +151,7 @@ enum SyncPreparation {
 
                 context.delete(duplicate)
                 didChange = true
+                summary.mergedMoods += 1
             }
         }
 
@@ -146,7 +182,8 @@ enum SyncPreparation {
     @MainActor
     private static func repairUniverses(
         _ universes: [Universe],
-        in context: ModelContext
+        in context: ModelContext,
+        summary: inout ChangeSummary
     ) -> Bool {
         guard !universes.isEmpty else { return false }
 
@@ -170,6 +207,7 @@ enum SyncPreparation {
 
                 context.delete(duplicate)
                 didChange = true
+                summary.mergedUniverses += 1
             }
         }
 
@@ -196,7 +234,8 @@ enum SyncPreparation {
     @MainActor
     private static func deduplicateEpisodes(
         _ episodes: [Episode],
-        in context: ModelContext
+        in context: ModelContext,
+        summary: inout ChangeSummary
     ) -> Bool {
         guard !episodes.isEmpty else { return false }
 
@@ -273,6 +312,7 @@ enum SyncPreparation {
                 logger.info("Dedup: removing duplicate episode #\(key.episodeNumber) in '\(key.universeSyncKey)'")
                 context.delete(duplicate)
                 didChange = true
+                summary.deduplicatedEpisodes += 1
             }
         }
 
@@ -280,13 +320,19 @@ enum SyncPreparation {
     }
 
     @MainActor
-    private static func refreshEpisodes(_ episodes: [Episode]) -> Bool {
+    private static func refreshEpisodes(
+        _ episodes: [Episode],
+        summary: inout ChangeSummary
+    ) -> Bool {
         var didChange = false
 
         for episode in episodes {
             let previousKey = episode.resolvedSyncKey
             episode.refreshSyncKeyIfPossible()
-            didChange = didChange || previousKey != episode.resolvedSyncKey
+            if previousKey != episode.resolvedSyncKey {
+                didChange = true
+                summary.refreshedEpisodeSyncKeys += 1
+            }
 
             var deduplicatedMoods: [Mood] = []
             var seenMoodKeys = Set<String>()
@@ -300,6 +346,7 @@ enum SyncPreparation {
             if deduplicatedMoods.count != episode.moods.count {
                 episode.moods = deduplicatedMoods
                 didChange = true
+                summary.deduplicatedEpisodeMoods += 1
             }
         }
 

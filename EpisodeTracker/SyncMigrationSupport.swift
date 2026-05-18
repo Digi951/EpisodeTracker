@@ -1,5 +1,11 @@
 import Foundation
+import os.log
 import SwiftData
+
+private let syncMigrationLogger = Logger(
+    subsystem: "com.Digi.EpisodeTracker",
+    category: "SyncMigration"
+)
 
 struct LocalLibrarySnapshot: Equatable {
     struct UniverseRecord: Equatable {
@@ -270,7 +276,7 @@ enum SyncMigrationReadinessEvaluator {
             localSnapshot = LocalLibrarySnapshot(universes: [], moods: [], episodes: [])
         }
 
-        return SyncMigrationReadiness(
+        let readiness = SyncMigrationReadiness(
             hasCompletedMigration: SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: userDefaults),
             hasLocalPersistentContainer: containerSet.localPersistent != nil,
             hasCloudPersistentContainer: containerSet.cloudPersistent != nil,
@@ -279,6 +285,12 @@ enum SyncMigrationReadinessEvaluator {
             localMoodCount: localSnapshot.moods.count,
             localValidationIssues: SyncMigrationValidator.validate(snapshot: localSnapshot)
         )
+
+        syncMigrationLogger.info(
+            "Readiness evaluated: completed=\(readiness.hasCompletedMigration, privacy: .public), localContainer=\(readiness.hasLocalPersistentContainer, privacy: .public), cloudContainer=\(readiness.hasCloudPersistentContainer, privacy: .public), episodes=\(readiness.localEpisodeCount, privacy: .public), universes=\(readiness.localUniverseCount, privacy: .public), moods=\(readiness.localMoodCount, privacy: .public), issues=\(readiness.localValidationIssues.count, privacy: .public), canAttempt=\(readiness.canAttemptMigration, privacy: .public)"
+        )
+
+        return readiness
     }
 }
 
@@ -290,6 +302,10 @@ enum SyncMigrationCoordinator {
         userDefaults: UserDefaults = .standard
     ) throws -> SyncMigrationReport {
         let sourceValidationIssues = SyncMigrationValidator.validate(snapshot: snapshot)
+
+        syncMigrationLogger.info(
+            "Migration started: episodes=\(snapshot.episodes.count, privacy: .public), universes=\(snapshot.universes.count, privacy: .public), moods=\(snapshot.moods.count, privacy: .public), sourceIssues=\(sourceValidationIssues.count, privacy: .public)"
+        )
 
         var universesBySyncKey = Dictionary(
             uniqueKeysWithValues: ((try? context.fetch(FetchDescriptor<Universe>())) ?? []).map {
@@ -362,8 +378,15 @@ enum SyncMigrationCoordinator {
         )
         let markedCompleted = sourceValidationIssues.isEmpty && migratedValidationIssues.isEmpty
 
+        syncMigrationLogger.info(
+            "Migration finished: migratedEpisodes=\(migratedSnapshot.episodes.count, privacy: .public), migratedUniverses=\(migratedSnapshot.universes.count, privacy: .public), migratedMoods=\(migratedSnapshot.moods.count, privacy: .public), migratedIssues=\(migratedValidationIssues.count, privacy: .public), combinedIssues=\(validationIssues.count, privacy: .public), markedCompleted=\(markedCompleted, privacy: .public)"
+        )
+
         if markedCompleted {
             SyncMigrationStateStore.markLocalToCloudMigrationCompleted(userDefaults: userDefaults)
+            syncMigrationLogger.info("Migration completion marker updated")
+        } else {
+            syncMigrationLogger.info("Migration completion marker left unchanged")
         }
 
         return SyncMigrationReport(
