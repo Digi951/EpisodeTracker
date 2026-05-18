@@ -389,6 +389,7 @@ private struct IPadEpisodeListView: View {
                         .onDelete { offsets in
                             requestDeleteEpisodes(group.episodes, at: offsets)
                         }
+                        .deleteDisabled(isEditing)
                     }
                 } header: {
                     EpisodeGroupHeader(
@@ -406,6 +407,7 @@ private struct IPadEpisodeListView: View {
             .onDelete { offsets in
                 requestDeleteEpisodes(filteredEpisodes, at: offsets)
             }
+            .deleteDisabled(isEditing)
         }
     }
 

@@ -221,6 +221,7 @@ struct EpisodeListView: View {
                     .onDelete { offsets in
                         requestDeleteEpisodes(group.episodes, at: offsets)
                     }
+                    .deleteDisabled(isEditing)
                 }
             } header: {
                 EpisodeGroupHeader(
@@ -241,6 +242,7 @@ struct EpisodeListView: View {
         .onDelete { offsets in
             requestDeleteEpisodes(filteredEpisodes, at: offsets)
         }
+        .deleteDisabled(isEditing)
     }
 
     @ViewBuilder
