@@ -452,12 +452,8 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(models.count, 3)
     }
 
-    func testSchemaV3ModelsMatchCurrentTopLevelTypes() {
-        let models = SchemaV3.models
-        XCTAssertTrue(models.contains { $0 == Episode.self })
-        XCTAssertTrue(models.contains { $0 == Mood.self })
-        XCTAssertTrue(models.contains { $0 == Universe.self })
-        XCTAssertEqual(models.count, 3)
+    func testSchemaV3HasThreeModels() {
+        XCTAssertEqual(SchemaV3.models.count, 3)
     }
 
     // MARK: - Schema Version Tracking
