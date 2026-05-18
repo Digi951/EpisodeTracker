@@ -537,7 +537,7 @@ struct EpisodeRowView: View {
 
     var body: some View {
         HStack {
-            if let coverName = episode.resolvedCoverImageName() {
+            if let coverName = episode.coverImageName, !coverName.isEmpty {
                 CoverImageThumbnail(name: coverName)
             }
 

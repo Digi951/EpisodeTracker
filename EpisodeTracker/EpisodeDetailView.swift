@@ -44,7 +44,7 @@ struct EpisodeDetailView: View {
 
     var body: some View {
         List {
-            if let coverName = episode.resolvedCoverImageName() {
+            if let coverName = episode.coverImageName, !coverName.isEmpty {
                 Section {
                     CoverImageView(name: coverName, maxHeight: 280)
                         .frame(maxWidth: .infinity)

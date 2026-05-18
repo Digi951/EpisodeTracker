@@ -81,17 +81,6 @@ extension Episode {
         )
     }
 
-    func resolvedCoverImageName(fallbackUniverse: Universe? = nil) -> String? {
-        if let coverImageName, !coverImageName.isEmpty {
-            return coverImageName
-        }
-        let uni = fallbackUniverse ?? universe
-        if let universeCover = uni?.coverImageName, !universeCover.isEmpty {
-            return universeCover
-        }
-        return nil
-    }
-
     func refreshSyncKeyIfPossible() {
         if let universe {
             syncKey = Self.makeSyncKey(

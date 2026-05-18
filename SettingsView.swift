@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
-import PhotosUI
 
 struct SettingsView: View {
     @EnvironmentObject private var containerAccess: AppContainerAccess
@@ -681,10 +680,6 @@ private struct CatalogManagementView: View {
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
     @State private var activeCatalogIDs: Set<String> = []
-    @State private var selectedUniverseForCover: Universe?
-    @State private var universePhotoItem: PhotosPickerItem?
-    @State private var coverRefreshTrigger = UUID()
-
     private let activeCatalogStore = ActiveCatalogStore()
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
@@ -708,52 +703,31 @@ private struct CatalogManagementView: View {
         List {
             Section {
                 ForEach(predefinedCatalogSources, id: \.id) { source in
-                    VStack(alignment: .leading, spacing: 0) {
-                        CatalogToggleRow(
-                            source: source,
-                            episodeCount: episodeCount(for: source.name),
-                            isActive: activeCatalogIDs.contains(source.id),
-                            onToggle: { newValue in
-                                toggleCatalog(source, active: newValue)
-                            }
-                        )
-
-                        if let universe = universes.first(where: {
-                            $0.name.caseInsensitiveCompare(source.name) == .orderedSame
-                        }) {
-                            UniverseCoverButton(
-                                universe: universe,
-                                onPickCover: { selectedUniverseForCover = universe },
-                                onRemoveCover: { removeUniverseCover(universe) }
-                            )
+                    CatalogToggleRow(
+                        source: source,
+                        episodeCount: episodeCount(for: source.name),
+                        isActive: activeCatalogIDs.contains(source.id),
+                        onToggle: { newValue in
+                            toggleCatalog(source, active: newValue)
                         }
-                    }
+                    )
                 }
             } header: {
                 Text("Verfügbare Kataloge")
             } footer: {
                 Text("Aktivierte Kataloge werden automatisch aktualisiert und liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
             }
-            .id(coverRefreshTrigger)
 
             Section {
                 ForEach(universes.filter { universe in
                     !predefinedCatalogSources.contains { $0.name.caseInsensitiveCompare(universe.name) == .orderedSame }
                 }) { universe in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(universe.name)
-                            Spacer()
-                            Text("\(universe.episodes.count) Folgen")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        UniverseCoverButton(
-                            universe: universe,
-                            onPickCover: { selectedUniverseForCover = universe },
-                            onRemoveCover: { removeUniverseCover(universe) }
-                        )
+                    HStack {
+                        Text(universe.name)
+                        Spacer()
+                        Text("\(universe.episodes.count) Folgen")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .onDelete(perform: deleteCustomUniverses)
@@ -776,7 +750,6 @@ private struct CatalogManagementView: View {
             } footer: {
                 Text("Nur leere Kataloge können gelöscht werden.")
             }
-            .id(coverRefreshTrigger)
 
             Section {
                 Button {
@@ -799,25 +772,6 @@ private struct CatalogManagementView: View {
         .navigationTitle("Kataloge")
         .onAppear {
             activeCatalogIDs = activeCatalogStore.activeIDs
-        }
-        .photosPicker(
-            isPresented: Binding(
-                get: { selectedUniverseForCover != nil },
-                set: { if !$0 { selectedUniverseForCover = nil } }
-            ),
-            selection: $universePhotoItem,
-            matching: .images
-        )
-        .onChange(of: universePhotoItem) { _, newItem in
-            guard let newItem, let universe = selectedUniverseForCover else { return }
-            Task { @MainActor in
-                if let data = try? await newItem.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    saveUniverseCover(uiImage, for: universe)
-                }
-                universePhotoItem = nil
-                selectedUniverseForCover = nil
-            }
         }
     }
 
@@ -883,28 +837,6 @@ private struct CatalogManagementView: View {
         }
     }
 
-    private func saveUniverseCover(_ image: UIImage, for universe: Universe) {
-        let store = CoverImageStore()
-        let coverName = CoverImageStore.universeCoverName(for: universe.id)
-        do {
-            try store.save(image, name: coverName)
-            universe.coverImageName = coverName
-            try? modelContext.save()
-            coverRefreshTrigger = UUID()
-        } catch {
-            // Cover is non-critical
-        }
-    }
-
-    private func removeUniverseCover(_ universe: Universe) {
-        let store = CoverImageStore()
-        if let coverName = universe.coverImageName {
-            try? store.delete(name: coverName)
-        }
-        universe.coverImageName = nil
-        try? modelContext.save()
-        coverRefreshTrigger = UUID()
-    }
 }
 
 private struct CatalogToggleRow: View {
@@ -940,35 +872,6 @@ private struct CatalogToggleRow: View {
                     .foregroundStyle(episodeCount > 0 ? .secondary : .tertiary)
             }
         }
-    }
-}
-
-private struct UniverseCoverButton: View {
-    let universe: Universe
-    let onPickCover: () -> Void
-    let onRemoveCover: () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            if let coverName = universe.coverImageName, !coverName.isEmpty {
-                CoverImageView(name: coverName, maxHeight: 44)
-                    .frame(height: 44)
-
-                Button("Ersetzen", action: onPickCover)
-                    .font(.footnote)
-
-                Button(role: .destructive, action: onRemoveCover) {
-                    Image(systemName: "trash")
-                        .font(.footnote)
-                }
-            } else {
-                Button(action: onPickCover) {
-                    Label("Sammlungscover hinzufügen", systemImage: "photo.badge.plus")
-                        .font(.footnote)
-                }
-            }
-        }
-        .padding(.top, 4)
     }
 }
 
