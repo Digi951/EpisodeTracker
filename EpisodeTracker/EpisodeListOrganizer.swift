@@ -264,15 +264,13 @@ enum EpisodeListOrganizer {
         case .rated:
             return episodes.filter { $0.rating != nil }
         case .noted:
-            return episodes.filter(hasNonEmptyNote)
+            return episodes.filter { episode in
+                guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+                    return false
+                }
+                return !note.isEmpty
+            }
         }
-    }
-
-    private static func hasNonEmptyNote(_ episode: Episode) -> Bool {
-        guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
-            return false
-        }
-        return !note.isEmpty
     }
 
     static func shouldGroup(

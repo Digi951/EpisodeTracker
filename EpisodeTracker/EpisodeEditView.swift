@@ -311,7 +311,7 @@ struct EpisodeEditView: View {
             episode.moods = Array(selectedMoods)
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             episode.refreshSyncKeyIfPossible()
-            saveCoverImage(for: episode)
+            applyCoverChange(to: episode)
 
             if isListened && !wasListened {
                 episode.listenCount += 1
@@ -333,7 +333,7 @@ struct EpisodeEditView: View {
                 newEpisode.listenCount = 1
                 newEpisode.lastListenedAt = .now
             }
-            saveCoverImage(for: newEpisode)
+            applyCoverChange(to: newEpisode)
             modelContext.insert(newEpisode)
         }
 
@@ -346,21 +346,17 @@ struct EpisodeEditView: View {
         }
     }
 
-    private func saveCoverImage(for episode: Episode) {
-        let store = CoverImageStore()
-        let coverName = CoverImageStore.coverName(for: episode.id)
-
+    private func applyCoverChange(to episode: Episode) {
+        let change: EpisodeCoverChange
         if removeCover {
-            try? store.delete(name: coverName)
-            episode.coverImageName = nil
+            change = .remove
         } else if let coverImage {
-            do {
-                try store.save(coverImage, name: coverName)
-                episode.coverImageName = coverName
-            } catch {
-                // Cover is non-critical
-            }
+            change = .replace(coverImage)
+        } else {
+            change = .keep
         }
+
+        try? EpisodeCoverManager().apply(change, to: episode)
     }
 
     private func hasDuplicateEpisodeNumber(in universe: Universe, episodeNumber: Int) -> Bool {

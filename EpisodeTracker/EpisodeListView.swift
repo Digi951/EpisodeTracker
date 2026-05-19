@@ -15,7 +15,7 @@ struct EpisodeListView: View {
     @State private var controls = EpisodeListControlsState()
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
-    @State private var multiSelection: Set<PersistentIdentifier> = []
+    @State private var selectionController = EpisodeSelectionController()
     @State private var isEditing = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
@@ -81,7 +81,7 @@ struct EpisodeListView: View {
     var body: some View {
         Group {
             if isEditing {
-                List(selection: $multiSelection) {
+                List(selection: $selectionController.selectedIDs) {
                     librarySnapshotRow
                     moodFilterRow
                     contentRows
@@ -102,7 +102,7 @@ struct EpisodeListView: View {
                     Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
                         isEditing.toggle()
                         if !isEditing {
-                            multiSelection.removeAll()
+                            selectionController.clear()
                         }
                     }
                 }
@@ -112,7 +112,7 @@ struct EpisodeListView: View {
                     Button {
                         selectAllVisible()
                     } label: {
-                        Text(multiSelection.count == filteredEpisodes.count ? "Keine" : "Alle")
+                        Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
                     }
                 } else {
                     EpisodeListSortFilterMenu(
@@ -123,11 +123,11 @@ struct EpisodeListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isEditing && !multiSelection.isEmpty {
+            if isEditing && !selectionController.isEmpty {
                 Button(role: .destructive) {
                     requestDeleteSelected()
                 } label: {
-                    Text("\(multiSelection.count) Folge\(multiSelection.count == 1 ? "" : "n") l\u{00F6}schen")
+                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
                         .font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -311,20 +311,15 @@ struct EpisodeListView: View {
     private func confirmDeleteEpisodes() {
         EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
-        multiSelection.removeAll()
+        selectionController.clear()
     }
 
     private func selectAllVisible() {
-        let allIDs = Set(filteredEpisodes.map(\.persistentModelID))
-        if multiSelection == allIDs {
-            multiSelection.removeAll()
-        } else {
-            multiSelection = allIDs
-        }
+        selectionController.toggleAllVisible(filteredEpisodes)
     }
 
     private func requestDeleteSelected() {
-        let selected = filteredEpisodes.filter { multiSelection.contains($0.persistentModelID) }
+        let selected = selectionController.selectedEpisodes(from: filteredEpisodes)
         guard !selected.isEmpty else { return }
         deleteState.requestBatch(selected)
         showingDeleteConfirmation = true
@@ -538,7 +533,7 @@ struct EpisodeRowView: View {
     var body: some View {
         HStack {
             if let coverName = episode.coverImageName, !coverName.isEmpty {
-                CoverImageThumbnail(name: coverName)
+                CoverImageThumbnailView(name: coverName)
             }
 
             Text("\(episode.episodeNumber)")
@@ -581,21 +576,6 @@ struct EpisodeRowView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             }
-        }
-    }
-}
-
-private struct CoverImageThumbnail: View {
-    let name: String
-    private let store = CoverImageStore()
-
-    var body: some View {
-        if let image = store.load(name: name) {
-            Image(uiImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 44, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
     }
 }

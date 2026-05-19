@@ -97,15 +97,20 @@ final class CoverImageStoreTests: XCTestCase {
         XCTAssertEqual(name, "12345678-1234-1234-1234-123456789ABC")
     }
 
-    func testUniverseCoverName() {
-        let id = UUID(uuidString: "ABCDEF01-2345-6789-ABCD-EF0123456789")!
-        let name = CoverImageStore.universeCoverName(for: id)
-        XCTAssertEqual(name, "universe-ABCDEF01-2345-6789-ABCD-EF0123456789")
-    }
-
     func testLoadNonexistentReturnsNil() {
         let result = store.load(name: "nonexistent")
         XCTAssertNil(result)
+    }
+
+    func testInvalidCoverNamesAreRejected() {
+        let image = makeTestImage(width: 100, height: 100)
+
+        XCTAssertThrowsError(try store.save(image, name: ""))
+        XCTAssertThrowsError(try store.save(image, name: " nested "))
+        XCTAssertThrowsError(try store.save(image, name: "../escape"))
+        XCTAssertNil(store.load(name: ""))
+        XCTAssertFalse(store.exists(name: "../escape"))
+        XCTAssertNoThrow(try store.delete(name: "../escape"))
     }
 
     private func makeTestImage(width: Int, height: Int, color: UIColor = .blue) -> UIImage {

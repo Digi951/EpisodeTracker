@@ -25,6 +25,10 @@ struct CoverImageStore {
     }
 
     func save(_ image: UIImage, name: String) throws {
+        guard Self.isValidCoverName(name) else {
+            throw CoverImageStoreError.invalidName
+        }
+
         let scaled = scaled(image)
         guard let data = scaled.jpegData(compressionQuality: compressionQuality) else {
             throw CoverImageStoreError.compressionFailed
@@ -34,16 +38,22 @@ struct CoverImageStore {
     }
 
     func load(name: String) -> UIImage? {
+        guard Self.isValidCoverName(name) else { return nil }
+
         let url = fileURL(for: name)
         guard let data = try? Data(contentsOf: url) else { return nil }
         return UIImage(data: data)
     }
 
     func exists(name: String) -> Bool {
-        FileManager.default.fileExists(atPath: fileURL(for: name).path)
+        guard Self.isValidCoverName(name) else { return false }
+
+        return FileManager.default.fileExists(atPath: fileURL(for: name).path)
     }
 
     func delete(name: String) throws {
+        guard Self.isValidCoverName(name) else { return }
+
         let url = fileURL(for: name)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         try FileManager.default.removeItem(at: url)
@@ -53,12 +63,16 @@ struct CoverImageStore {
         episodeID.uuidString
     }
 
-    static func universeCoverName(for universeID: UUID) -> String {
-        "universe-\(universeID.uuidString)"
-    }
-
     private func fileURL(for name: String) -> URL {
         coverDirectory.appendingPathComponent("\(name).jpg")
+    }
+
+    private static func isValidCoverName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed == name else { return false }
+        guard !name.contains("/") && !name.contains("\\") else { return false }
+        guard name != "." && name != ".." else { return false }
+        return true
     }
 
     private func scaled(_ image: UIImage) -> UIImage {
@@ -89,10 +103,13 @@ struct CoverImageStore {
 }
 
 enum CoverImageStoreError: LocalizedError {
+    case invalidName
     case compressionFailed
 
     var errorDescription: String? {
         switch self {
+        case .invalidName:
+            return "Cover image name is invalid."
         case .compressionFailed:
             return "Cover image could not be compressed to JPEG."
         }

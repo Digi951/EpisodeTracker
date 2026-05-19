@@ -205,7 +205,7 @@ private struct IPadEpisodeListView: View {
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
     @State private var showingAddEpisode = false
-    @State private var multiSelection: Set<PersistentIdentifier> = []
+    @State private var selectionController = EpisodeSelectionController()
     @State private var isEditing = false
 
     private var librarySnapshot: SidebarLibrarySnapshot {
@@ -259,7 +259,7 @@ private struct IPadEpisodeListView: View {
     var body: some View {
         Group {
             if isEditing {
-                List(selection: $multiSelection) {
+                List(selection: $selectionController.selectedIDs) {
                     listContent
                 }
                 .environment(\.editMode, .constant(.active))
@@ -278,7 +278,7 @@ private struct IPadEpisodeListView: View {
                     Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
                         isEditing.toggle()
                         if !isEditing {
-                            multiSelection.removeAll()
+                            selectionController.clear()
                         }
                     }
                 }
@@ -288,7 +288,7 @@ private struct IPadEpisodeListView: View {
                     Button {
                         selectAllVisible()
                     } label: {
-                        Text(multiSelection.count == filteredEpisodes.count ? "Keine" : "Alle")
+                        Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
                     }
                 } else {
                     EpisodeListSortFilterMenu(
@@ -305,11 +305,11 @@ private struct IPadEpisodeListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isEditing && !multiSelection.isEmpty {
+            if isEditing && !selectionController.isEmpty {
                 Button(role: .destructive) {
                     requestDeleteSelected()
                 } label: {
-                    Text("\(multiSelection.count) Folge\(multiSelection.count == 1 ? "" : "n") l\u{00F6}schen")
+                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
                         .font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -472,20 +472,15 @@ private struct IPadEpisodeListView: View {
         }
         EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
-        multiSelection.removeAll()
+        selectionController.clear()
     }
 
     private func selectAllVisible() {
-        let allIDs = Set(filteredEpisodes.map(\.persistentModelID))
-        if multiSelection == allIDs {
-            multiSelection.removeAll()
-        } else {
-            multiSelection = allIDs
-        }
+        selectionController.toggleAllVisible(filteredEpisodes)
     }
 
     private func requestDeleteSelected() {
-        let selected = filteredEpisodes.filter { multiSelection.contains($0.persistentModelID) }
+        let selected = selectionController.selectedEpisodes(from: filteredEpisodes)
         guard !selected.isEmpty else { return }
         deleteState.requestBatch(selected)
         showingDeleteConfirmation = true

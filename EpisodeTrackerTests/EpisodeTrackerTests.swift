@@ -1102,6 +1102,39 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(deleteState.title, "2 Folgen löschen?")
     }
 
+    func testEpisodeSelectionControllerTogglesAllVisibleEpisodes() {
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1980)
+        ]
+        var controller = EpisodeSelectionController()
+
+        controller.toggleAllVisible(episodes)
+
+        XCTAssertEqual(controller.count, 2)
+        XCTAssertEqual(controller.selectAllButtonTitle(visibleEpisodes: episodes), "Keine")
+
+        controller.toggleAllVisible(episodes)
+
+        XCTAssertTrue(controller.isEmpty)
+        XCTAssertEqual(controller.selectAllButtonTitle(visibleEpisodes: episodes), "Alle")
+    }
+
+    func testEpisodeSelectionControllerReturnsSelectedEpisodes() {
+        let episodes = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1980),
+            Episode(episodeNumber: 3, title: "C", releaseYear: 1981)
+        ]
+        var controller = EpisodeSelectionController()
+        controller.selectedIDs = [
+            episodes[0].persistentModelID,
+            episodes[2].persistentModelID
+        ]
+
+        XCTAssertEqual(controller.selectedEpisodes(from: episodes).map(\.title), ["A", "C"])
+    }
+
     func testStatisticsOverviewPreferencesRestoreDefaultOrderWhenEmpty() {
         let sections = StatisticsOverviewPreferences.orderedItems(
             from: "",

@@ -6,7 +6,7 @@ set -euo pipefail
 
 PROJECT="EpisodeTracker.xcodeproj"
 SCHEME="EpisodeTracker"
-DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+DERIVED_DATA_PATH="${EPISODETRACKER_DERIVED_DATA_PATH:-./DerivedData/ReleaseCheck}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,13 +15,35 @@ NC='\033[0m'
 
 step() { echo -e "\n${YELLOW}=== $1 ===${NC}\n"; }
 pass() { echo -e "${GREEN}✓ $1${NC}"; }
-fail() { echo -e "${RED}✗ $1${NC}"; exit 1; }
+fail() { echo -e "${RED}✗ $1${NC}" >&2; exit 1; }
+
+resolve_destination() {
+    if [ -n "${EPISODETRACKER_DESTINATION:-}" ]; then
+        echo "$EPISODETRACKER_DESTINATION"
+        return
+    fi
+
+    local simulator_name
+    simulator_name=$(xcrun simctl list devices available 2>/dev/null \
+        | awk -F '[()]' '/iPhone/ { gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit }')
+
+    if [ -z "$simulator_name" ]; then
+        fail "No available iPhone simulator found. Set EPISODETRACKER_DESTINATION to a valid xcodebuild destination."
+    fi
+
+    echo "platform=iOS Simulator,name=$simulator_name"
+}
+
+DESTINATION="$(resolve_destination)"
+echo "Using destination: $DESTINATION"
+echo "Using derived data path: $DERIVED_DATA_PATH"
 
 step "1/3: Running tests (Debug)"
 if xcodebuild test \
     -project "$PROJECT" \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
     -quiet 2>&1; then
     pass "Tests passed (Debug)"
 else
@@ -34,6 +56,7 @@ if xcodebuild build \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
     -configuration Release \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
     -quiet 2>&1; then
     pass "Release build succeeded"
 else
