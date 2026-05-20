@@ -198,12 +198,15 @@ private struct IPadEpisodeListView: View {
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
 
+    @AppStorage("prefersICloudSync") private var prefersICloudSync = false
     @Binding var selection: Episode?
 
     @State private var controls = EpisodeListControlsState()
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
     @State private var showingAddEpisode = false
+    @State private var selectionController = EpisodeSelectionController()
+    @State private var isEditing = false
 
     private var librarySnapshot: SidebarLibrarySnapshot {
         SidebarLibrarySnapshot(episodes: episodes)
@@ -254,72 +257,67 @@ private struct IPadEpisodeListView: View {
     }
 
     var body: some View {
-        List(selection: $selection) {
-            if showsLibrarySnapshot && !episodes.isEmpty {
-                CompactLibrarySnapshotView(
-                    episodeCount: librarySnapshot.episodeCount,
-                    listenedCount: librarySnapshot.listenedCount,
-                    openCount: librarySnapshot.openCount,
-                    totalListens: librarySnapshot.totalListens
-                )
-                .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            }
-
-            if filteredEpisodes.isEmpty {
-                ContentUnavailableView {
-                    Label(episodes.isEmpty ? "Noch keine Folgen" : "Nichts gefunden", systemImage: "magnifyingglass")
-                } description: {
-                    Text(episodes.isEmpty ? "Lege deine erste Folge an." : "Passe Suche oder Filter an.")
+        Group {
+            if isEditing {
+                List(selection: $selectionController.selectedIDs) {
+                    listContent
                 }
-                .listRowInsets(EdgeInsets(top: 18, leading: 10, bottom: 12, trailing: 10))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            } else if !episodeGroups.isEmpty {
-                ForEach(episodeGroups) { group in
-                    Section {
-                        if !isCollapsed(group) {
-                            ForEach(group.episodes) { episode in
-                                episodeNavigationLink(episode)
-                            }
-                            .onDelete { offsets in
-                                requestDeleteEpisodes(group.episodes, at: offsets)
-                            }
-                        }
-                    } header: {
-                        EpisodeGroupHeader(
-                            group: group,
-                            isCollapsed: isCollapsed(group)
-                        ) {
-                            toggleGroup(group)
-                        }
-                    }
-                }
+                .environment(\.editMode, .constant(.active))
             } else {
-                ForEach(filteredEpisodes) { episode in
-                    episodeNavigationLink(episode)
-                }
-                .onDelete { offsets in
-                    requestDeleteEpisodes(filteredEpisodes, at: offsets)
+                List(selection: $selection) {
+                    listContent
                 }
             }
         }
         .listStyle(.sidebar)
-        .searchable(text: $controls.searchText, prompt: "Folge suchen…")
+        .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                EpisodeListSortFilterMenu(
-                    controls: $controls,
-                    universes: universes,
-                    resetsMoodFilter: false
-                )
-                Button {
-                    showingAddEpisode = true
-                } label: {
-                    Label("Neue Folge", systemImage: "plus")
+            ToolbarItem(placement: .topBarLeading) {
+                if !episodes.isEmpty {
+                    Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
+                        isEditing.toggle()
+                        if !isEditing {
+                            selectionController.clear()
+                        }
+                    }
                 }
+            }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if isEditing {
+                    Button {
+                        selectAllVisible()
+                    } label: {
+                        Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
+                    }
+                } else {
+                    EpisodeListSortFilterMenu(
+                        controls: $controls,
+                        universes: universes,
+                        resetsMoodFilter: false
+                    )
+                    Button {
+                        showingAddEpisode = true
+                    } label: {
+                        Label("Neue Folge", systemImage: "plus")
+                    }
+                }
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if isEditing && !selectionController.isEmpty {
+                Button(role: .destructive) {
+                    requestDeleteSelected()
+                } label: {
+                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             }
         }
         .sheet(isPresented: $showingAddEpisode) {
@@ -332,14 +330,15 @@ private struct IPadEpisodeListView: View {
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Löschen", role: .destructive) {
+            Button("L\u{00F6}schen", role: .destructive) {
                 confirmDeleteEpisodes()
+                isEditing = false
             }
             Button("Abbrechen", role: .cancel) {
                 deleteState.clear()
             }
         } message: {
-            Text(deleteState.message)
+            Text(deleteState.message(usesCloudSync: prefersICloudSync))
         }
         .onAppear {
             if selection == nil {
@@ -357,39 +356,100 @@ private struct IPadEpisodeListView: View {
         }
     }
 
-    private func episodeNavigationLink(_ episode: Episode) -> some View {
-        NavigationLink(value: episode) {
-            EpisodeRowView(episode: episode)
+    @ViewBuilder
+    private var listContent: some View {
+        if showsLibrarySnapshot && !episodes.isEmpty {
+            CompactLibrarySnapshotView(
+                episodeCount: librarySnapshot.episodeCount,
+                listenedCount: librarySnapshot.listenedCount,
+                openCount: librarySnapshot.openCount,
+                totalListens: librarySnapshot.totalListens
+            )
+            .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
         }
-        .swipeActions(edge: .leading) {
-            Button {
-                episode.isListened.toggle()
-                if episode.isListened {
+
+        if filteredEpisodes.isEmpty {
+            ContentUnavailableView {
+                Label(episodes.isEmpty ? "Noch keine Folgen" : "Nichts gefunden", systemImage: "magnifyingglass")
+            } description: {
+                Text(episodes.isEmpty ? "Lege deine erste Folge an." : "Passe Suche oder Filter an.")
+            }
+            .listRowInsets(EdgeInsets(top: 18, leading: 10, bottom: 12, trailing: 10))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        } else if !episodeGroups.isEmpty {
+            ForEach(episodeGroups) { group in
+                Section {
+                    if !isCollapsed(group) {
+                        ForEach(group.episodes) { episode in
+                            episodeRow(episode)
+                        }
+                        .onDelete { offsets in
+                            requestDeleteEpisodes(group.episodes, at: offsets)
+                        }
+                        .deleteDisabled(isEditing)
+                    }
+                } header: {
+                    EpisodeGroupHeader(
+                        group: group,
+                        isCollapsed: isCollapsed(group)
+                    ) {
+                        toggleGroup(group)
+                    }
+                }
+            }
+        } else {
+            ForEach(filteredEpisodes) { episode in
+                episodeRow(episode)
+            }
+            .onDelete { offsets in
+                requestDeleteEpisodes(filteredEpisodes, at: offsets)
+            }
+            .deleteDisabled(isEditing)
+        }
+    }
+
+    @ViewBuilder
+    private func episodeRow(_ episode: Episode) -> some View {
+        if isEditing {
+            EpisodeRowView(episode: episode)
+                .tag(episode.persistentModelID)
+        } else {
+            NavigationLink(value: episode) {
+                EpisodeRowView(episode: episode)
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    episode.isListened.toggle()
+                    if episode.isListened {
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isListened ? "Nochmal" : "Gehört",
+                        systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+                    )
+                }
+                .tint(episode.isListened ? .gray : .green)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    episode.isListened = true
                     episode.listenCount += 1
                     episode.lastListenedAt = .now
+                } label: {
+                    Label("Hördurchgang zählen", systemImage: "plus")
                 }
-            } label: {
-                Label(
-                    episode.isListened ? "Nochmal" : "Gehört",
-                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
-                )
-            }
-            .tint(episode.isListened ? .gray : .green)
-        }
-        .swipeActions(edge: .trailing) {
-            Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
-            } label: {
-                Label("Hördurchgang zählen", systemImage: "plus")
-            }
-            .tint(.blue)
+                .tint(.blue)
 
-            Button(role: .destructive) {
-                requestDeleteEpisode(episode)
-            } label: {
-                Label("Löschen", systemImage: "trash")
+                Button(role: .destructive) {
+                    requestDeleteEpisode(episode)
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
             }
         }
     }
@@ -409,9 +469,21 @@ private struct IPadEpisodeListView: View {
             if episode == selection {
                 selection = nil
             }
-            modelContext.delete(episode)
         }
+        EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
+        selectionController.clear()
+    }
+
+    private func selectAllVisible() {
+        selectionController.toggleAllVisible(filteredEpisodes)
+    }
+
+    private func requestDeleteSelected() {
+        let selected = selectionController.selectedEpisodes(from: filteredEpisodes)
+        guard !selected.isEmpty else { return }
+        deleteState.requestBatch(selected)
+        showingDeleteConfirmation = true
     }
 
     private func isCollapsed(_ group: EpisodeListGroup) -> Bool {

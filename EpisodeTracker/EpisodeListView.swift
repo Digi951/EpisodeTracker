@@ -10,9 +10,13 @@ struct EpisodeListView: View {
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
 
+    @AppStorage("prefersICloudSync") private var prefersICloudSync = false
+
     @State private var controls = EpisodeListControlsState()
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
+    @State private var selectionController = EpisodeSelectionController()
+    @State private var isEditing = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -75,22 +79,64 @@ struct EpisodeListView: View {
     }
 
     var body: some View {
-        List {
-            librarySnapshotRow
-            moodFilterRow
-            contentRows
+        Group {
+            if isEditing {
+                List(selection: $selectionController.selectedIDs) {
+                    librarySnapshotRow
+                    moodFilterRow
+                    contentRows
+                }
+                .environment(\.editMode, .constant(.active))
+            } else {
+                List {
+                    librarySnapshotRow
+                    moodFilterRow
+                    contentRows
+                }
+            }
         }
-        .searchable(text: $controls.searchText, prompt: "Folge suchen…")
+        .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if !episodes.isEmpty {
+                    Button(isEditing ? "Fertig" : "Ausw\u{00E4}hlen") {
+                        isEditing.toggle()
+                        if !isEditing {
+                            selectionController.clear()
+                        }
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                EpisodeListSortFilterMenu(
-                    controls: $controls,
-                    universes: universes
-                )
+                if isEditing {
+                    Button {
+                        selectAllVisible()
+                    } label: {
+                        Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
+                    }
+                } else {
+                    EpisodeListSortFilterMenu(
+                        controls: $controls,
+                        universes: universes
+                    )
+                }
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if !episodes.isEmpty {
+            if isEditing && !selectionController.isEmpty {
+                Button(role: .destructive) {
+                    requestDeleteSelected()
+                } label: {
+                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            } else if !episodes.isEmpty && !isEditing {
                 HStack {
                     Spacer()
                     NavigationLink(value: NavigationDestination.addEpisode) {
@@ -114,14 +160,15 @@ struct EpisodeListView: View {
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Löschen", role: .destructive) {
+            Button("L\u{00F6}schen", role: .destructive) {
                 confirmDeleteEpisodes()
+                isEditing = false
             }
             Button("Abbrechen", role: .cancel) {
                 deleteState.clear()
             }
         } message: {
-            Text(deleteState.message)
+            Text(deleteState.message(usesCloudSync: prefersICloudSync))
         }
     }
 
@@ -184,6 +231,7 @@ struct EpisodeListView: View {
                     .onDelete { offsets in
                         requestDeleteEpisodes(group.episodes, at: offsets)
                     }
+                    .deleteDisabled(isEditing)
                 }
             } header: {
                 EpisodeGroupHeader(
@@ -204,42 +252,48 @@ struct EpisodeListView: View {
         .onDelete { offsets in
             requestDeleteEpisodes(filteredEpisodes, at: offsets)
         }
+        .deleteDisabled(isEditing)
     }
 
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
-        NavigationLink(value: episode) {
+        if isEditing {
             EpisodeRowView(episode: episode)
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                episode.isListened.toggle()
-                if episode.isListened {
+                .tag(episode.persistentModelID)
+        } else {
+            NavigationLink(value: episode) {
+                EpisodeRowView(episode: episode)
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    episode.isListened.toggle()
+                    if episode.isListened {
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isListened ? "Nochmal" : "Gehört",
+                        systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+                    )
+                }
+                .tint(episode.isListened ? .gray : .green)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    episode.isListened = true
                     episode.listenCount += 1
                     episode.lastListenedAt = .now
+                } label: {
+                    Label("Hördurchgang zählen", systemImage: "plus")
                 }
-            } label: {
-                Label(
-                    episode.isListened ? "Nochmal" : "Gehört",
-                    systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
-                )
-            }
-            .tint(episode.isListened ? .gray : .green)
-        }
-        .swipeActions(edge: .trailing) {
-            Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
-            } label: {
-                Label("Hördurchgang zählen", systemImage: "plus")
-            }
-            .tint(.blue)
+                .tint(.blue)
 
-            Button(role: .destructive) {
-                requestDeleteEpisode(episode)
-            } label: {
-                Label("Löschen", systemImage: "trash")
+                Button(role: .destructive) {
+                    requestDeleteEpisode(episode)
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
             }
         }
     }
@@ -255,10 +309,20 @@ struct EpisodeListView: View {
     }
 
     private func confirmDeleteEpisodes() {
-        for episode in deleteState.pendingEpisodes {
-            modelContext.delete(episode)
-        }
+        EpisodeDeleteHelper.delete(deleteState.pendingEpisodes, from: modelContext)
         deleteState.clear()
+        selectionController.clear()
+    }
+
+    private func selectAllVisible() {
+        selectionController.toggleAllVisible(filteredEpisodes)
+    }
+
+    private func requestDeleteSelected() {
+        let selected = selectionController.selectedEpisodes(from: filteredEpisodes)
+        guard !selected.isEmpty else { return }
+        deleteState.requestBatch(selected)
+        showingDeleteConfirmation = true
     }
 
     private func isCollapsed(_ group: EpisodeListGroup) -> Bool {
@@ -468,6 +532,10 @@ struct EpisodeRowView: View {
 
     var body: some View {
         HStack {
+            if let coverName = episode.coverImageName, !coverName.isEmpty {
+                CoverImageThumbnailView(name: coverName)
+            }
+
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)

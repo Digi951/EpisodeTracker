@@ -6,6 +6,7 @@ final class Universe {
     var id: UUID = UUID()
     var name: String = ""
     var syncKey: String?
+    var coverImageName: String?
     @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
 
     init(

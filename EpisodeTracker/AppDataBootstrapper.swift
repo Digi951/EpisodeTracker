@@ -9,18 +9,20 @@ private let bootstrapLogger = Logger(
 
 enum AppDataBootstrapper {
     static let schemaVersionKey = "schemaVersion"
-    static let currentSchemaVersion = 3
+    static let currentSchemaVersion = 4
     static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
 
+    @discardableResult
     @MainActor
     static func bootstrap(
         containerSet: AppModelContainerSet,
         userDefaults: UserDefaults = .standard
-    ) async {
+    ) async -> BootstrapReport {
+        var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
         if let localContainer = containerSet.localPersistent {
-            prepareContainer(
+            report = prepareContainer(
                 localContainer,
                 usesCloudSync: false,
                 lastSchemaVersion: lastSchemaVersion
@@ -35,7 +37,7 @@ enum AppDataBootstrapper {
         }
 
         if shouldPreparePrimary {
-            prepareContainer(
+            report = prepareContainer(
                 containerSet.primary,
                 usesCloudSync: containerSet.runtimeMode.usesCloudSync,
                 lastSchemaVersion: lastSchemaVersion
@@ -45,16 +47,20 @@ enum AppDataBootstrapper {
         if containerSet.runtimeMode.usesCloudSync {
             attemptAutomaticCloudMigrationIfNeeded(
                 containerSet: containerSet,
-                userDefaults: userDefaults
+                userDefaults: userDefaults,
+                report: &report
             )
 
-            prepareSyncDataIfNeeded(container: containerSet.primary)
+            let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
+            report.syncPreparationSummary = syncSummary
             repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
         }
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
-        prepareSyncDataIfNeeded(container: containerSet.primary)
+
+        let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
+        report.syncPreparationSummary = syncSummary
 
         if containerSet.runtimeMode.usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
@@ -62,16 +68,20 @@ enum AppDataBootstrapper {
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
+
+        bootstrapLogger.info("Bootstrap complete: \(report.logDescription, privacy: .public)")
+        return report
     }
 
+    @discardableResult
     @MainActor
     static func bootstrap(
         container: ModelContainer,
         usesCloudSync: Bool,
         userDefaults: UserDefaults = .standard
-    ) async {
+    ) async -> BootstrapReport {
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
-        prepareContainer(
+        let report = prepareContainer(
             container,
             usesCloudSync: usesCloudSync,
             lastSchemaVersion: lastSchemaVersion
@@ -87,6 +97,9 @@ enum AppDataBootstrapper {
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
+
+        bootstrapLogger.info("Bootstrap completed: \(report.logDescription, privacy: .public)")
+        return report
     }
 
     @MainActor
@@ -94,26 +107,32 @@ enum AppDataBootstrapper {
         _ container: ModelContainer,
         usesCloudSync: Bool,
         lastSchemaVersion: Int
-    ) {
-        seedMoodsIfNeeded(container: container)
-        seedCollectionsIfNeeded(container: container)
+    ) -> BootstrapReport {
+        var report = BootstrapReport()
+
+        report.seededMoods = seedMoodsIfNeeded(container: container)
+        report.seededCollections = seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
-        assignMissingCollectionsIfNeeded(container: container)
-        prepareSyncDataIfNeeded(container: container)
+        report.assignedOrphanEpisodes = assignMissingCollectionsIfNeeded(container: container)
+        let syncSummary = SyncPreparation.prepare(context: container.mainContext)
+        report.syncPreparationSummary = syncSummary
 
         if usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: container)
         }
 
         if lastSchemaVersion < 2 {
-            repairPostMigrationIfNeeded(container: container)
+            report.repairedPostMigrationIDs = repairPostMigrationIfNeeded(container: container)
         }
+
+        return report
     }
 
     @MainActor
     private static func attemptAutomaticCloudMigrationIfNeeded(
         containerSet: AppModelContainerSet,
-        userDefaults: UserDefaults
+        userDefaults: UserDefaults,
+        report: inout BootstrapReport
     ) {
         let readiness = SyncMigrationReadinessEvaluator.evaluate(
             containerSet: containerSet,
@@ -124,19 +143,23 @@ enum AppDataBootstrapper {
               let localContainer = containerSet.localPersistent,
               let cloudContainer = containerSet.cloudPersistent
         else {
+            let statusMessage: String
             if readiness.hasCompletedMigration {
-                userDefaults.set("Automatische Cloud-Migration bereits abgeschlossen.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration bereits abgeschlossen."
             } else if !readiness.hasCloudPersistentContainer {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: Cloud-Ziel ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: Cloud-Ziel ist nicht verfügbar."
             } else if !readiness.hasLocalPersistentContainer {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar."
             } else if !readiness.hasLocalData {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: keine lokalen Daten gefunden.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: keine lokalen Daten gefunden."
             } else if !readiness.localValidationIssues.isEmpty {
-                userDefaults.set("Automatische Cloud-Migration übersprungen: \(readiness.localValidationIssues.count) Validierungshinweise im lokalen Bestand.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen: \(readiness.localValidationIssues.count) Validierungshinweise im lokalen Bestand."
             } else {
-                userDefaults.set("Automatische Cloud-Migration übersprungen.", forKey: automaticCloudMigrationStatusKey)
+                statusMessage = "Automatische Cloud-Migration übersprungen."
             }
+
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
 
             bootstrapLogger.info(
                 "Automatic cloud migration skipped: completed=\(readiness.hasCompletedMigration, privacy: .public), localContainer=\(readiness.hasLocalPersistentContainer, privacy: .public), cloudContainer=\(readiness.hasCloudPersistentContainer, privacy: .public), hasLocalData=\(readiness.hasLocalData, privacy: .public), issues=\(readiness.localValidationIssues.count, privacy: .public)"
@@ -146,72 +169,77 @@ enum AppDataBootstrapper {
 
         let snapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
         do {
-            let report = try SyncMigrationCoordinator.migrate(
+            let migrationReport = try SyncMigrationCoordinator.migrate(
                 snapshot: snapshot,
                 into: cloudContainer.mainContext,
                 userDefaults: userDefaults
             )
 
-            if report.validationIssues.isEmpty {
-                userDefaults.set(
-                    "Automatische Cloud-Migration erfolgreich: \(report.migratedEpisodeCount) Folgen, \(report.migratedUniverseCount) Sammlungen, \(report.migratedMoodCount) Stimmungen.",
-                    forKey: automaticCloudMigrationStatusKey
-                )
+            let statusMessage: String
+            if migrationReport.validationIssues.isEmpty {
+                statusMessage = "Automatische Cloud-Migration erfolgreich: \(migrationReport.migratedEpisodeCount) Folgen, \(migrationReport.migratedUniverseCount) Sammlungen, \(migrationReport.migratedMoodCount) Stimmungen."
             } else {
-                userDefaults.set(
-                    "Automatische Cloud-Migration beendet mit \(report.validationIssues.count) Validierungshinweisen.",
-                    forKey: automaticCloudMigrationStatusKey
-                )
+                statusMessage = "Automatische Cloud-Migration beendet mit \(migrationReport.validationIssues.count) Validierungshinweisen."
             }
 
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+
             bootstrapLogger.info(
-                "Automatic cloud migration finished: episodes=\(report.migratedEpisodeCount, privacy: .public), universes=\(report.migratedUniverseCount, privacy: .public), moods=\(report.migratedMoodCount, privacy: .public), issues=\(report.validationIssues.count, privacy: .public), markedCompleted=\(report.markedCompleted, privacy: .public)"
+                "Automatic cloud migration finished: episodes=\(migrationReport.migratedEpisodeCount, privacy: .public), universes=\(migrationReport.migratedUniverseCount, privacy: .public), moods=\(migrationReport.migratedMoodCount, privacy: .public), issues=\(migrationReport.validationIssues.count, privacy: .public), markedCompleted=\(migrationReport.markedCompleted, privacy: .public)"
             )
         } catch {
-            let message = "Automatische Cloud-Migration fehlgeschlagen: \(error.localizedDescription)"
-            userDefaults.set(message, forKey: automaticCloudMigrationStatusKey)
-            bootstrapLogger.error("\(message, privacy: .public)")
+            let statusMessage = "Automatische Cloud-Migration fehlgeschlagen: \(error.localizedDescription)"
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+            bootstrapLogger.error("\(statusMessage, privacy: .public)")
         }
     }
 
+    @discardableResult
     @MainActor
-    static func repairPostMigrationIfNeeded(container: ModelContainer) {
+    static func repairPostMigrationIfNeeded(container: ModelContainer) -> Int {
         let context = container.mainContext
         let episodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
 
-        var didChange = false
+        var repairedCount = 0
         for episode in episodes where episode.id == UUID(uuidString: "00000000-0000-0000-0000-000000000000") {
             episode.id = UUID()
-            didChange = true
+            repairedCount += 1
         }
-        if didChange {
+        if repairedCount > 0 {
             try? context.save()
         }
+        return repairedCount
     }
 
+    @discardableResult
     @MainActor
-    static func seedMoodsIfNeeded(container: ModelContainer) {
+    static func seedMoodsIfNeeded(container: ModelContainer) -> Bool {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Mood>()
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+        guard existingCount == 0 else { return false }
 
         for suggestion in Mood.defaultSuggestions {
             context.insert(Mood(name: suggestion.name, iconName: suggestion.icon))
         }
+        return true
     }
 
+    @discardableResult
     @MainActor
-    static func seedCollectionsIfNeeded(container: ModelContainer) {
+    static func seedCollectionsIfNeeded(container: ModelContainer) -> Bool {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Universe>()
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+        guard existingCount == 0 else { return false }
 
         context.insert(Universe(name: "Allgemein"))
         for universeName in CatalogSourceRegistry.managedSources.map(\.name) {
             context.insert(Universe(name: universeName))
         }
+        return true
     }
 
     @MainActor
@@ -226,23 +254,25 @@ enum AppDataBootstrapper {
         }
     }
 
+    @discardableResult
     @MainActor
-    static func assignMissingCollectionsIfNeeded(container: ModelContainer) {
+    static func assignMissingCollectionsIfNeeded(container: ModelContainer) -> Int {
         let context = container.mainContext
-        guard let defaultUniverse = ensureDefaultUniverse(in: context) else { return }
+        guard let defaultUniverse = ensureDefaultUniverse(in: context) else { return 0 }
 
         let descriptor = FetchDescriptor<Episode>()
-        guard let allEpisodes = try? context.fetch(descriptor) else { return }
+        guard let allEpisodes = try? context.fetch(descriptor) else { return 0 }
 
-        var didChange = false
+        var assignedCount = 0
         for episode in allEpisodes where episode.universe == nil {
             episode.universe = defaultUniverse
-            didChange = true
+            assignedCount += 1
         }
 
-        if didChange {
+        if assignedCount > 0 {
             try? context.save()
         }
+        return assignedCount
     }
 
     @MainActor

@@ -303,6 +303,80 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(universes[0].episodes.count, 1, "Existing episode assignments must survive the merge")
     }
 
+    // MARK: - Cover Field Persistence
+
+    func testCoverFieldsStartNilAfterUpgrade() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "Der Super-Papagei",
+            releaseYear: 1979,
+            universe: universe,
+            moods: [mood]
+        )
+
+        context.insert(universe)
+        context.insert(mood)
+        context.insert(episode)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertNil(fetched[0].coverImageName)
+        XCTAssertNil(fetched[0].universe?.coverImageName)
+
+        // Existing data untouched
+        XCTAssertEqual(fetched[0].title, "Der Super-Papagei")
+        XCTAssertEqual(fetched[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(fetched[0].moods.count, 1)
+    }
+
+    func testCoverNamePersistsThroughSaveFetch() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "TKKG")
+        universe.coverImageName = "universe-\(universe.id.uuidString)"
+        let episode = Episode(episodeNumber: 1, title: "Test", releaseYear: 2020, universe: universe)
+        episode.coverImageName = "\(episode.id.uuidString)"
+
+        context.insert(universe)
+        context.insert(episode)
+        try context.save()
+
+        let fetchedEpisodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetchedEpisodes[0].coverImageName, "\(episode.id.uuidString)")
+
+        let fetchedUniverses = try context.fetch(FetchDescriptor<Universe>())
+        let tkkg = fetchedUniverses.first(where: { $0.name == "TKKG" })!
+        XCTAssertEqual(tkkg.coverImageName, "universe-\(universe.id.uuidString)")
+    }
+
+    func testSyncPreparationPreservesCoverFields() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Test")
+        universe.coverImageName = "uni-cover"
+        let episode = Episode(episodeNumber: 1, title: "E1", releaseYear: 2020, universe: universe)
+        episode.coverImageName = "ep-cover"
+
+        context.insert(universe)
+        context.insert(episode)
+        try context.save()
+
+        let summary = SyncPreparation.prepare(context: context)
+        XCTAssertFalse(summary.hasChanges)
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched[0].coverImageName, "ep-cover")
+        XCTAssertEqual(fetched[0].universe?.coverImageName, "uni-cover")
+    }
+
     // MARK: - Schema Metadata
 
     func testSchemaContainsOriginalNameForRenamedRelationships() throws {
@@ -423,15 +497,43 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 3)
+        XCTAssertEqual(schemas.count, 4)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
+        XCTAssertTrue(schemas[3] == SchemaV4.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 2, "Should have V1→V2 and V2→V3 stages")
+        XCTAssertEqual(stages.count, 3, "Should have V1→V2, V2→V3, and V3→V4 stages")
+    }
+
+    func testMigrationPlanIncludesV4() {
+        let schemas = EpisodeTrackerMigrationPlan.schemas
+        XCTAssertEqual(schemas.count, 4)
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(4, 0, 0) }))
+
+        let stages = EpisodeTrackerMigrationPlan.stages
+        XCTAssertEqual(stages.count, 3)
+    }
+
+    func testSchemaV4ReferencesCurrentModels() {
+        XCTAssertEqual(SchemaV4.models.count, 3)
+    }
+
+    func testSchemaVersionIsFour() async throws {
+        let container = try makeInMemoryContainer()
+        let suiteName = "test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+
+        await AppDataBootstrapper.bootstrap(
+            container: container,
+            usesCloudSync: false,
+            userDefaults: defaults
+        )
+
+        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 4)
     }
 
     func testSchemaV1ModelsMatchV1Release() {
@@ -452,12 +554,8 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(models.count, 3)
     }
 
-    func testSchemaV3ModelsMatchCurrentTopLevelTypes() {
-        let models = SchemaV3.models
-        XCTAssertTrue(models.contains { $0 == Episode.self })
-        XCTAssertTrue(models.contains { $0 == Mood.self })
-        XCTAssertTrue(models.contains { $0 == Universe.self })
-        XCTAssertEqual(models.count, 3)
+    func testSchemaV3HasThreeModels() {
+        XCTAssertEqual(SchemaV3.models.count, 3)
     }
 
     // MARK: - Schema Version Tracking

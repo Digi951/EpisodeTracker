@@ -52,12 +52,17 @@ struct EpisodeDeleteState {
         pendingEpisodes.count == 1 ? "Folge löschen?" : "\(pendingEpisodes.count) Folgen löschen?"
     }
 
-    var message: String {
-        guard pendingEpisodes.count == 1, let episode = pendingEpisodes.first else {
-            return "Diese Aktion kann nicht rückgängig gemacht werden."
+    func message(usesCloudSync: Bool) -> String {
+        let syncHint = usesCloudSync
+            ? "Die Folgen werden auf allen synchronisierten Geräten entfernt."
+            : "Die Folgen werden nur auf diesem Gerät entfernt."
+        let catalogHint = "Katalogeinträge bleiben erhalten und können erneut übernommen werden."
+
+        if pendingEpisodes.count == 1, let episode = pendingEpisodes.first {
+            return "„\(episode.title)“ wird dauerhaft gelöscht. \(syncHint) \(catalogHint)"
         }
 
-        return "„\(episode.title)“ wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+        return "\(syncHint) \(catalogHint)"
     }
 
     mutating func request(_ episode: Episode) {
@@ -66,6 +71,10 @@ struct EpisodeDeleteState {
 
     mutating func request(from episodes: [Episode], at offsets: IndexSet) {
         pendingEpisodes = offsets.map { episodes[$0] }
+    }
+
+    mutating func requestBatch(_ episodes: [Episode]) {
+        pendingEpisodes = episodes
     }
 
     mutating func clear() {
@@ -255,15 +264,13 @@ enum EpisodeListOrganizer {
         case .rated:
             return episodes.filter { $0.rating != nil }
         case .noted:
-            return episodes.filter(hasNonEmptyNote)
+            return episodes.filter { episode in
+                guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+                    return false
+                }
+                return !note.isEmpty
+            }
         }
-    }
-
-    private static func hasNonEmptyNote(_ episode: Episode) -> Bool {
-        guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines) else {
-            return false
-        }
-        return !note.isEmpty
     }
 
     static func shouldGroup(

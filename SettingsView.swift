@@ -680,7 +680,6 @@ private struct CatalogManagementView: View {
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
     @State private var activeCatalogIDs: Set<String> = []
-
     private let activeCatalogStore = ActiveCatalogStore()
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
@@ -837,6 +836,7 @@ private struct CatalogManagementView: View {
             }
         }
     }
+
 }
 
 private struct CatalogToggleRow: View {

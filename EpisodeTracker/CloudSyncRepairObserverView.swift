@@ -1,6 +1,9 @@
 import SwiftData
 import SwiftUI
 
+// MARK: - Temporary Bridge (target: remove in V1.6+)
+// This invisible view triggers SyncPreparation repairs reactively via @Query observation.
+// Long-term, this should move to a ModelActor or explicit lifecycle hook.
 struct CloudSyncRepairObserverView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
