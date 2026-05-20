@@ -136,24 +136,10 @@ struct EpisodeListView: View {
                 .tint(.red)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
-            } else if !episodes.isEmpty && !isEditing {
-                HStack {
-                    Spacer()
-                    NavigationLink(value: NavigationDestination.addEpisode) {
-                        Image(systemName: "plus")
-                            .font(.title2.weight(.semibold))
-                            .frame(width: 58, height: 58)
-                            .foregroundStyle(.white)
-                            .background(Color.accentColor, in: Circle())
-                            .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
-                            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
-                    }
-                    .accessibilityLabel("Neue Folge")
-                    .padding(.trailing, 18)
-                    .padding(.bottom, 8)
-                }
-                .listRowBackground(Color.clear)
             }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            floatingAddButton
         }
         .confirmationDialog(
             deleteState.title,
@@ -169,6 +155,24 @@ struct EpisodeListView: View {
             }
         } message: {
             Text(deleteState.message(usesCloudSync: prefersICloudSync))
+        }
+    }
+
+    @ViewBuilder
+    private var floatingAddButton: some View {
+        if !episodes.isEmpty && !isEditing {
+            NavigationLink(value: NavigationDestination.addEpisode) {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
+                    .frame(width: 58, height: 58)
+                    .foregroundStyle(.white)
+                    .background(Color.accentColor, in: Circle())
+                    .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
+                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+            }
+            .accessibilityLabel("Neue Folge")
+            .padding(.trailing, 18)
+            .padding(.bottom, 16)
         }
     }
 
