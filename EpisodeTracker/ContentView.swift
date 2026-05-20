@@ -267,13 +267,7 @@ private struct IPadEpisodeListView: View {
     }
 
     private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
-        guard !isEditing,
-              controls.searchText.isEmpty,
-              !controls.hasActiveFilter
-        else {
-            return nil
-        }
-
+        guard !isEditing, controls.searchText.isEmpty, !controls.hasActiveFilter else { return nil }
         return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
             newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
             catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
@@ -409,14 +403,7 @@ private struct IPadEpisodeListView: View {
             .listRowBackground(Color.clear)
         }
 
-        if let catalogUpdateBanner {
-            NavigationLink(value: SmartListNavigation.detail(.naechsteAusKatalog)) {
-                CatalogUpdateBannerView(recommendation: catalogUpdateBanner, style: .sidebar)
-            }
-            .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 10, trailing: 10))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-        }
+        CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
 
         if filteredEpisodes.isEmpty {
             ContentUnavailableView {

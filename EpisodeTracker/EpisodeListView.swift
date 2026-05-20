@@ -79,13 +79,7 @@ struct EpisodeListView: View {
     }
 
     private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
-        guard !isEditing,
-              controls.searchText.isEmpty,
-              !controls.hasActiveFilter
-        else {
-            return nil
-        }
-
+        guard !isEditing, controls.searchText.isEmpty, !controls.hasActiveFilter else { return nil }
         return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
             newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
             catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
@@ -99,7 +93,7 @@ struct EpisodeListView: View {
                 List(selection: $selectionController.selectedIDs) {
                     librarySnapshotRow
                     moodFilterRow
-                    catalogUpdateBannerRow
+                    CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
                     contentRows
                 }
                 .environment(\.editMode, .constant(.active))
@@ -107,7 +101,7 @@ struct EpisodeListView: View {
                 List {
                     librarySnapshotRow
                     moodFilterRow
-                    catalogUpdateBannerRow
+                    CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
                     contentRows
                 }
             }
@@ -190,18 +184,6 @@ struct EpisodeListView: View {
             .accessibilityLabel("Neue Folge")
             .padding(.trailing, 18)
             .padding(.bottom, 16)
-        }
-    }
-
-    @ViewBuilder
-    private var catalogUpdateBannerRow: some View {
-        if let catalogUpdateBanner {
-            NavigationLink(value: SmartListNavigation.detail(.naechsteAusKatalog)) {
-                CatalogUpdateBannerView(recommendation: catalogUpdateBanner, style: .phone)
-            }
-            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
         }
     }
 
@@ -376,9 +358,30 @@ enum CatalogUpdateBannerStyle {
     case sidebar
 }
 
+struct CatalogUpdateBannerRow: View {
+    let recommendation: CatalogUpdateBannerRecommendation?
+    let style: CatalogUpdateBannerStyle
+
+    @AppStorage("dismissedCatalogBannerFingerprint") private var dismissedBannerFingerprint = ""
+
+    var body: some View {
+        if let recommendation, recommendation.fingerprint != dismissedBannerFingerprint {
+            CatalogUpdateBannerView(recommendation: recommendation, style: style) {
+                withAnimation { dismissedBannerFingerprint = recommendation.fingerprint }
+            }
+            .listRowInsets(style == .sidebar
+                ? EdgeInsets(top: 0, leading: 10, bottom: 10, trailing: 10)
+                : EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
+    }
+}
+
 struct CatalogUpdateBannerView: View {
     let recommendation: CatalogUpdateBannerRecommendation
     let style: CatalogUpdateBannerStyle
+    let onDismiss: () -> Void
 
     private var isSidebar: Bool {
         style == .sidebar
@@ -399,14 +402,25 @@ struct CatalogUpdateBannerView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
-                Text(isSidebar ? recommendation.compactMessage : recommendation.message)
+                Text(recommendation.message)
                     .font(isSidebar ? .caption : .footnote)
                     .foregroundStyle(.secondary)
-                    .lineLimit(isSidebar ? 2 : 3)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(.secondary.opacity(0.12), in: Circle())
+            }
+            .buttonStyle(.plain)
         }
         .padding(isSidebar ? 12 : 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -704,5 +718,31 @@ private struct MoodChip: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
+
+#Preview("Banner – neue Kataloge") {
+    List {
+        CatalogUpdateBannerRow(
+            recommendation: CatalogUpdateBannerRecommendation.previewNewCatalogs,
+            style: .phone
+        )
+        CatalogUpdateBannerRow(
+            recommendation: CatalogUpdateBannerRecommendation.previewNewCatalogs,
+            style: .sidebar
+        )
+    }
+}
+
+#Preview("Banner – neue Folgen") {
+    List {
+        CatalogUpdateBannerRow(
+            recommendation: CatalogUpdateBannerRecommendation.previewNewEpisodes,
+            style: .phone
+        )
+        CatalogUpdateBannerRow(
+            recommendation: CatalogUpdateBannerRecommendation.previewNewEpisodes,
+            style: .sidebar
+        )
     }
 }

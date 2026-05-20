@@ -237,6 +237,10 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         compactMessageText
     }
 
+    var fingerprint: String {
+        "\(titleText)|\(universeCount)|\(missingEpisodeCount)|\(firstUniverseName)"
+    }
+
     static func newCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {
         guard let firstName = availability.firstName else { return nil }
         let title = availability.count == 1
@@ -286,6 +290,22 @@ struct CatalogUpdateBannerRecommendation: Equatable {
             firstEpisodeTitle: firstTitle
         )
     }
+
+    #if DEBUG
+    static let previewNewCatalogs = CatalogUpdateBannerRecommendation.newCatalogs(
+        NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi", name: "Bibi und Tina", url: URL(string: "https://example.com")!),
+            ManagedCatalogSource(id: "tkkg", name: "TKKG", url: URL(string: "https://example.com")!)
+        ])
+    )
+
+    static let previewNewEpisodes = CatalogUpdateBannerRecommendation(
+        missingEpisodeCount: 5,
+        universeCount: 1,
+        firstUniverseName: "Die drei ???",
+        firstEpisodeTitle: "und der Super-Papagei"
+    )
+    #endif
 }
 
 enum EpisodeListOrganizer {

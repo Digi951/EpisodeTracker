@@ -1251,6 +1251,59 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(recommendation?.compactMessage, "Version 1 -> 2 - 4 Folgen")
     }
 
+    // MARK: - Banner-Fingerprint
+
+    func testFingerprintChangesWhenCatalogStateChanges() {
+        let bannerA = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 3,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Super-Papagei"
+        )
+        let bannerB = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 5,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Super-Papagei"
+        )
+
+        XCTAssertNotEqual(bannerA.fingerprint, bannerB.fingerprint)
+    }
+
+    func testFingerprintStableForSameState() {
+        let bannerA = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 3,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Super-Papagei"
+        )
+        let bannerB = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 3,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Super-Papagei"
+        )
+
+        XCTAssertEqual(bannerA.fingerprint, bannerB.fingerprint)
+    }
+
+    func testNewCatalogBannerFingerprintDiffersFromEpisodeBanner() {
+        let newCatalogBanner = CatalogUpdateBannerRecommendation.newCatalogs(
+            NewCatalogAvailability(sources: [
+                ManagedCatalogSource(id: "bibi", name: "Bibi und Tina", url: URL(string: "https://example.com")!)
+            ])
+        )
+        let episodeBanner = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 1,
+            universeCount: 1,
+            firstUniverseName: "Bibi und Tina",
+            firstEpisodeTitle: "Das Fohlen"
+        )
+
+        XCTAssertNotNil(newCatalogBanner)
+        XCTAssertNotEqual(newCatalogBanner?.fingerprint, episodeBanner.fingerprint)
+    }
+
     func testAvailableMoodsAndMoodEpisodesMatchByNameWhenInstancesDiffer() {
         let libraryMood = Mood(name: "Gruselig", iconName: "😱")
         let pickerMood = Mood(name: "Gruselig", iconName: "😱")
