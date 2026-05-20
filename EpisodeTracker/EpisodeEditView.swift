@@ -63,6 +63,15 @@ struct EpisodeEditView: View {
         && selectedUniverse != nil
         && canCreateEpisodeUnderCurrentPlan
     }
+    private var duplicateEpisodeWarning: String? {
+        guard isNew,
+              let number = parsedEpisodeNumber,
+              let universe = selectedUniverse,
+              hasDuplicateEpisodeNumber(in: universe, episodeNumber: number)
+        else { return nil }
+        return "Folge \(number) existiert bereits in \(universe.name)."
+    }
+
     private var suggestedMoods: [(name: String, icon: String)] {
         Mood.defaultSuggestions.filter { suggestion in
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
@@ -112,6 +121,7 @@ struct EpisodeEditView: View {
                 isNew: isNew,
                 yearSuggestions: yearSuggestions,
                 formValidationMessage: formValidationMessage,
+                duplicateEpisodeWarning: duplicateEpisodeWarning,
                 canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan,
                 onApplyCatalogMatch: applyCatalogMatch,
                 onSelectSuggestedEntry: applySuggestedEntry
@@ -516,6 +526,7 @@ private struct EpisodeFormSection: View {
     let isNew: Bool
     let yearSuggestions: [CatalogEntry]
     let formValidationMessage: String?
+    let duplicateEpisodeWarning: String?
     let canCreateEpisodeUnderCurrentPlan: Bool
     let onApplyCatalogMatch: () -> Void
     let onSelectSuggestedEntry: (CatalogEntry) -> Void
@@ -570,6 +581,11 @@ private struct EpisodeFormSection: View {
                     }
                 }
                 .font(.subheadline)
+            }
+            if let duplicateEpisodeWarning {
+                Text(duplicateEpisodeWarning)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
             }
             if let formValidationMessage {
                 Text(formValidationMessage)

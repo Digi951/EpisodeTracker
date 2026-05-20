@@ -1795,6 +1795,87 @@ final class EpisodeTrackerTests: XCTestCase {
     }
 
     @MainActor
+    func testSyncPreparationMergesCoverImageNameFromDuplicate() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+
+        let episodeWithCover = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            rating: 3,
+            universe: universe
+        )
+        episodeWithCover.coverImageName = "cover-25"
+
+        let episodeWithout = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            rating: 3,
+            universe: universe
+        )
+
+        context.insert(universe)
+        context.insert(episodeWithout)
+        context.insert(episodeWithCover)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].coverImageName, "cover-25", "Cover should be preserved from the duplicate with a cover")
+    }
+
+    @MainActor
+    func testSyncPreparationMergesStreamingURLFromDuplicate() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+
+        let episodeA = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: true,
+            rating: 4,
+            universe: universe
+        )
+
+        let episodeB = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: false,
+            universe: universe
+        )
+        episodeB.streamingURL = "https://open.spotify.com/album/abc"
+
+        context.insert(universe)
+        context.insert(episodeA)
+        context.insert(episodeB)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].streamingURL, "https://open.spotify.com/album/abc", "Streaming URL should be merged from duplicate")
+    }
+
+    @MainActor
     func testBootstrapperProvidesDefaultUniverseWhenMissing() throws {
         let schema = Schema([Episode.self, Mood.self, Universe.self])
         let container = try ModelContainer(

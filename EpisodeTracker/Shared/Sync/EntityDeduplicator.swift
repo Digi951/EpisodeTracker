@@ -215,6 +215,9 @@ enum EntityDeduplicator {
         for (key, duplicates) in grouped where duplicates.count > 1 {
             let sorted = duplicates.sorted { a, b in
                 if a.isListened != b.isListened { return a.isListened }
+                let aHasCover = a.coverImageName?.isEmpty == false
+                let bHasCover = b.coverImageName?.isEmpty == false
+                if aHasCover != bHasCover { return aHasCover }
                 if (a.rating != nil) != (b.rating != nil) { return a.rating != nil }
                 if let ra = a.rating, let rb = b.rating, ra != rb { return ra > rb }
                 if a.listenCount != b.listenCount { return a.listenCount > b.listenCount }
@@ -255,6 +258,18 @@ enum EntityDeduplicator {
                         }
                     } else {
                         keeper.lastListenedAt = duplicateDate
+                    }
+                }
+
+                if keeper.coverImageName == nil || keeper.coverImageName?.isEmpty == true {
+                    if let duplicateCover = duplicate.coverImageName, !duplicateCover.isEmpty {
+                        keeper.coverImageName = duplicateCover
+                    }
+                }
+
+                if keeper.streamingURL == nil || keeper.streamingURL?.isEmpty == true {
+                    if let duplicateURL = duplicate.streamingURL, !duplicateURL.isEmpty {
+                        keeper.streamingURL = duplicateURL
                     }
                 }
 
