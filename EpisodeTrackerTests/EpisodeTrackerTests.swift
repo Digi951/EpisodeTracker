@@ -1,6 +1,7 @@
 import XCTest
 import SwiftData
 import SwiftUI
+import UIKit
 @testable import EpisodeTracker
 
 @MainActor
@@ -340,6 +341,7 @@ final class EpisodeTrackerTests: XCTestCase {
             universe: universe,
             moods: [mood]
         )
+        episode.coverImageName = "cover-\(episode.id.uuidString)"
 
         context.insert(universe)
         context.insert(mood)
@@ -355,6 +357,7 @@ final class EpisodeTrackerTests: XCTestCase {
         ])
         XCTAssertEqual(snapshot.episodes.count, 1)
         XCTAssertEqual(snapshot.episodes[0].syncKey, "episode:universe:die drei ???#42")
+        XCTAssertEqual(snapshot.episodes[0].coverImageName, "cover-\(episode.id.uuidString)")
         XCTAssertEqual(snapshot.episodes[0].universeSyncKey, "universe:die drei ???")
         XCTAssertEqual(snapshot.episodes[0].moodSyncKeys, ["mood:spannend"])
     }
@@ -422,6 +425,7 @@ final class EpisodeTrackerTests: XCTestCase {
             rating: 4,
             listenCount: 2,
             lastListenedAt: Date(timeIntervalSince1970: 1_000),
+            coverImageName: "local-cover",
             universeSyncKey: "universe:die drei ???",
             moodSyncKeys: ["mood:spannend"]
         )
@@ -435,6 +439,7 @@ final class EpisodeTrackerTests: XCTestCase {
             rating: 5,
             listenCount: 5,
             lastListenedAt: Date(timeIntervalSince1970: 2_000),
+            coverImageName: "cloud-cover",
             universeSyncKey: "universe:die drei ???",
             moodSyncKeys: ["mood:gruselig"]
         )
@@ -448,7 +453,90 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(merged.rating, 4)
         XCTAssertEqual(merged.listenCount, 5)
         XCTAssertEqual(merged.lastListenedAt, Date(timeIntervalSince1970: 2_000))
-        XCTAssertEqual(merged.moodSyncKeys, ["mood:gruselig", "mood:spannend"])
+        XCTAssertEqual(merged.coverImageName, "local-cover")
+        XCTAssertEqual(merged.moodSyncKeys, ["mood:spannend"])
+    }
+
+    func testSyncMigrationEpisodeMergerUsesNewerFieldTimestampsWhenBothExist() {
+        let local = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: nil,
+            isListened: false,
+            rating: nil,
+            listenCount: 0,
+            lastListenedAt: nil,
+            coverImageName: "local-cover",
+            coverUpdatedAt: Date(timeIntervalSince1970: 1_000),
+            moodsUpdatedAt: Date(timeIntervalSince1970: 1_000),
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: ["mood:spannend"]
+        )
+        let cloud = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: nil,
+            isListened: false,
+            rating: nil,
+            listenCount: 0,
+            lastListenedAt: nil,
+            coverImageName: "cloud-cover",
+            coverUpdatedAt: Date(timeIntervalSince1970: 2_000),
+            moodsUpdatedAt: Date(timeIntervalSince1970: 2_000),
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: ["mood:gruselig"]
+        )
+
+        let merged = SyncMigrationEpisodeMerger.merge(local: local, cloud: cloud)
+
+        XCTAssertEqual(merged.coverImageName, "cloud-cover")
+        XCTAssertEqual(merged.coverUpdatedAt, Date(timeIntervalSince1970: 2_000))
+        XCTAssertEqual(merged.moodSyncKeys, ["mood:gruselig"])
+        XCTAssertEqual(merged.moodsUpdatedAt, Date(timeIntervalSince1970: 2_000))
+    }
+
+    func testSyncMigrationEpisodeMergerKeepsLocalFieldsWhenTimestampsAreMissing() {
+        let local = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: nil,
+            isListened: false,
+            rating: nil,
+            listenCount: 0,
+            lastListenedAt: nil,
+            coverImageName: "local-cover",
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: []
+        )
+        let cloud = LocalLibrarySnapshot.EpisodeRecord(
+            syncKey: "episode:universe:die drei ???#1",
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            personalNote: nil,
+            isListened: false,
+            rating: nil,
+            listenCount: 0,
+            lastListenedAt: nil,
+            coverImageName: "cloud-cover",
+            coverUpdatedAt: Date(timeIntervalSince1970: 2_000),
+            moodsUpdatedAt: Date(timeIntervalSince1970: 2_000),
+            universeSyncKey: "universe:die drei ???",
+            moodSyncKeys: ["mood:gruselig"]
+        )
+
+        let merged = SyncMigrationEpisodeMerger.merge(local: local, cloud: cloud)
+
+        XCTAssertEqual(merged.coverImageName, "local-cover")
+        XCTAssertNil(merged.coverUpdatedAt)
+        XCTAssertTrue(merged.moodSyncKeys.isEmpty)
+        XCTAssertNil(merged.moodsUpdatedAt)
     }
 
     func testSyncMigrationStateStorePersistsCompletionMarker() {
@@ -530,6 +618,7 @@ final class EpisodeTrackerTests: XCTestCase {
                     rating: 4,
                     listenCount: 2,
                     lastListenedAt: Date(timeIntervalSince1970: 1_000),
+                    coverImageName: "source-cover",
                     universeSyncKey: "universe:die drei ???",
                     moodSyncKeys: ["mood:spannend"]
                 )
@@ -578,7 +667,8 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(mergedSnapshot.episodes[0].rating, 4)
         XCTAssertEqual(mergedSnapshot.episodes[0].listenCount, 5)
         XCTAssertEqual(mergedSnapshot.episodes[0].lastListenedAt, Date(timeIntervalSince1970: 2_000))
-        XCTAssertEqual(mergedSnapshot.episodes[0].moodSyncKeys, ["mood:gruselig", "mood:spannend"])
+        XCTAssertEqual(mergedSnapshot.episodes[0].coverImageName, "source-cover")
+        XCTAssertEqual(mergedSnapshot.episodes[0].moodSyncKeys, ["mood:spannend"])
     }
 
     func testSyncMigrationCoordinatorDoesNotMarkCompletedWhenValidationIssuesRemain() throws {
@@ -782,6 +872,7 @@ final class EpisodeTrackerTests: XCTestCase {
             universe: localUniverse,
             moods: [localMood]
         )
+        localEpisode.coverImageName = "local-cover"
 
         localContext.insert(localUniverse)
         localContext.insert(localMood)
@@ -835,7 +926,8 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(mergedEpisode.rating, 4)
         XCTAssertEqual(mergedEpisode.listenCount, 5)
         XCTAssertEqual(mergedEpisode.lastListenedAt, Date(timeIntervalSince1970: 2_000))
-        XCTAssertEqual(mergedEpisode.moodSyncKeys, ["mood:gruselig", "mood:spannend"])
+        XCTAssertEqual(mergedEpisode.coverImageName, "local-cover")
+        XCTAssertEqual(mergedEpisode.moodSyncKeys, ["mood:spannend"])
     }
 
     @MainActor
@@ -873,6 +965,70 @@ final class EpisodeTrackerTests: XCTestCase {
 
         XCTAssertFalse(cloudSnapshot.episodes.contains(where: { $0.title == "Die Mathekrankheit" }))
         XCTAssertTrue(SyncMigrationStateStore.hasCompletedLocalToCloudMigration(userDefaults: defaults))
+    }
+
+    @MainActor
+    func testBootstrapRepairsMissingCoverAfterCompletedMigrationMarker() async throws {
+        let localContainer = try makeInMemoryContainer()
+        let localContext = localContainer.mainContext
+
+        let localUniverse = Universe(name: "Die drei ???")
+        let localEpisode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            universe: localUniverse
+        )
+        localEpisode.coverImageName = "local-cover"
+
+        localContext.insert(localUniverse)
+        localContext.insert(localEpisode)
+
+        let cloudContainer = try makeInMemoryContainer()
+        let cloudContext = cloudContainer.mainContext
+        let cloudUniverse = Universe(name: "Die drei ???")
+        let cloudMood = Mood(name: "Gruselig", iconName: "😱")
+        let cloudEpisode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            syncKey: "episode:universe:die drei ???#1",
+            universe: cloudUniverse,
+            moods: [cloudMood]
+        )
+
+        cloudContext.insert(cloudUniverse)
+        cloudContext.insert(cloudMood)
+        cloudContext.insert(cloudEpisode)
+
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defaults.set(4, forKey: AppDataBootstrapper.schemaVersionKey)
+        SyncMigrationStateStore.markLocalToCloudMigrationCompleted(userDefaults: defaults)
+
+        await AppDataBootstrapper.bootstrap(
+            containerSet: AppModelContainerSet(
+                primary: cloudContainer,
+                localPersistent: localContainer,
+                cloudPersistent: cloudContainer,
+                runtimeMode: .cloudPersistent(containerIdentifier: "iCloud.com.Digi.EpisodeTracker")
+            ),
+            userDefaults: defaults
+        )
+
+        let cloudSnapshot = LocalLibrarySnapshot.capture(context: cloudContainer.mainContext)
+        let repairedEpisode = try XCTUnwrap(
+            cloudSnapshot.episodes.first(where: { $0.syncKey == "episode:universe:die drei ???#1" })
+        )
+
+        XCTAssertEqual(cloudSnapshot.episodes.count, 1)
+        XCTAssertEqual(repairedEpisode.coverImageName, "local-cover")
+        XCTAssertEqual(repairedEpisode.moodSyncKeys, ["mood:gruselig"])
+        XCTAssertTrue(SyncMigrationStateStore.hasCompletedLocalToCloudRepair(userDefaults: defaults))
+        XCTAssertEqual(
+            defaults.string(forKey: AppDataBootstrapper.automaticCloudMigrationStatusKey),
+            "Automatische Cloud-Migration repariert: 1 Cover ergänzt."
+        )
     }
 
     func testFreemiumPreparationDoesNotBlockCreationYet() {
@@ -1635,7 +1791,108 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(keeper.rating, 4, "Keeper should have the higher rating")
         XCTAssertEqual(keeper.listenCount, 2, "Keeper should have higher listen count")
         XCTAssertEqual(keeper.personalNote, "Klassiker!", "Note should be merged from duplicate")
-        XCTAssertEqual(keeper.moods.count, 2, "Moods from both episodes should be merged")
+        XCTAssertEqual(keeper.moods.map(\.resolvedSyncKey), ["mood:spannend"], "Keeper should keep its own moods")
+    }
+
+    @MainActor
+    func testSyncPreparationDeduplicatesEpisodesByUniverseNameWhenUniverseKeysDiffer() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let localUniverse = Universe(name: "Die drei ???", syncKey: "legacy-local-universe")
+        let importedUniverse = Universe(name: "Die drei ???", syncKey: "universe:die drei ???")
+
+        let localEpisode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: false,
+            universe: localUniverse
+        )
+        let importedEpisode = Episode(
+            episodeNumber: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            isListened: true,
+            listenCount: 1,
+            universe: importedUniverse
+        )
+
+        context.insert(localUniverse)
+        context.insert(importedUniverse)
+        context.insert(localEpisode)
+        context.insert(importedEpisode)
+
+        SyncPreparation.prepare(context: context)
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertTrue(episodes[0].isListened)
+        XCTAssertEqual(episodes[0].listenCount, 1)
+        XCTAssertEqual(episodes[0].universe?.name, "Die drei ???")
+    }
+
+    @MainActor
+    func testSyncPreparationCollapsesTriplicatedUpgradeStateByVisibleKeys() throws {
+        let schema = Schema([Episode.self, Mood.self, Universe.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let context = container.mainContext
+
+        let universes = [
+            Universe(name: "Die drei ???", syncKey: "legacy-local"),
+            Universe(name: "Die drei ???", syncKey: "episode-import"),
+            Universe(name: "Die drei ???", syncKey: "universe:die drei ???")
+        ]
+        let moods = [
+            Mood(name: "Gruselig", iconName: "😱", syncKey: "legacy-gruselig"),
+            Mood(name: "Gruselig", iconName: "😱", syncKey: "mood:gruselig"),
+            Mood(name: "Klassiker", iconName: "⭐", syncKey: "mood:klassiker")
+        ]
+
+        for universe in universes {
+            context.insert(universe)
+        }
+        for mood in moods {
+            context.insert(mood)
+        }
+
+        let episodes = [
+            Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979, universe: universes[0]),
+            Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979, isListened: true, rating: 4, listenCount: 1, universe: universes[1], moods: [moods[0]]),
+            Episode(episodeNumber: 1, title: "und der Super-Papagei", releaseYear: 1979, isListened: true, rating: 4, listenCount: 1, universe: universes[2], moods: [moods[2]]),
+            Episode(episodeNumber: 2, title: "und der Phantomsee", releaseYear: 1979, universe: universes[0]),
+            Episode(episodeNumber: 2, title: "und der Phantomsee", releaseYear: 1979, isListened: true, rating: 3, listenCount: 1, universe: universes[1], moods: [moods[1]]),
+            Episode(episodeNumber: 2, title: "und der Phantomsee", releaseYear: 1979, isListened: true, rating: 3, listenCount: 1, universe: universes[2], moods: [moods[2]]),
+            Episode(episodeNumber: 25, title: "und die singende Schlange", releaseYear: 1981, universe: universes[0]),
+            Episode(episodeNumber: 25, title: "und die singende Schlange", releaseYear: 1981, isListened: true, rating: 3, listenCount: 1, universe: universes[1], moods: [moods[0], moods[2]]),
+            Episode(episodeNumber: 25, title: "und die singende Schlange", releaseYear: 1981, rating: 3, universe: universes[2])
+        ]
+        for episode in episodes {
+            context.insert(episode)
+        }
+
+        let summary = SyncPreparation.prepare(context: context)
+
+        let remainingUniverses = try context.fetch(FetchDescriptor<Universe>())
+        let remainingMoods = try context.fetch(FetchDescriptor<Mood>())
+        let remainingEpisodes = try context.fetch(FetchDescriptor<Episode>())
+        let remainingNumbers = remainingEpisodes.map(\.episodeNumber).sorted()
+
+        XCTAssertEqual(remainingUniverses.count, 1)
+        XCTAssertEqual(Set(remainingMoods.map(\.normalizedName)), ["gruselig", "klassiker"])
+        XCTAssertEqual(remainingMoods.count, 2)
+        XCTAssertEqual(remainingEpisodes.count, 3)
+        XCTAssertEqual(remainingNumbers, [1, 2, 25])
+        XCTAssertEqual(summary.deduplicatedEpisodes, 6)
+        XCTAssertTrue(remainingEpisodes.allSatisfy { $0.universe?.name == "Die drei ???" })
+        XCTAssertTrue(remainingEpisodes.allSatisfy { $0.moods.count <= 2 })
     }
 
     @MainActor
@@ -1804,6 +2061,10 @@ final class EpisodeTrackerTests: XCTestCase {
         let context = container.mainContext
 
         let universe = Universe(name: "Die drei ???")
+        let coverStore = CoverImageStore()
+        let coverName = "cover-25-\(UUID().uuidString)"
+        try coverStore.save(makeTestCoverImage(), name: coverName)
+        defer { try? coverStore.delete(name: coverName) }
 
         let episodeWithCover = Episode(
             episodeNumber: 25,
@@ -1813,7 +2074,7 @@ final class EpisodeTrackerTests: XCTestCase {
             rating: 3,
             universe: universe
         )
-        episodeWithCover.coverImageName = "cover-25"
+        episodeWithCover.coverImageName = coverName
 
         let episodeWithout = Episode(
             episodeNumber: 25,
@@ -1832,7 +2093,7 @@ final class EpisodeTrackerTests: XCTestCase {
 
         let episodes = try context.fetch(FetchDescriptor<Episode>())
         XCTAssertEqual(episodes.count, 1)
-        XCTAssertEqual(episodes[0].coverImageName, "cover-25", "Cover should be preserved from the duplicate with a cover")
+        XCTAssertEqual(episodes[0].coverImageName, coverName, "Cover should be preserved from the duplicate with a cover")
     }
 
     @MainActor
@@ -2053,5 +2314,13 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(layout.detailColumns.count, 2)
         XCTAssertLessThanOrEqual(layout.contentWidth, 1100)
         XCTAssertGreaterThan(layout.horizontalPadding, 24)
+    }
+
+    private func makeTestCoverImage() -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16))
+        return renderer.image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
+        }
     }
 }

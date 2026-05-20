@@ -77,6 +77,27 @@ struct EpisodeEditView: View {
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
         }
     }
+    private var visibleMoods: [Mood] {
+        Dictionary(grouping: allMoods) { $0.normalizedName }
+            .values
+            .compactMap { duplicates in
+                duplicates.sorted { lhs, rhs in
+                    if lhs.episodes.count != rhs.episodes.count {
+                        return lhs.episodes.count > rhs.episodes.count
+                    }
+
+                    let lhsHasIcon = lhs.iconName?.isEmpty == false
+                    let rhsHasIcon = rhs.iconName?.isEmpty == false
+                    if lhsHasIcon != rhsHasIcon {
+                        return lhsHasIcon
+                    }
+
+                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                }
+                .first
+            }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }
     private var activeUniverses: [Universe] {
         let activeIDs = ActiveCatalogStore().activeIDs
         let activeManagedNames = Set(
@@ -185,7 +206,7 @@ struct EpisodeEditView: View {
                 newMoodName: $newMoodName,
                 newMoodIcon: $newMoodIcon,
                 moodValidationMessage: moodValidationMessage,
-                allMoods: allMoods,
+                allMoods: visibleMoods,
                 selectedMoods: selectedMoods,
                 onAddSuggestedMood: addSuggestedMood,
                 onAddMood: addMood,
@@ -266,6 +287,7 @@ struct EpisodeEditView: View {
             refreshYearSuggestions()
         }
         .onAppear {
+            SyncPreparation.prepare(context: modelContext)
             populateInitialState()
             refreshCatalogMatch()
             clipboardHasImage = UIPasteboard.general.hasImages
@@ -333,6 +355,8 @@ struct EpisodeEditView: View {
 
         if let episode {
             let wasListened = episode.isListened
+            let previousMoodKeys = Set(episode.moods.map(\.resolvedSyncKey))
+            let newMoodKeys = Set(selectedMoods.map(\.resolvedSyncKey))
             episode.episodeNumber = episodeNumber
             episode.title = title
             episode.releaseYear = releaseYear
@@ -341,6 +365,9 @@ struct EpisodeEditView: View {
             episode.rating = rating
             episode.universe = selectedUniverse
             episode.moods = Array(selectedMoods)
+            if previousMoodKeys != newMoodKeys {
+                episode.moodsUpdatedAt = .now
+            }
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             episode.refreshSyncKeyIfPossible()
             applyCoverChange(to: episode)
@@ -361,6 +388,9 @@ struct EpisodeEditView: View {
                 moods: Array(selectedMoods)
             )
             newEpisode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
+            if !selectedMoods.isEmpty {
+                newEpisode.moodsUpdatedAt = .now
+            }
             if isListened {
                 newEpisode.listenCount = 1
                 newEpisode.lastListenedAt = .now

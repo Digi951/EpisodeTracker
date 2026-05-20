@@ -192,45 +192,47 @@ enum EntityDeduplicator {
     static func deduplicateEpisodes(
         _ episodes: [Episode],
         in context: ModelContext,
-        summary: inout SyncPreparation.ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary,
+        coverStore providedCoverStore: CoverImageStore? = nil
     ) -> Bool {
         guard !episodes.isEmpty else { return false }
+        let coverStore = providedCoverStore ?? CoverImageStore()
 
         struct EpisodeKey: Hashable {
-            let universeSyncKey: String
+            let universeKey: String
             let episodeNumber: Int
         }
 
         var grouped: [EpisodeKey: [Episode]] = [:]
         for episode in episodes {
+            guard let universeKey = episode.universeDeduplicationUniverseKey,
+                  episode.episodeNumber > 0 else { continue }
+
             let key = EpisodeKey(
-                universeSyncKey: episode.universe?.resolvedSyncKey ?? "",
+                universeKey: universeKey,
                 episodeNumber: episode.episodeNumber
             )
-            guard !key.universeSyncKey.isEmpty, key.episodeNumber > 0 else { continue }
             grouped[key, default: []].append(episode)
         }
 
         var didChange = false
         for (key, duplicates) in grouped where duplicates.count > 1 {
             let sorted = duplicates.sorted { a, b in
-                if a.isListened != b.isListened { return a.isListened }
-                let aHasCover = a.coverImageName?.isEmpty == false
-                let bHasCover = b.coverImageName?.isEmpty == false
+                let aHasCover = hasExistingCover(a, in: coverStore)
+                let bHasCover = hasExistingCover(b, in: coverStore)
                 if aHasCover != bHasCover { return aHasCover }
+                if a.isListened != b.isListened { return a.isListened }
                 if (a.rating != nil) != (b.rating != nil) { return a.rating != nil }
                 if let ra = a.rating, let rb = b.rating, ra != rb { return ra > rb }
                 if a.listenCount != b.listenCount { return a.listenCount > b.listenCount }
                 if (a.personalNote != nil) != (b.personalNote != nil) { return a.personalNote != nil }
-                if a.moods.count != b.moods.count { return a.moods.count > b.moods.count }
                 return false
             }
 
             let keeper = sorted[0]
             for duplicate in sorted.dropFirst() {
-                let keeperMoodKeys = Set(keeper.moods.map(\.resolvedSyncKey))
-                for mood in duplicate.moods where !keeperMoodKeys.contains(mood.resolvedSyncKey) {
-                    keeper.moods.append(mood)
+                if duplicate.isListened && !keeper.isListened {
+                    keeper.isListened = true
                 }
 
                 if let duplicateNote = duplicate.personalNote, !duplicateNote.isEmpty {
@@ -261,8 +263,10 @@ enum EntityDeduplicator {
                     }
                 }
 
-                if keeper.coverImageName == nil || keeper.coverImageName?.isEmpty == true {
-                    if let duplicateCover = duplicate.coverImageName, !duplicateCover.isEmpty {
+                if !hasExistingCover(keeper, in: coverStore) {
+                    if let duplicateCover = duplicate.coverImageName,
+                       !duplicateCover.isEmpty,
+                       coverStore.exists(name: duplicateCover) {
                         keeper.coverImageName = duplicateCover
                     }
                 }
@@ -273,7 +277,7 @@ enum EntityDeduplicator {
                     }
                 }
 
-                logger.info("Dedup: removing duplicate episode #\(key.episodeNumber) in '\(key.universeSyncKey)'")
+                logger.info("Dedup: removing duplicate episode #\(key.episodeNumber) in '\(key.universeKey)'")
                 context.delete(duplicate)
                 didChange = true
                 summary.deduplicatedEpisodes += 1
@@ -281,6 +285,14 @@ enum EntityDeduplicator {
         }
 
         return didChange
+    }
+
+    private static func hasExistingCover(_ episode: Episode, in store: CoverImageStore) -> Bool {
+        guard let coverName = episode.coverImageName, !coverName.isEmpty else {
+            return false
+        }
+
+        return store.exists(name: coverName)
     }
 
     // MARK: - Sync Key Refresh
@@ -317,5 +329,21 @@ enum EntityDeduplicator {
         }
 
         return didChange
+    }
+}
+
+extension Episode {
+    var universeDeduplicationUniverseKey: String? {
+        guard let universe else { return nil }
+
+        let normalizedName = universe.name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        if !normalizedName.isEmpty {
+            return "universe-name:\(normalizedName)"
+        }
+
+        let syncKey = universe.resolvedSyncKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        return syncKey.isEmpty ? nil : "universe-sync:\(syncKey)"
     }
 }

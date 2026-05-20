@@ -82,8 +82,9 @@ enum SyncPreparation {
         var hasDuplicateEpisodes = false
         var episodeKeys = Set<String>()
         for episode in episodes {
-            guard let syncKey = episode.universe?.resolvedSyncKey, !syncKey.isEmpty, episode.episodeNumber > 0 else { continue }
-            let key = "\(syncKey)#\(episode.episodeNumber)"
+            guard let universeKey = episode.universeDeduplicationUniverseKey,
+                  episode.episodeNumber > 0 else { continue }
+            let key = "\(universeKey)#\(episode.episodeNumber)"
             if !episodeKeys.insert(key).inserted {
                 hasDuplicateEpisodes = true
                 break

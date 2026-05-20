@@ -9,7 +9,7 @@ private let bootstrapLogger = Logger(
 
 enum AppDataBootstrapper {
     static let schemaVersionKey = "schemaVersion"
-    static let currentSchemaVersion = 4
+    static let currentSchemaVersion = 5
     static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
 
     @discardableResult
@@ -48,6 +48,7 @@ enum AppDataBootstrapper {
             attemptAutomaticCloudMigrationIfNeeded(
                 containerSet: containerSet,
                 userDefaults: userDefaults,
+                lastSchemaVersion: lastSchemaVersion,
                 report: &report
             )
 
@@ -132,6 +133,7 @@ enum AppDataBootstrapper {
     private static func attemptAutomaticCloudMigrationIfNeeded(
         containerSet: AppModelContainerSet,
         userDefaults: UserDefaults,
+        lastSchemaVersion: Int,
         report: inout BootstrapReport
     ) {
         let readiness = SyncMigrationReadinessEvaluator.evaluate(
@@ -143,6 +145,16 @@ enum AppDataBootstrapper {
               let localContainer = containerSet.localPersistent,
               let cloudContainer = containerSet.cloudPersistent
         else {
+            if attemptCompletedMigrationRepairIfNeeded(
+                readiness: readiness,
+                containerSet: containerSet,
+                userDefaults: userDefaults,
+                lastSchemaVersion: lastSchemaVersion,
+                report: &report
+            ) {
+                return
+            }
+
             let statusMessage: String
             if readiness.hasCompletedMigration {
                 statusMessage = "Automatische Cloud-Migration bereits abgeschlossen."
@@ -194,6 +206,58 @@ enum AppDataBootstrapper {
             report.cloudMigrationStatus = statusMessage
             bootstrapLogger.error("\(statusMessage, privacy: .public)")
         }
+    }
+
+    @MainActor
+    private static func attemptCompletedMigrationRepairIfNeeded(
+        readiness: SyncMigrationReadiness,
+        containerSet: AppModelContainerSet,
+        userDefaults: UserDefaults,
+        lastSchemaVersion: Int,
+        report: inout BootstrapReport
+    ) -> Bool {
+        guard readiness.hasCompletedMigration,
+              lastSchemaVersion < currentSchemaVersion,
+              !SyncMigrationStateStore.hasCompletedLocalToCloudRepair(userDefaults: userDefaults),
+              readiness.hasLocalPersistentContainer,
+              readiness.hasCloudPersistentContainer,
+              readiness.hasLocalData,
+              readiness.localValidationIssues.isEmpty,
+              let localContainer = containerSet.localPersistent,
+              let cloudContainer = containerSet.cloudPersistent else {
+            return false
+        }
+
+        let localSnapshot = LocalLibrarySnapshot.capture(context: localContainer.mainContext)
+
+        do {
+            let repairedCovers = try SyncMigrationCompletedRepairer.repairMissingLocalCovers(
+                snapshot: localSnapshot,
+                into: cloudContainer.mainContext
+            )
+            SyncMigrationStateStore.markLocalToCloudRepairCompleted(userDefaults: userDefaults)
+
+            let statusMessage: String
+            if repairedCovers > 0 {
+                statusMessage = "Automatische Cloud-Migration repariert: \(repairedCovers) Cover ergänzt."
+            } else {
+                statusMessage = "Automatische Cloud-Migration bereits abgeschlossen; Reparaturprüfung ohne Änderungen."
+            }
+
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+
+            bootstrapLogger.info(
+                "Automatic cloud migration repair finished: repairedCovers=\(repairedCovers, privacy: .public)"
+            )
+        } catch {
+            let statusMessage = "Automatische Cloud-Migration Reparatur fehlgeschlagen: \(error.localizedDescription)"
+            userDefaults.set(statusMessage, forKey: automaticCloudMigrationStatusKey)
+            report.cloudMigrationStatus = statusMessage
+            bootstrapLogger.error("\(statusMessage, privacy: .public)")
+        }
+
+        return true
     }
 
     @discardableResult

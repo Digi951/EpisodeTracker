@@ -134,23 +134,7 @@ struct EpisodeListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isEditing && !selectionController.isEmpty {
-                Button(role: .destructive) {
-                    requestDeleteSelected()
-                } label: {
-                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            }
-        }
-        .overlay(alignment: .bottomTrailing) {
-            floatingAddButton
+            bottomActionInset
         }
         .confirmationDialog(
             deleteState.title,
@@ -170,21 +154,41 @@ struct EpisodeListView: View {
     }
 
     @ViewBuilder
-    private var floatingAddButton: some View {
-        if !episodes.isEmpty && !isEditing {
-            NavigationLink(value: NavigationDestination.addEpisode) {
-                Image(systemName: "plus")
-                    .font(.title2.weight(.semibold))
-                    .frame(width: 58, height: 58)
-                    .foregroundStyle(.white)
-                    .background(Color.accentColor, in: Circle())
-                    .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
-                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+    private var bottomActionInset: some View {
+        if isEditing && !selectionController.isEmpty {
+            Button(role: .destructive) {
+                requestDeleteSelected()
+            } label: {
+                Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
             }
-            .accessibilityLabel("Neue Folge")
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        } else if !episodes.isEmpty && !isEditing {
+            HStack {
+                Spacer()
+                floatingAddButton
+            }
             .padding(.trailing, 18)
             .padding(.bottom, 16)
         }
+    }
+
+    private var floatingAddButton: some View {
+        NavigationLink(value: NavigationDestination.addEpisode) {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .frame(width: 58, height: 58)
+                .foregroundStyle(.white)
+                .background(Color.accentColor, in: Circle())
+                .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+        }
+        .accessibilityLabel("Neue Folge")
     }
 
     @ViewBuilder
@@ -546,7 +550,7 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
