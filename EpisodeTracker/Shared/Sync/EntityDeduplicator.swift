@@ -2,77 +2,16 @@ import Foundation
 import os.log
 import SwiftData
 
-private let logger = Logger(subsystem: "com.Digi.EpisodeTracker", category: "SyncPreparation")
+private let logger = Logger(subsystem: "com.Digi.EpisodeTracker", category: "EntityDeduplicator")
 
-enum SyncPreparation {
-    @discardableResult
-    @MainActor
-    static func prepare(context: ModelContext) -> ChangeSummary {
-        let allMoods = (try? context.fetch(FetchDescriptor<Mood>())) ?? []
-        let allUniverses = (try? context.fetch(FetchDescriptor<Universe>())) ?? []
-        let allEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
+enum EntityDeduplicator {
 
-        logger.info(
-            "SyncPreparation: start with episodes=\(allEpisodes.count), universes=\(allUniverses.count), moods=\(allMoods.count)"
-        )
-
-        var didChange = false
-        var changeSummary = ChangeSummary()
-
-        didChange = repairEpisodeIDs(allEpisodes, summary: &changeSummary) || didChange
-        didChange = repairMoodIDs(allMoods, summary: &changeSummary) || didChange
-        didChange = repairUniverseIDs(allUniverses, summary: &changeSummary) || didChange
-        didChange = repairMoods(allMoods, in: context, summary: &changeSummary) || didChange
-        didChange = repairUniverses(allUniverses, in: context, summary: &changeSummary) || didChange
-        didChange = deduplicateEpisodes(allEpisodes, in: context, summary: &changeSummary) || didChange
-
-        let refreshedEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? allEpisodes
-        didChange = refreshEpisodes(refreshedEpisodes, summary: &changeSummary) || didChange
-
-        if didChange {
-            do {
-                try context.save()
-                logger.info("SyncPreparation: saved repairs successfully (\(changeSummary.logDescription, privacy: .public))")
-            } catch {
-                logger.error("SyncPreparation: save failed — \(error.localizedDescription)")
-            }
-        } else {
-            logger.info("SyncPreparation: no repairs required")
-        }
-
-        return changeSummary
-    }
-
-    struct ChangeSummary: Sendable {
-        fileprivate(set) var repairedEpisodeIDs = 0
-        fileprivate(set) var repairedMoodIDs = 0
-        fileprivate(set) var repairedUniverseIDs = 0
-        fileprivate(set) var mergedMoods = 0
-        fileprivate(set) var mergedUniverses = 0
-        fileprivate(set) var deduplicatedEpisodes = 0
-        fileprivate(set) var refreshedEpisodeSyncKeys = 0
-        fileprivate(set) var deduplicatedEpisodeMoods = 0
-
-        var hasChanges: Bool {
-            repairedEpisodeIDs > 0 ||
-            repairedMoodIDs > 0 ||
-            repairedUniverseIDs > 0 ||
-            mergedMoods > 0 ||
-            mergedUniverses > 0 ||
-            deduplicatedEpisodes > 0 ||
-            refreshedEpisodeSyncKeys > 0 ||
-            deduplicatedEpisodeMoods > 0
-        }
-
-        var logDescription: String {
-            "episodeIDs=\(repairedEpisodeIDs), moodIDs=\(repairedMoodIDs), universeIDs=\(repairedUniverseIDs), mergedMoods=\(mergedMoods), mergedUniverses=\(mergedUniverses), deduplicatedEpisodes=\(deduplicatedEpisodes), refreshedEpisodeSyncKeys=\(refreshedEpisodeSyncKeys), deduplicatedEpisodeMoods=\(deduplicatedEpisodeMoods)"
-        }
-    }
+    // MARK: - ID Repair
 
     @MainActor
-    private static func repairEpisodeIDs(
+    static func repairEpisodeIDs(
         _ episodes: [Episode],
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
@@ -87,9 +26,9 @@ enum SyncPreparation {
     }
 
     @MainActor
-    private static func repairMoodIDs(
+    static func repairMoodIDs(
         _ moods: [Mood],
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
@@ -104,9 +43,9 @@ enum SyncPreparation {
     }
 
     @MainActor
-    private static func repairUniverseIDs(
+    static func repairUniverseIDs(
         _ universes: [Universe],
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         var seenIDs = Set<UUID>()
         var didChange = false
@@ -120,11 +59,13 @@ enum SyncPreparation {
         return didChange
     }
 
+    // MARK: - Mood Deduplication
+
     @MainActor
-    private static func repairMoods(
+    static func deduplicateMoods(
         _ moods: [Mood],
         in context: ModelContext,
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         guard !moods.isEmpty else { return false }
 
@@ -193,11 +134,13 @@ enum SyncPreparation {
         return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
     }
 
+    // MARK: - Universe Deduplication
+
     @MainActor
-    private static func repairUniverses(
+    static func deduplicateUniverses(
         _ universes: [Universe],
         in context: ModelContext,
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         guard !universes.isEmpty else { return false }
 
@@ -243,17 +186,16 @@ enum SyncPreparation {
         return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
     }
 
-    /// Deduplicate episodes that share the same universe and episode number.
-    /// Keeps the entry with the most user data (listened, rated, notes).
+    // MARK: - Episode Deduplication
+
     @MainActor
-    private static func deduplicateEpisodes(
+    static func deduplicateEpisodes(
         _ episodes: [Episode],
         in context: ModelContext,
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         guard !episodes.isEmpty else { return false }
 
-        // Group by (universe syncKey, episodeNumber)
         struct EpisodeKey: Hashable {
             let universeSyncKey: String
             let episodeNumber: Int
@@ -265,14 +207,12 @@ enum SyncPreparation {
                 universeSyncKey: episode.universe?.resolvedSyncKey ?? "",
                 episodeNumber: episode.episodeNumber
             )
-            // Only group episodes that have a real universe (skip orphans with empty key)
             guard !key.universeSyncKey.isEmpty, key.episodeNumber > 0 else { continue }
             grouped[key, default: []].append(episode)
         }
 
         var didChange = false
         for (key, duplicates) in grouped where duplicates.count > 1 {
-            // Sort: prefer listened > rated > has notes > has moods > earlier creation
             let sorted = duplicates.sorted { a, b in
                 if a.isListened != b.isListened { return a.isListened }
                 if (a.rating != nil) != (b.rating != nil) { return a.rating != nil }
@@ -285,13 +225,11 @@ enum SyncPreparation {
 
             let keeper = sorted[0]
             for duplicate in sorted.dropFirst() {
-                // Merge any unique moods from the duplicate
                 let keeperMoodKeys = Set(keeper.moods.map(\.resolvedSyncKey))
                 for mood in duplicate.moods where !keeperMoodKeys.contains(mood.resolvedSyncKey) {
                     keeper.moods.append(mood)
                 }
 
-                // Merge personal notes (concatenate if both exist)
                 if let duplicateNote = duplicate.personalNote, !duplicateNote.isEmpty {
                     if let keeperNote = keeper.personalNote, !keeperNote.isEmpty {
                         if keeperNote != duplicateNote {
@@ -302,17 +240,14 @@ enum SyncPreparation {
                     }
                 }
 
-                // Take higher rating if keeper has none
                 if keeper.rating == nil {
                     keeper.rating = duplicate.rating
                 }
 
-                // Take higher listen count
                 if duplicate.listenCount > keeper.listenCount {
                     keeper.listenCount = duplicate.listenCount
                 }
 
-                // Keep the most recent lastListenedAt
                 if let duplicateDate = duplicate.lastListenedAt {
                     if let keeperDate = keeper.lastListenedAt {
                         if duplicateDate > keeperDate {
@@ -333,10 +268,12 @@ enum SyncPreparation {
         return didChange
     }
 
+    // MARK: - Sync Key Refresh
+
     @MainActor
-    private static func refreshEpisodes(
+    static func refreshEpisodes(
         _ episodes: [Episode],
-        summary: inout ChangeSummary
+        summary: inout SyncPreparation.ChangeSummary
     ) -> Bool {
         var didChange = false
 
