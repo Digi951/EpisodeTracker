@@ -78,7 +78,7 @@ enum EntityDeduplicator {
 
         let grouped = Dictionary(grouping: moods, by: moodDeduplicationKey)
         for duplicates in grouped.values where duplicates.count > 1 {
-            let keeper = duplicates.sorted(by: preferMoodForDeduplication)[0]
+            let keeper = duplicates.sorted { Mood.isPreferredAsCanonical($0, over: $1) }[0]
 
             for duplicate in duplicates where duplicate.id != keeper.id {
                 if (keeper.iconName == nil || keeper.iconName?.isEmpty == true),
@@ -114,24 +114,8 @@ enum EntityDeduplicator {
     }
 
     private static func moodDeduplicationKey(_ mood: Mood) -> String {
-        let normalizedName = mood.name
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+        let normalizedName = mood.normalizedName
         return normalizedName.isEmpty ? mood.resolvedSyncKey : "mood-name:\(normalizedName)"
-    }
-
-    private static func preferMoodForDeduplication(_ lhs: Mood, _ rhs: Mood) -> Bool {
-        if lhs.episodes.count != rhs.episodes.count {
-            return lhs.episodes.count > rhs.episodes.count
-        }
-
-        let lhsHasIcon = lhs.iconName?.isEmpty == false
-        let rhsHasIcon = rhs.iconName?.isEmpty == false
-        if lhsHasIcon != rhsHasIcon {
-            return lhsHasIcon
-        }
-
-        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
     }
 
     // MARK: - Universe Deduplication

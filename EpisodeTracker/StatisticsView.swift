@@ -180,7 +180,9 @@ private struct StatisticsSnapshot {
                 guard !key.isEmpty, countedMoodKeys.insert(key).inserted else { continue }
 
                 if let existing = moodCounts[key] {
-                    let representative = Self.preferredMood(existing.mood, mood)
+                    let representative = Mood.isPreferredAsCanonical(existing.mood, over: mood)
+                        ? existing.mood
+                        : mood
                     moodCounts[key] = (representative, existing.count + 1)
                 } else {
                     moodCounts[key] = (mood, 1)
@@ -196,20 +198,6 @@ private struct StatisticsSnapshot {
                 return $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending
             }
             .map { ($0.mood, $0.count) }
-    }
-
-    private static func preferredMood(_ lhs: Mood, _ rhs: Mood) -> Mood {
-        if lhs.episodes.count != rhs.episodes.count {
-            return lhs.episodes.count > rhs.episodes.count ? lhs : rhs
-        }
-
-        let lhsHasIcon = lhs.iconName?.isEmpty == false
-        let rhsHasIcon = rhs.iconName?.isEmpty == false
-        if lhsHasIcon != rhsHasIcon {
-            return lhsHasIcon ? lhs : rhs
-        }
-
-        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending ? lhs : rhs
     }
 }
 

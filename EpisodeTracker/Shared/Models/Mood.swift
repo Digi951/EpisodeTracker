@@ -62,4 +62,21 @@ extension Mood {
     func matches(_ other: Mood) -> Bool {
         id == other.id || resolvedSyncKey == other.resolvedSyncKey || normalizedName == other.normalizedName
     }
+
+    /// Ordering used to pick the representative when several `Mood` records share
+    /// a canonical identity (same `normalizedName`) — e.g. duplicates introduced
+    /// by sync. Returns `true` when `lhs` should win over `rhs`.
+    static func isPreferredAsCanonical(_ lhs: Mood, over rhs: Mood) -> Bool {
+        if lhs.episodes.count != rhs.episodes.count {
+            return lhs.episodes.count > rhs.episodes.count
+        }
+
+        let lhsHasIcon = lhs.iconName?.isEmpty == false
+        let rhsHasIcon = rhs.iconName?.isEmpty == false
+        if lhsHasIcon != rhsHasIcon {
+            return lhsHasIcon
+        }
+
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+    }
 }

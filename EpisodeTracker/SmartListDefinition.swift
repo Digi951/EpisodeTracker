@@ -281,20 +281,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         Dictionary(grouping: moods) { $0.normalizedName }
             .values
             .compactMap { duplicates in
-                duplicates.sorted { lhs, rhs in
-                    if lhs.episodes.count != rhs.episodes.count {
-                        return lhs.episodes.count > rhs.episodes.count
-                    }
-
-                    let lhsHasIcon = lhs.iconName?.isEmpty == false
-                    let rhsHasIcon = rhs.iconName?.isEmpty == false
-                    if lhsHasIcon != rhsHasIcon {
-                        return lhsHasIcon
-                    }
-
-                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-                }
-                .first
+                duplicates.sorted { Mood.isPreferredAsCanonical($0, over: $1) }.first
             }
     }
 
