@@ -547,14 +547,14 @@ struct EpisodeRowView: View {
 
     var body: some View {
         HStack {
-            if let coverName = episode.coverImageName, !coverName.isEmpty {
-                CoverImageThumbnailView(name: coverName)
-            }
-
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .center)
+
+            if let coverName = episode.coverImageName, !coverName.isEmpty {
+                CoverImageThumbnailView(name: coverName)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(episode.title)
