@@ -75,6 +75,36 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(entries[0].collectionName, "Die drei ???")
     }
 
+    func testParsesNormalizedCatalogDocumentMetadata() throws {
+        let json = """
+        {
+          "collectionName": "Bibi und Tina",
+          "version": 2,
+          "lastUpdated": "2026-05-19",
+          "entryCount": 124,
+          "entries": [
+            {
+              "number": 1,
+              "title": "Das Fohlen",
+              "releaseYear": 1991
+            }
+          ]
+        }
+        """
+
+        let document = try parser.parseNormalizedCatalogDocument(
+            from: Data(json.utf8),
+            fallbackCollectionName: "Fallback"
+        )
+
+        XCTAssertEqual(document.collectionName, "Bibi und Tina")
+        XCTAssertEqual(document.version, 2)
+        XCTAssertEqual(document.lastUpdated, "2026-05-19")
+        XCTAssertEqual(document.entryCount, 124)
+        XCTAssertEqual(document.entries.map(\.number), [1])
+        XCTAssertEqual(document.entries[0].collectionName, "Bibi und Tina")
+    }
+
     func testParsesManifestAndNormalizesGitHubBlobURLs() throws {
         let json = """
         {
@@ -1081,6 +1111,144 @@ final class EpisodeTrackerTests: XCTestCase {
         )
 
         XCTAssertNil(recommendation)
+    }
+
+    func testCatalogEpisodeDeltaUsesEpisodeNumbersAsDiffKey() {
+        let previous = CatalogSnapshot(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            version: 1,
+            lastUpdated: "2026-05-18",
+            entryCount: 2,
+            episodeNumbers: [1, 2]
+        )
+        let current = CatalogSnapshot(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            version: 2,
+            lastUpdated: "2026-05-19",
+            entryCount: 4,
+            episodeNumbers: [1, 2, 3, 4]
+        )
+        let entries = [
+            CatalogEntry(number: 1, title: "Das Fohlen", releaseYear: 1991, collectionName: "Bibi und Tina"),
+            CatalogEntry(number: 2, title: "Am See", releaseYear: 1991, collectionName: "Bibi und Tina"),
+            CatalogEntry(number: 3, title: "Der neue Reiterhof", releaseYear: 1992, collectionName: "Bibi und Tina"),
+            CatalogEntry(number: 4, title: "Das Zeltlager", releaseYear: 1992, collectionName: "Bibi und Tina")
+        ]
+
+        let delta = CatalogEpisodeDelta.make(previous: previous, current: current, entries: entries)
+
+        XCTAssertEqual(delta?.previousVersion, 1)
+        XCTAssertEqual(delta?.currentVersion, 2)
+        XCTAssertEqual(delta?.previousEntryCount, 2)
+        XCTAssertEqual(delta?.currentEntryCount, 4)
+        XCTAssertEqual(delta?.addedEntries.map(\.number), [3, 4])
+    }
+
+    func testCatalogEpisodeDeltaIgnoresMetadataOnlyUpdates() {
+        let previous = CatalogSnapshot(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            version: 1,
+            lastUpdated: "2026-05-18",
+            entryCount: 2,
+            episodeNumbers: [1, 2]
+        )
+        let current = CatalogSnapshot(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            version: 2,
+            lastUpdated: "2026-05-19",
+            entryCount: 2,
+            episodeNumbers: [1, 2]
+        )
+        let entries = [
+            CatalogEntry(number: 1, title: "Das Fohlen", releaseYear: 1991, collectionName: "Bibi und Tina"),
+            CatalogEntry(number: 2, title: "Am See", releaseYear: 1991, collectionName: "Bibi und Tina")
+        ]
+
+        XCTAssertNil(CatalogEpisodeDelta.make(previous: previous, current: current, entries: entries))
+    }
+
+    func testDeltaCatalogUpdateBannerPrefersNewCatalogAvailability() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let availability = NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi-blocksberg", name: "Bibi Blocksberg", url: url)
+        ])
+        let delta = CatalogEpisodeDelta(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            previousVersion: 1,
+            currentVersion: 2,
+            previousEntryCount: 2,
+            currentEntryCount: 3,
+            addedEntries: [
+                CatalogEntry(number: 3, title: "Der neue Reiterhof", releaseYear: 1992, collectionName: "Bibi und Tina")
+            ]
+        )
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: availability,
+            catalogEpisodeDeltas: [delta],
+            activeCatalogIDs: ["bibi-und-tina"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "1 neuer Katalog verfügbar")
+        XCTAssertEqual(recommendation?.message, "Bibi Blocksberg kann in den Katalogen aktiviert werden.")
+    }
+
+    func testDeltaCatalogUpdateBannerHidesActivatedNewCatalogs() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let availability = NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi-blocksberg", name: "Bibi Blocksberg", url: url)
+        ])
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: availability,
+            catalogEpisodeDeltas: [],
+            activeCatalogIDs: ["bibi-blocksberg"]
+        )
+
+        XCTAssertNil(recommendation)
+    }
+
+    func testDeltaCatalogUpdateBannerFiltersInactiveCatalogs() {
+        let activeDelta = CatalogEpisodeDelta(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            previousVersion: 1,
+            currentVersion: 2,
+            previousEntryCount: 2,
+            currentEntryCount: 4,
+            addedEntries: [
+                CatalogEntry(number: 3, title: "Der neue Reiterhof", releaseYear: 1992, collectionName: "Bibi und Tina"),
+                CatalogEntry(number: 4, title: "Das Zeltlager", releaseYear: 1992, collectionName: "Bibi und Tina")
+            ]
+        )
+        let inactiveDelta = CatalogEpisodeDelta(
+            catalogID: "tkkg",
+            name: "TKKG",
+            previousVersion: 1,
+            currentVersion: 2,
+            previousEntryCount: 1,
+            currentEntryCount: 4,
+            addedEntries: [
+                CatalogEntry(number: 2, title: "Der blinde Hellseher", releaseYear: 1982, collectionName: "TKKG"),
+                CatalogEntry(number: 3, title: "Das leere Grab im Moor", releaseYear: 1982, collectionName: "TKKG"),
+                CatalogEntry(number: 4, title: "Das Paket mit dem Totenkopf", releaseYear: 1982, collectionName: "TKKG")
+            ]
+        )
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: nil,
+            catalogEpisodeDeltas: [inactiveDelta, activeDelta],
+            activeCatalogIDs: ["bibi-und-tina"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "2 neue Katalogfolgen in Bibi und Tina")
+        XCTAssertEqual(recommendation?.message, "Der neue Reiterhof und weitere neue Folgen wurden ergänzt.")
+        XCTAssertEqual(recommendation?.compactMessage, "Version 1 -> 2 - 4 Folgen")
     }
 
     func testAvailableMoodsAndMoodEpisodesMatchByNameWhenInstancesDiffer() {

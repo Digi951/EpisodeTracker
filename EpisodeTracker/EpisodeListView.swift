@@ -80,7 +80,6 @@ struct EpisodeListView: View {
 
     private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
         guard !isEditing,
-              !episodes.isEmpty,
               controls.searchText.isEmpty,
               !controls.hasActiveFilter
         else {
@@ -88,10 +87,9 @@ struct EpisodeListView: View {
         }
 
         return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
-            catalogEntries: EpisodeCatalog.shared.allEntries,
-            libraryEpisodes: episodes,
-            activeCatalogIDs: ActiveCatalogStore().activeIDs,
-            managedSources: EpisodeCatalog.shared.managedSources
+            newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
+            catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs
         )
     }
 

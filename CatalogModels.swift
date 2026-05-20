@@ -1,6 +1,6 @@
 import Foundation
 
-struct CatalogEntry: Codable {
+struct CatalogEntry: Codable, Equatable {
     let number: Int
     let title: String
     let releaseYear: Int
@@ -37,7 +37,7 @@ struct CatalogManifest: Codable {
     let catalogs: [ManagedCatalogSource]
 }
 
-struct ManagedCatalogSource: Codable {
+struct ManagedCatalogSource: Codable, Equatable {
     let id: String
     let name: String
     let language: String?
@@ -78,6 +78,86 @@ struct CatalogCacheStatus {
 
     var hasCache: Bool {
         cachedEntryCount != nil
+    }
+}
+
+struct CatalogSnapshot: Codable, Equatable {
+    let catalogID: String
+    let name: String
+    let version: Int?
+    let lastUpdated: String?
+    let entryCount: Int
+    let episodeNumbers: [Int]
+
+    init(
+        catalogID: String,
+        name: String,
+        version: Int?,
+        lastUpdated: String?,
+        entryCount: Int,
+        episodeNumbers: [Int]
+    ) {
+        self.catalogID = catalogID
+        self.name = name
+        self.version = version
+        self.lastUpdated = lastUpdated
+        self.entryCount = entryCount
+        self.episodeNumbers = Array(Set(episodeNumbers)).sorted()
+    }
+}
+
+struct CatalogEpisodeDelta: Codable, Equatable {
+    let catalogID: String
+    let name: String
+    let previousVersion: Int?
+    let currentVersion: Int?
+    let previousEntryCount: Int
+    let currentEntryCount: Int
+    let addedEntries: [CatalogEntry]
+
+    var addedCount: Int {
+        addedEntries.count
+    }
+
+    var firstAddedTitle: String? {
+        addedEntries.first?.title
+    }
+
+    static func make(
+        previous: CatalogSnapshot?,
+        current: CatalogSnapshot,
+        entries: [CatalogEntry]
+    ) -> CatalogEpisodeDelta? {
+        guard let previous else { return nil }
+
+        let previousNumbers = Set(previous.episodeNumbers)
+        let addedEntries = entries
+            .filter { !previousNumbers.contains($0.number) }
+            .sorted { $0.number < $1.number }
+
+        guard !addedEntries.isEmpty else { return nil }
+
+        return CatalogEpisodeDelta(
+            catalogID: current.catalogID,
+            name: current.name,
+            previousVersion: previous.version,
+            currentVersion: current.version,
+            previousEntryCount: previous.entryCount,
+            currentEntryCount: current.entryCount,
+            addedEntries: addedEntries
+        )
+    }
+}
+
+struct NewCatalogAvailability: Codable, Equatable {
+    let sources: [ManagedCatalogSource]
+
+    var count: Int {
+        sources.count
+    }
+
+    var firstName: String? {
+        sources.first?.name
     }
 }
 
