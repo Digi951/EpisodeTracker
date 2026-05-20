@@ -6,21 +6,13 @@ struct CoverImageView: View {
     @State private var image: UIImage?
 
     var body: some View {
-        if let image {
-            coverImage(image)
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
-        } else {
-            Color.clear
-                .frame(maxHeight: 1)
-                .onAppear {
-                    loadImage(named: name)
-                }
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+        Group {
+            if let image {
+                coverImage(image)
+            }
         }
+        .onAppear { loadImage(named: name) }
+        .onChange(of: name) { _, newName in loadImage(named: newName) }
     }
 
     private func coverImage(_ image: UIImage) -> some View {
@@ -42,21 +34,13 @@ struct CoverImageThumbnailView: View {
     @State private var image: UIImage?
 
     var body: some View {
-        if let image {
-            thumbnail(image)
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
-        } else {
-            Color.clear
-                .frame(width: size, height: size)
-                .onAppear {
-                    loadImage(named: name)
-                }
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+        Group {
+            if let image {
+                thumbnail(image)
+            }
         }
+        .onAppear { loadImage(named: name) }
+        .onChange(of: name) { _, newName in loadImage(named: newName) }
     }
 
     private func thumbnail(_ image: UIImage) -> some View {

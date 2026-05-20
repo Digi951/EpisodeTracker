@@ -40,7 +40,9 @@ struct EpisodeEditView: View {
     private var isNew: Bool { episode == nil }
     private var hasVisibleCover: Bool {
         if removeCover { return false }
-        return coverImage != nil || (episode?.coverImageName != nil && !(episode?.coverImageName?.isEmpty ?? true))
+        if coverImage != nil { return true }
+        guard let name = episode?.coverImageName, !name.isEmpty else { return false }
+        return CoverImageStore().exists(name: name)
     }
     private var parsedEpisodeNumber: Int? {
         Int(episodeNumberText.trimmingCharacters(in: .whitespacesAndNewlines))
