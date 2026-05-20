@@ -264,7 +264,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
         let filtered = filter.apply(to: episodes)
         var results: [(mood: Mood, count: Int)] = []
 
-        for mood in allMoods {
+        for mood in canonicalMoods(from: allMoods) {
             let count = filtered.filter { episode in
                 episode.moods.contains(where: { $0.matches(mood) })
             }.count
@@ -275,6 +275,27 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
         results.sort { $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending }
         return results
+    }
+
+    private static func canonicalMoods(from moods: [Mood]) -> [Mood] {
+        Dictionary(grouping: moods) { $0.normalizedName }
+            .values
+            .compactMap { duplicates in
+                duplicates.sorted { lhs, rhs in
+                    if lhs.episodes.count != rhs.episodes.count {
+                        return lhs.episodes.count > rhs.episodes.count
+                    }
+
+                    let lhsHasIcon = lhs.iconName?.isEmpty == false
+                    let rhsHasIcon = rhs.iconName?.isEmpty == false
+                    if lhsHasIcon != rhsHasIcon {
+                        return lhsHasIcon
+                    }
+
+                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                }
+                .first
+            }
     }
 
     // MARK: - Catalog Queries

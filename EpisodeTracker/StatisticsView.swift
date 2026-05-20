@@ -172,13 +172,44 @@ private struct StatisticsSnapshot {
             .prefix(5)
             .map { $0 }
 
-        var moodCounts: [Mood: Int] = [:]
+        var moodCounts: [String: (mood: Mood, count: Int)] = [:]
         for episode in episodes {
+            var countedMoodKeys = Set<String>()
             for mood in episode.moods {
-                moodCounts[mood, default: 0] += 1
+                let key = mood.normalizedName
+                guard !key.isEmpty, countedMoodKeys.insert(key).inserted else { continue }
+
+                if let existing = moodCounts[key] {
+                    let representative = Self.preferredMood(existing.mood, mood)
+                    moodCounts[key] = (representative, existing.count + 1)
+                } else {
+                    moodCounts[key] = (mood, 1)
+                }
             }
         }
-        moodDistribution = moodCounts.sorted { $0.value > $1.value }
+        moodDistribution = moodCounts.values
+            .sorted {
+                if $0.count != $1.count {
+                    return $0.count > $1.count
+                }
+
+                return $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending
+            }
+            .map { ($0.mood, $0.count) }
+    }
+
+    private static func preferredMood(_ lhs: Mood, _ rhs: Mood) -> Mood {
+        if lhs.episodes.count != rhs.episodes.count {
+            return lhs.episodes.count > rhs.episodes.count ? lhs : rhs
+        }
+
+        let lhsHasIcon = lhs.iconName?.isEmpty == false
+        let rhsHasIcon = rhs.iconName?.isEmpty == false
+        if lhsHasIcon != rhsHasIcon {
+            return lhsHasIcon ? lhs : rhs
+        }
+
+        return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending ? lhs : rhs
     }
 }
 
