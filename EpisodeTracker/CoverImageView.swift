@@ -6,13 +6,15 @@ struct CoverImageView: View {
     @State private var image: UIImage?
 
     var body: some View {
-        Group {
-            if let image {
-                coverImage(image)
-            }
+        if let image {
+            coverImage(image)
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
+        } else {
+            Color.clear
+                .frame(width: 0, height: 0)
+                .onAppear { loadImage(named: name) }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         }
-        .onAppear { loadImage(named: name) }
-        .onChange(of: name) { _, newName in loadImage(named: newName) }
     }
 
     private func coverImage(_ image: UIImage) -> some View {
@@ -34,13 +36,15 @@ struct CoverImageThumbnailView: View {
     @State private var image: UIImage?
 
     var body: some View {
-        Group {
-            if let image {
-                thumbnail(image)
-            }
+        if let image {
+            thumbnail(image)
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
+        } else {
+            Color.clear
+                .frame(width: 0, height: 0)
+                .onAppear { loadImage(named: name) }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         }
-        .onAppear { loadImage(named: name) }
-        .onChange(of: name) { _, newName in loadImage(named: newName) }
     }
 
     private func thumbnail(_ image: UIImage) -> some View {
