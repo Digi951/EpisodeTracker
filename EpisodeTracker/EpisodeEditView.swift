@@ -146,6 +146,7 @@ struct EpisodeEditView: View {
                     }
                 } label: {
                     Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
+                        .foregroundStyle(clipboardHasImage ? Color.accentColor : Color(.tertiaryLabel))
                 }
                 .disabled(!clipboardHasImage)
 
