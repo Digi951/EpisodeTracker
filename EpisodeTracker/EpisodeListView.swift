@@ -78,12 +78,30 @@ struct EpisodeListView: View {
         )
     }
 
+    private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        guard !isEditing,
+              !episodes.isEmpty,
+              controls.searchText.isEmpty,
+              !controls.hasActiveFilter
+        else {
+            return nil
+        }
+
+        return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            catalogEntries: EpisodeCatalog.shared.allEntries,
+            libraryEpisodes: episodes,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs,
+            managedSources: EpisodeCatalog.shared.managedSources
+        )
+    }
+
     var body: some View {
         Group {
             if isEditing {
                 List(selection: $selectionController.selectedIDs) {
                     librarySnapshotRow
                     moodFilterRow
+                    catalogUpdateBannerRow
                     contentRows
                 }
                 .environment(\.editMode, .constant(.active))
@@ -91,6 +109,7 @@ struct EpisodeListView: View {
                 List {
                     librarySnapshotRow
                     moodFilterRow
+                    catalogUpdateBannerRow
                     contentRows
                 }
             }
@@ -173,6 +192,18 @@ struct EpisodeListView: View {
             .accessibilityLabel("Neue Folge")
             .padding(.trailing, 18)
             .padding(.bottom, 16)
+        }
+    }
+
+    @ViewBuilder
+    private var catalogUpdateBannerRow: some View {
+        if let catalogUpdateBanner {
+            NavigationLink(value: SmartListNavigation.detail(.naechsteAusKatalog)) {
+                CatalogUpdateBannerView(recommendation: catalogUpdateBanner, style: .phone)
+            }
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
         }
     }
 
@@ -339,6 +370,49 @@ struct EpisodeListView: View {
             in: collapsedGroupIDsRaw,
             scopeKey: groupCollapseScopeKey
         )
+    }
+}
+
+enum CatalogUpdateBannerStyle {
+    case phone
+    case sidebar
+}
+
+struct CatalogUpdateBannerView: View {
+    let recommendation: CatalogUpdateBannerRecommendation
+    let style: CatalogUpdateBannerStyle
+
+    private var isSidebar: Bool {
+        style == .sidebar
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
+            Image(systemName: "text.badge.plus")
+                .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
+                .foregroundStyle(.green)
+                .frame(width: isSidebar ? 30 : 36, height: isSidebar ? 30 : 36)
+                .background(.green.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: isSidebar ? 3 : 5) {
+                Text(recommendation.title)
+                    .font(isSidebar ? .subheadline.weight(.semibold) : .headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                Text(isSidebar ? recommendation.compactMessage : recommendation.message)
+                    .font(isSidebar ? .caption : .footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(isSidebar ? 2 : 3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .padding(isSidebar ? 12 : 14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 

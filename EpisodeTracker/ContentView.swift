@@ -115,6 +115,16 @@ private struct PhoneEpisodesRoot: View {
                         EpisodeEditView()
                     }
                 }
+                .navigationDestination(for: SmartListNavigation.self) { destination in
+                    switch destination {
+                    case .detail(let smartList):
+                        SmartListDetailView(smartList: smartList)
+                    case .moodPicker:
+                        MoodPickerView()
+                    case .moodDetail(let mood):
+                        SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                    }
+                }
                 .navigationTitle(libraryTitle)
         }
     }
@@ -256,6 +266,23 @@ private struct IPadEpisodeListView: View {
         )
     }
 
+    private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        guard !isEditing,
+              !episodes.isEmpty,
+              controls.searchText.isEmpty,
+              !controls.hasActiveFilter
+        else {
+            return nil
+        }
+
+        return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            catalogEntries: EpisodeCatalog.shared.allEntries,
+            libraryEpisodes: episodes,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs,
+            managedSources: EpisodeCatalog.shared.managedSources
+        )
+    }
+
     var body: some View {
         Group {
             if isEditing {
@@ -272,6 +299,20 @@ private struct IPadEpisodeListView: View {
         .listStyle(.sidebar)
         .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
+        .navigationDestination(for: SmartListNavigation.self) { destination in
+            switch destination {
+            case .detail(let smartList):
+                SmartListDetailView(smartList: smartList, iPadSelection: $selection)
+            case .moodPicker:
+                MoodPickerView()
+            case .moodDetail(let mood):
+                SmartListDetailView(
+                    smartList: .zufaelligNachStimmung,
+                    mood: mood,
+                    iPadSelection: $selection
+                )
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if !episodes.isEmpty {
@@ -366,6 +407,15 @@ private struct IPadEpisodeListView: View {
                 totalListens: librarySnapshot.totalListens
             )
             .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
+
+        if let catalogUpdateBanner {
+            NavigationLink(value: SmartListNavigation.detail(.naechsteAusKatalog)) {
+                CatalogUpdateBannerView(recommendation: catalogUpdateBanner, style: .sidebar)
+            }
+            .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 10, trailing: 10))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         }

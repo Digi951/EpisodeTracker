@@ -178,7 +178,66 @@ struct EpisodeListGroup: Identifiable {
     }
 }
 
+struct CatalogUpdateBannerRecommendation: Equatable {
+    let missingEpisodeCount: Int
+    let universeCount: Int
+    let firstUniverseName: String
+    let firstEpisodeTitle: String
+
+    var title: String {
+        missingEpisodeCount == 1 ? "1 neue Katalogfolge" : "\(missingEpisodeCount) neue Katalogfolgen"
+    }
+
+    var message: String {
+        if universeCount == 1 {
+            return "\(firstUniverseName): \(firstEpisodeTitle) wartet auf deine Bibliothek."
+        }
+        return "Aktive Kataloge haben neue Folgen, unter anderem \(firstEpisodeTitle) in \(firstUniverseName)."
+    }
+
+    var compactMessage: String {
+        if universeCount == 1 {
+            return "\(firstUniverseName): \(firstEpisodeTitle)"
+        }
+        return "\(universeCount) Kataloge, u. a. \(firstUniverseName)"
+    }
+}
+
 enum EpisodeListOrganizer {
+    static func catalogUpdateBannerRecommendation(
+        catalogEntries: [CatalogEntry],
+        libraryEpisodes: [Episode],
+        activeCatalogIDs: Set<String>,
+        managedSources: [ManagedCatalogSource]
+    ) -> CatalogUpdateBannerRecommendation? {
+        guard !libraryEpisodes.isEmpty, !activeCatalogIDs.isEmpty else { return nil }
+
+        let activeNames = Set(
+            managedSources
+                .filter { activeCatalogIDs.contains($0.id) }
+                .map { normalizedKey($0.name) }
+        )
+        guard !activeNames.isEmpty else { return nil }
+
+        let activeEntries = catalogEntries.filter { entry in
+            guard let collectionName = entry.collectionName else { return false }
+            return activeNames.contains(normalizedKey(collectionName))
+        }
+        let missingEntries = SmartListDefinition.missingCatalogEntries(
+            catalogEntries: activeEntries,
+            libraryEpisodes: libraryEpisodes
+        )
+        guard let first = missingEntries.first else { return nil }
+
+        let universeCount = Set(missingEntries.map { normalizedKey($0.universeName) }).count
+        return CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: missingEntries.count,
+            universeCount: universeCount,
+            firstUniverseName: first.universeName,
+            firstEpisodeTitle: first.entry.title
+        )
+    }
+
     static func filteredAndSortedEpisodes(
         episodes: [Episode],
         searchText: String,
@@ -417,5 +476,9 @@ enum EpisodeListOrganizer {
             EpisodeListGroup(id: "recent:open", title: "Noch offen", episodes: open, progressTotalOverride: nil)
         ]
         .filter { !$0.episodes.isEmpty }
+    }
+
+    private static func normalizedKey(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

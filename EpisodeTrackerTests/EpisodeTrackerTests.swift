@@ -1004,6 +1004,85 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(groups[0].progress, 2.0 / 7.0, accuracy: 0.0001)
     }
 
+    func testCatalogUpdateBannerSummarizesMissingActiveCatalogEpisodes() {
+        let source = ManagedCatalogSource(
+            id: "die-drei-fragezeichen",
+            name: "Die drei ???",
+            url: URL(string: "https://example.com/catalog.json")!
+        )
+        let universe = Universe(name: "Die drei ???")
+        let library = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: universe)
+        ]
+        let catalog = [
+            CatalogEntry(number: 1, title: "A", releaseYear: 1979, collectionName: "Die drei ???"),
+            CatalogEntry(number: 2, title: "Phantomsee", releaseYear: 1979, collectionName: "Die drei ???"),
+            CatalogEntry(number: 3, title: "Karpatenhund", releaseYear: 1980, collectionName: "Die drei ???")
+        ]
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            catalogEntries: catalog,
+            libraryEpisodes: library,
+            activeCatalogIDs: [source.id],
+            managedSources: [source]
+        )
+
+        XCTAssertEqual(recommendation?.missingEpisodeCount, 2)
+        XCTAssertEqual(recommendation?.universeCount, 1)
+        XCTAssertEqual(recommendation?.firstUniverseName, "Die drei ???")
+        XCTAssertEqual(recommendation?.firstEpisodeTitle, "Phantomsee")
+        XCTAssertEqual(recommendation?.title, "2 neue Katalogfolgen")
+    }
+
+    func testCatalogUpdateBannerIgnoresInactiveCatalogs() {
+        let source = ManagedCatalogSource(
+            id: "tkkg",
+            name: "TKKG",
+            url: URL(string: "https://example.com/catalog.json")!
+        )
+        let library = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: Universe(name: "TKKG"))
+        ]
+        let catalog = [
+            CatalogEntry(number: 2, title: "Millionendiebe", releaseYear: 1981, collectionName: "TKKG")
+        ]
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            catalogEntries: catalog,
+            libraryEpisodes: library,
+            activeCatalogIDs: [],
+            managedSources: [source]
+        )
+
+        XCTAssertNil(recommendation)
+    }
+
+    func testCatalogUpdateBannerHidesWhenLibraryAlreadyContainsCatalogEpisodes() {
+        let source = ManagedCatalogSource(
+            id: "die-drei-fragezeichen",
+            name: "Die drei ???",
+            url: URL(string: "https://example.com/catalog.json")!
+        )
+        let universe = Universe(name: "Die drei ???")
+        let library = [
+            Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: universe),
+            Episode(episodeNumber: 2, title: "B", releaseYear: 1979, universe: universe)
+        ]
+        let catalog = [
+            CatalogEntry(number: 1, title: "A", releaseYear: 1979, collectionName: "Die drei ???"),
+            CatalogEntry(number: 2, title: "B", releaseYear: 1979, collectionName: "Die drei ???")
+        ]
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            catalogEntries: catalog,
+            libraryEpisodes: library,
+            activeCatalogIDs: [source.id],
+            managedSources: [source]
+        )
+
+        XCTAssertNil(recommendation)
+    }
+
     func testAvailableMoodsAndMoodEpisodesMatchByNameWhenInstancesDiffer() {
         let libraryMood = Mood(name: "Gruselig", iconName: "😱")
         let pickerMood = Mood(name: "Gruselig", iconName: "😱")
