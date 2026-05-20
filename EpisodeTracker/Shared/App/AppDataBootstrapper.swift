@@ -60,13 +60,6 @@ enum AppDataBootstrapper {
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
 
-        let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
-        report.syncPreparationSummary = syncSummary
-
-        if containerSet.runtimeMode.usesCloudSync {
-            repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
-        }
-
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
 
@@ -90,11 +83,6 @@ enum AppDataBootstrapper {
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
-        prepareSyncDataIfNeeded(container: container)
-
-        if usesCloudSync {
-            repairCloudSyncReadinessIfNeeded(container: container)
-        }
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -337,11 +325,6 @@ enum AppDataBootstrapper {
             try? context.save()
         }
         return assignedCount
-    }
-
-    @MainActor
-    static func prepareSyncDataIfNeeded(container: ModelContainer) {
-        SyncPreparation.prepare(context: container.mainContext)
     }
 
     @MainActor
