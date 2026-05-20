@@ -34,6 +34,8 @@ struct EpisodeEditView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var coverImage: UIImage?
     @State private var removeCover = false
+    @State private var clipboardHasImage = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var isNew: Bool { episode == nil }
     private var hasVisibleCover: Bool {
@@ -135,6 +137,17 @@ struct EpisodeEditView: View {
                         systemImage: hasVisibleCover ? "photo.badge.arrow.down" : "photo.badge.plus"
                     )
                 }
+
+                Button {
+                    if let image = UIPasteboard.general.image {
+                        coverImage = image
+                        selectedPhotoItem = nil
+                        removeCover = false
+                    }
+                } label: {
+                    Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
+                }
+                .disabled(!clipboardHasImage)
 
                 if hasVisibleCover {
                     Button(role: .destructive) {
@@ -242,6 +255,12 @@ struct EpisodeEditView: View {
         .onAppear {
             populateInitialState()
             refreshCatalogMatch()
+            clipboardHasImage = UIPasteboard.general.hasImages
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                clipboardHasImage = UIPasteboard.general.hasImages
+            }
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
