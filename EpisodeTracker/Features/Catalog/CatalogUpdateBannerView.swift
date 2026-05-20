@@ -75,6 +75,7 @@ struct CatalogUpdateBannerView: View {
     }
 }
 
+#if DEBUG
 #Preview("Banner – neue Kataloge") {
     List {
         CatalogUpdateBannerRow(
@@ -100,3 +101,4 @@ struct CatalogUpdateBannerView: View {
         )
     }
 }
+#endif
