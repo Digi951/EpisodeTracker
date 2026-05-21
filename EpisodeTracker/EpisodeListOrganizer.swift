@@ -238,7 +238,7 @@ struct CatalogUpdateBannerRecommendation: Equatable {
     }
 
     var fingerprint: String {
-        "\(titleText)|\(universeCount)|\(missingEpisodeCount)|\(firstUniverseName)"
+        "\(titleText)|\(universeCount)|\(missingEpisodeCount)|\(firstUniverseName)|\(firstEpisodeTitle)"
     }
 
     static func newCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {
@@ -291,6 +291,51 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         )
     }
 
+    /// Folds every pending catalog delta into a single banner so that no
+    /// catalog's update is shadowed by a larger one. A single delta keeps the
+    /// detailed per-catalog wording.
+    static func aggregatedEpisodeDeltas(_ deltas: [CatalogEpisodeDelta]) -> CatalogUpdateBannerRecommendation? {
+        let relevant = deltas
+            .filter { $0.addedCount > 0 }
+            .sorted {
+                if $0.addedCount != $1.addedCount {
+                    return $0.addedCount > $1.addedCount
+                }
+                return $0.name.localizedCompare($1.name) == .orderedAscending
+            }
+
+        guard let top = relevant.first else { return nil }
+        guard relevant.count > 1, let firstTitle = top.firstAddedTitle else {
+            return episodeDelta(top)
+        }
+
+        let totalAdded = relevant.reduce(0) { $0 + $1.addedCount }
+        return CatalogUpdateBannerRecommendation(
+            title: "\(totalAdded) neue Katalogfolgen in \(relevant.count) Katalogen",
+            message: "Neue Folgen in \(catalogList(relevant.map(\.name))).",
+            compactMessage: "\(relevant.count) Kataloge, u. a. \(top.name)",
+            missingEpisodeCount: totalAdded,
+            universeCount: relevant.count,
+            firstUniverseName: top.name,
+            firstEpisodeTitle: firstTitle
+        )
+    }
+
+    private static func catalogList(_ names: [String]) -> String {
+        switch names.count {
+        case 0:
+            return ""
+        case 1:
+            return names[0]
+        case 2:
+            return "\(names[0]) und \(names[1])"
+        case 3:
+            return "\(names[0]), \(names[1]) und \(names[2])"
+        default:
+            return "\(names[0]), \(names[1]) und \(names.count - 2) weiteren Katalogen"
+        }
+    }
+
     #if DEBUG
     static let previewNewCatalogs = CatalogUpdateBannerRecommendation.newCatalogs(
         NewCatalogAvailability(sources: [
@@ -329,15 +374,8 @@ enum EpisodeListOrganizer {
 
         let activeDeltas = catalogEpisodeDeltas
             .filter { activeIDs.contains(normalizedKey($0.catalogID)) }
-            .sorted {
-                if $0.addedCount != $1.addedCount {
-                    return $0.addedCount > $1.addedCount
-                }
-                return $0.name.localizedCompare($1.name) == .orderedAscending
-            }
 
-        guard let delta = activeDeltas.first else { return nil }
-        return CatalogUpdateBannerRecommendation.episodeDelta(delta)
+        return CatalogUpdateBannerRecommendation.aggregatedEpisodeDeltas(activeDeltas)
     }
 
     static func catalogUpdateBannerRecommendation(

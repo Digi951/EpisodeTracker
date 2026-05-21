@@ -1407,6 +1407,46 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(recommendation?.compactMessage, "Version 1 -> 2 - 4 Folgen")
     }
 
+    func testDeltaCatalogUpdateBannerAggregatesMultipleActiveCatalogs() {
+        let bibiDelta = CatalogEpisodeDelta(
+            catalogID: "bibi-und-tina",
+            name: "Bibi und Tina",
+            previousVersion: 1,
+            currentVersion: 2,
+            previousEntryCount: 2,
+            currentEntryCount: 4,
+            addedEntries: [
+                CatalogEntry(number: 3, title: "Der neue Reiterhof", releaseYear: 1992, collectionName: "Bibi und Tina"),
+                CatalogEntry(number: 4, title: "Das Zeltlager", releaseYear: 1992, collectionName: "Bibi und Tina")
+            ]
+        )
+        let tkkgDelta = CatalogEpisodeDelta(
+            catalogID: "tkkg",
+            name: "TKKG",
+            previousVersion: 1,
+            currentVersion: 2,
+            previousEntryCount: 1,
+            currentEntryCount: 4,
+            addedEntries: [
+                CatalogEntry(number: 2, title: "Der blinde Hellseher", releaseYear: 1982, collectionName: "TKKG"),
+                CatalogEntry(number: 3, title: "Das leere Grab im Moor", releaseYear: 1982, collectionName: "TKKG"),
+                CatalogEntry(number: 4, title: "Das Paket mit dem Totenkopf", releaseYear: 1982, collectionName: "TKKG")
+            ]
+        )
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: nil,
+            catalogEpisodeDeltas: [bibiDelta, tkkgDelta],
+            activeCatalogIDs: ["bibi-und-tina", "tkkg"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "5 neue Katalogfolgen in 2 Katalogen")
+        XCTAssertEqual(recommendation?.missingEpisodeCount, 5)
+        XCTAssertEqual(recommendation?.universeCount, 2)
+        // TKKG has more new episodes, so it is ranked and named first.
+        XCTAssertEqual(recommendation?.message, "Neue Folgen in TKKG und Bibi und Tina.")
+    }
+
     // MARK: - Banner-Fingerprint
 
     func testFingerprintChangesWhenCatalogStateChanges() {
@@ -1441,6 +1481,26 @@ final class EpisodeTrackerTests: XCTestCase {
         )
 
         XCTAssertEqual(bannerA.fingerprint, bannerB.fingerprint)
+    }
+
+    func testFingerprintChangesWhenSameCatalogGainsDifferentEpisodes() {
+        // Two separate updates to the same catalog that each add the same
+        // number of episodes must not collide — otherwise the second banner
+        // stays hidden once the first was dismissed.
+        let firstUpdate = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 2,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Super-Papagei"
+        )
+        let secondUpdate = CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: 2,
+            universeCount: 1,
+            firstUniverseName: "Die drei ???",
+            firstEpisodeTitle: "und der Phantomsee"
+        )
+
+        XCTAssertNotEqual(firstUpdate.fingerprint, secondUpdate.fingerprint)
     }
 
     func testNewCatalogBannerFingerprintDiffersFromEpisodeBanner() {
