@@ -99,6 +99,8 @@ struct SettingsView: View {
                 )
             }
 #endif
+
+            SettingsAboutSection()
         }
         .navigationTitle("Einstellungen")
         .listStyle(.insetGrouped)
@@ -495,6 +497,16 @@ private struct SettingsSyncSection: View {
     }
 }
 
+private struct SettingsAboutSection: View {
+    var body: some View {
+        Section {
+            SettingsValueRow(label: "Version", value: Bundle.main.appVersionDisplay)
+        } header: {
+            Text("Über")
+        }
+    }
+}
+
 #if DEBUG
 private struct SettingsSyncDiagnosticsContext {
     let requestedModeTitle: String
@@ -684,6 +696,7 @@ private struct CatalogManagementView: View {
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
         CatalogSourceRegistry.managedSources
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     private var existingUniverseNameKeys: Set<String> {
@@ -1063,4 +1076,12 @@ private extension JSONDecoder {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+private extension Bundle {
+    var appVersionDisplay: String {
+        let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = infoDictionary?["CFBundleVersion"] as? String ?? "—"
+        return "\(version) (\(build))"
+    }
 }
