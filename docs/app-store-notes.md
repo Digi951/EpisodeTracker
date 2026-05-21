@@ -46,6 +46,18 @@ Die App stellt selbst keine Audioinhalte bereit, spielt keine Hörspiele ab und 
 
 Hörspiele,Folgen,Tracker,Sammlung,Bewertung,Notizen,Katalog
 
+### What's New (Version 1.6)
+
+Diese Version macht das Pflegen deiner Sammlung ein gutes Stück angenehmer.
+
+• Cover direkt einfügen: Hast du ein Cover kopiert? Zum Beispiel als Screenshot aus deinem Streamingdienst? Dann setzt du es jetzt mit einem Tippen aus der Zwischenablage in die Folge ein. Der Umweg über die Fotos-App entfällt.
+
+• Neue Folgen im Blick: Bekommt einer deiner aktiven Kataloge Nachschub, weist dich ein dezenter Hinweis direkt an Ort und Stelle darauf hin.
+
+• Verlässlicher bei Updates: Deine Folgen-Cover und Stimmungen bleiben beim App-Update jetzt noch zuverlässiger erhalten.
+
+Dazu kommen viele Feinschliffe in der Folgenliste und unter der Haube. Danke, dass du HörspielLog nutzt. Viel Freude beim Hören!
+
 ## Future Freemium Model
 
 Version 1.0 should launch free and without In-App Purchases. Add StoreKit only after TestFlight feedback confirms the right product boundary.
