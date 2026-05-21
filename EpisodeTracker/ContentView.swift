@@ -564,46 +564,53 @@ private struct SidebarLibrarySnapshot {
 }
 
 private struct UpNextSplitView: View {
-    @State private var selectedEpisode: Episode?
+    @State private var selectedNavigation: SmartListNavigation?
 
     var body: some View {
         NavigationSplitView {
-            NavigationStack {
-                UpNextView()
-                    .navigationDestination(for: SmartListNavigation.self) { destination in
-                        switch destination {
-                        case .detail(let smartList):
-                            SmartListDetailView(
-                                smartList: smartList,
-                                iPadSelection: $selectedEpisode
-                            )
-                        case .moodPicker:
-                            MoodPickerView()
-                        case .moodDetail(let mood):
-                            SmartListDetailView(
-                                smartList: .zufaelligNachStimmung,
-                                mood: mood,
-                                iPadSelection: $selectedEpisode
-                            )
-                        }
-                    }
-                    .navigationTitle("Als nächstes")
-            }
-            .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 380)
+            UpNextView(iPadNavSelection: $selectedNavigation)
+                .navigationTitle("Als nächstes")
+                .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 360)
         } detail: {
             NavigationStack {
-                if let selectedEpisode {
-                    EpisodeDetailView(episode: selectedEpisode)
+                if let selectedNavigation {
+                    detailContent(for: selectedNavigation)
+                        .navigationDestination(for: Episode.self) { episode in
+                            EpisodeDetailView(episode: episode)
+                        }
+                        .navigationDestination(for: SmartListNavigation.self) { destination in
+                            switch destination {
+                            case .moodDetail(let mood):
+                                SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                                    .navigationDestination(for: Episode.self) { episode in
+                                        EpisodeDetailView(episode: episode)
+                                    }
+                            default:
+                                EmptyView()
+                            }
+                        }
                 } else {
                     SplitSelectionPlaceholder(
-                        title: "Folge auswählen",
+                        title: "Liste auswählen",
                         systemImage: "list.bullet.rectangle",
-                        message: "Wähle links eine Liste oder Folge aus, um Details, Bewertung und Notizen zu sehen."
+                        message: "Wähle links eine Liste aus, um Vorschläge und Folgen zu sehen."
                     )
                 }
             }
         }
         .navigationSplitViewStyle(.balanced)
+    }
+
+    @ViewBuilder
+    private func detailContent(for navigation: SmartListNavigation) -> some View {
+        switch navigation {
+        case .detail(let smartList):
+            SmartListDetailView(smartList: smartList)
+        case .moodPicker:
+            MoodPickerView()
+        case .moodDetail(let mood):
+            SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+        }
     }
 }
 
