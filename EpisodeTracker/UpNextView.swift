@@ -6,6 +6,18 @@ struct UpNextView: View {
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
+    @Binding var iPadNavSelection: SmartListNavigation?
+    private let usesSelectionMode: Bool
+
+    init(iPadNavSelection: Binding<SmartListNavigation?>? = nil) {
+        if let binding = iPadNavSelection {
+            _iPadNavSelection = binding
+            usesSelectionMode = true
+        } else {
+            _iPadNavSelection = .constant(nil)
+            usesSelectionMode = false
+        }
+    }
 
     private var catalogSuggestions: [(universeName: String, entry: CatalogEntry)] {
         SmartListDefinition.nextFromCatalog(
@@ -57,20 +69,21 @@ struct UpNextView: View {
         let itemCount = count(for: smartList)
         let hasItems = itemCount > 0 || smartList == .zufaelligNachStimmung
 
-        switch smartList {
-        case .naechsteAusKatalog:
-            NavigationLink(value: SmartListNavigation.detail(smartList)) {
-                SmartListRowContent(
+        let navValue: SmartListNavigation = smartList == .zufaelligNachStimmung
+            ? .moodPicker
+            : .detail(smartList)
+
+        let content: SmartListRowContent = {
+            switch smartList {
+            case .naechsteAusKatalog:
+                return SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
                     teaser: catalogSuggestions.first.map { SmartListDefinition.catalogTeaserText(for: $0.entry) },
                     onInfoTap: { showingInfo = smartList }
                 )
-            }
-            .opacity(hasItems ? 1 : 0.5)
-        case .zufaelligNachStimmung:
-            NavigationLink(value: SmartListNavigation.moodPicker) {
-                SmartListRowContent(
+            case .zufaelligNachStimmung:
+                return SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
                     teaser: itemCount == 0
@@ -80,16 +93,32 @@ struct UpNextView: View {
                             : "\(itemCount) Stimmungen verfügbar",
                     onInfoTap: { showingInfo = smartList }
                 )
-            }
-        default:
-            NavigationLink(value: SmartListNavigation.detail(smartList)) {
+            default:
                 let firstEpisode = smartList.episodes(from: episodes).first
-                SmartListRowContent(
+                return SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
                     teaser: firstEpisode.map { SmartListDefinition.teaserText(for: $0) },
                     onInfoTap: { showingInfo = smartList }
                 )
+            }
+        }()
+
+        if usesSelectionMode {
+            Button {
+                iPadNavSelection = navValue
+            } label: {
+                content
+            }
+            .listRowBackground(
+                iPadNavSelection == navValue
+                    ? Color.accentColor.opacity(0.12)
+                    : nil
+            )
+            .opacity(hasItems ? 1 : 0.5)
+        } else {
+            NavigationLink(value: navValue) {
+                content
             }
             .opacity(hasItems ? 1 : 0.5)
         }
