@@ -9,8 +9,6 @@ struct EpisodeListView: View {
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
-    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
-
     @AppStorage("prefersICloudSync") private var prefersICloudSync = false
 
     @State private var controls = EpisodeListControlsState()
@@ -94,10 +92,6 @@ struct EpisodeListView: View {
         )
     }
 
-    private var appAccentColor: AppAccentColor {
-        AppAccentColor.resolved(from: appAccentColorRawValue)
-    }
-
     var body: some View {
         Group {
             if isEditing {
@@ -130,18 +124,23 @@ struct EpisodeListView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if isEditing {
+            if isEditing {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         selectAllVisible()
                     } label: {
                         Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
                     }
-                } else {
+                }
+            } else {
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: universes
                     )
+                    NavigationLink(value: NavigationDestination.addEpisode) {
+                        Label("Neue Folge", systemImage: "plus")
+                    }
                 }
             }
         }
@@ -180,27 +179,7 @@ struct EpisodeListView: View {
             .tint(.red)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
-        } else if !episodes.isEmpty && !isEditing {
-            HStack {
-                Spacer()
-                floatingAddButton
-            }
-            .padding(.trailing, 18)
-            .padding(.bottom, 16)
         }
-    }
-
-    private var floatingAddButton: some View {
-        NavigationLink(value: NavigationDestination.addEpisode) {
-            Image(systemName: "plus")
-                .font(.title2.weight(.semibold))
-                .frame(width: 58, height: 58)
-                .foregroundStyle(.white)
-                .background(appAccentColor.color, in: Circle())
-                .shadow(color: appAccentColor.color.opacity(0.28), radius: 14, x: 0, y: 8)
-                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
-        }
-        .accessibilityLabel("Neue Folge")
     }
 
     @ViewBuilder
