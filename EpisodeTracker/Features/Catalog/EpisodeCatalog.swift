@@ -29,6 +29,14 @@ final class EpisodeCatalog {
         CatalogSourceRegistry.managedSources
     }
 
+    var catalogEpisodeDeltas: [CatalogEpisodeDelta] {
+        cacheStore.loadCatalogEpisodeDeltas()
+    }
+
+    var newCatalogAvailability: NewCatalogAvailability? {
+        cacheStore.loadNewCatalogAvailability()
+    }
+
     func entry(for number: Int, in collectionName: String?) -> CatalogEntry? {
         guard let key = collectionName?.lowercased(), !key.isEmpty else { return nil }
         return entries.reversed().first(where: {
@@ -89,6 +97,7 @@ final class EpisodeCatalog {
         guard force || shouldRefresh(previousMetadata) || cacheStore.loadManifest() == nil else { return }
 
         do {
+            let previousSources = cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
             let result = try await remoteDataSource.fetch(
                 from: CatalogSourceRegistry.manifestURL,
                 metadata: previousMetadata
@@ -98,6 +107,12 @@ final class EpisodeCatalog {
             switch result {
             case .updated(let data, let eTag, let lastModified):
                 let manifest = try parser.parseManifest(from: data)
+                let newSources = newCatalogSources(in: manifest.catalogs, previousSources: previousSources)
+                if newSources.isEmpty {
+                    try cacheStore.clearNewCatalogAvailability()
+                } else {
+                    try cacheStore.saveNewCatalogAvailability(NewCatalogAvailability(sources: newSources))
+                }
                 try cacheStore.saveManifest(manifest)
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
@@ -128,8 +143,8 @@ final class EpisodeCatalog {
 
             switch result {
             case .updated(let data, let eTag, let lastModified):
-                let parsedEntries = try parser.parseCatalogEntries(from: data, fallbackCollectionName: source.name)
-                let normalizedEntries = parsedEntries.map {
+                let document = try parser.parseNormalizedCatalogDocument(from: data, fallbackCollectionName: source.name)
+                let normalizedEntries = document.entries.map {
                     CatalogEntry(
                         number: $0.number,
                         title: $0.title,
@@ -139,7 +154,26 @@ final class EpisodeCatalog {
                         appleMusicURL: $0.appleMusicURL
                     )
                 }
+                let previousSnapshot = cacheStore.loadCatalogSnapshot(universeName: source.name, cacheKey: source.id)
+                let currentSnapshot = CatalogSnapshot(
+                    catalogID: source.id,
+                    name: source.name,
+                    version: document.version,
+                    lastUpdated: document.lastUpdated,
+                    entryCount: document.entryCount,
+                    episodeNumbers: normalizedEntries.map(\.number)
+                )
+                if let delta = CatalogEpisodeDelta.make(
+                    previous: previousSnapshot,
+                    current: currentSnapshot,
+                    entries: normalizedEntries
+                ) {
+                    try cacheStore.saveCatalogEpisodeDelta(delta)
+                } else {
+                    try cacheStore.clearCatalogEpisodeDelta(catalogID: source.id)
+                }
                 try cacheStore.saveRemoteCache(entries: normalizedEntries, universeName: source.name, cacheKey: source.id)
+                try cacheStore.saveCatalogSnapshot(currentSnapshot, universeName: source.name, cacheKey: source.id)
 
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
@@ -177,5 +211,17 @@ final class EpisodeCatalog {
         }
 
         return Date().timeIntervalSince(lastCheckedAt) > 60 * 60 * 6
+    }
+
+    private func newCatalogSources(
+        in currentSources: [ManagedCatalogSource],
+        previousSources: [ManagedCatalogSource]
+    ) -> [ManagedCatalogSource] {
+        let previousIDs = Set(previousSources.map { normalizedKey($0.id) })
+        return currentSources.filter { !previousIDs.contains(normalizedKey($0.id)) }
+    }
+
+    private func normalizedKey(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

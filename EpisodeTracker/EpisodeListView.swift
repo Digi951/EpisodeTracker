@@ -78,12 +78,22 @@ struct EpisodeListView: View {
         )
     }
 
+    private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        guard !isEditing, controls.searchText.isEmpty, !controls.hasActiveFilter else { return nil }
+        return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
+            catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs
+        )
+    }
+
     var body: some View {
         Group {
             if isEditing {
                 List(selection: $selectionController.selectedIDs) {
                     librarySnapshotRow
                     moodFilterRow
+                    CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
                     contentRows
                 }
                 .environment(\.editMode, .constant(.active))
@@ -91,6 +101,7 @@ struct EpisodeListView: View {
                 List {
                     librarySnapshotRow
                     moodFilterRow
+                    CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
                     contentRows
                 }
             }
@@ -123,37 +134,7 @@ struct EpisodeListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isEditing && !selectionController.isEmpty {
-                Button(role: .destructive) {
-                    requestDeleteSelected()
-                } label: {
-                    Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            } else if !episodes.isEmpty && !isEditing {
-                HStack {
-                    Spacer()
-                    NavigationLink(value: NavigationDestination.addEpisode) {
-                        Image(systemName: "plus")
-                            .font(.title2.weight(.semibold))
-                            .frame(width: 58, height: 58)
-                            .foregroundStyle(.white)
-                            .background(Color.accentColor, in: Circle())
-                            .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
-                            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
-                    }
-                    .accessibilityLabel("Neue Folge")
-                    .padding(.trailing, 18)
-                    .padding(.bottom, 8)
-                }
-                .listRowBackground(Color.clear)
-            }
+            bottomActionInset
         }
         .confirmationDialog(
             deleteState.title,
@@ -170,6 +151,44 @@ struct EpisodeListView: View {
         } message: {
             Text(deleteState.message(usesCloudSync: prefersICloudSync))
         }
+    }
+
+    @ViewBuilder
+    private var bottomActionInset: some View {
+        if isEditing && !selectionController.isEmpty {
+            Button(role: .destructive) {
+                requestDeleteSelected()
+            } label: {
+                Text("\(selectionController.count) Folge\(selectionController.count == 1 ? "" : "n") l\u{00F6}schen")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        } else if !episodes.isEmpty && !isEditing {
+            HStack {
+                Spacer()
+                floatingAddButton
+            }
+            .padding(.trailing, 18)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private var floatingAddButton: some View {
+        NavigationLink(value: NavigationDestination.addEpisode) {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .frame(width: 58, height: 58)
+                .foregroundStyle(.white)
+                .background(Color.accentColor, in: Circle())
+                .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+        }
+        .accessibilityLabel("Neue Folge")
     }
 
     @ViewBuilder
@@ -531,15 +550,15 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        HStack {
-            if let coverName = episode.coverImageName, !coverName.isEmpty {
-                CoverImageThumbnailView(name: coverName)
-            }
-
+        HStack(spacing: 12) {
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .center)
+
+            if let coverName = episode.coverImageName, !coverName.isEmpty {
+                CoverImageThumbnailView(name: coverName)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(episode.title)

@@ -8,18 +8,12 @@ struct CoverImageView: View {
     var body: some View {
         if let image {
             coverImage(image)
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         } else {
             Color.clear
-                .frame(maxHeight: 1)
-                .onAppear {
-                    loadImage(named: name)
-                }
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+                .frame(width: 0, height: 0)
+                .onAppear { loadImage(named: name) }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         }
     }
 
@@ -44,18 +38,12 @@ struct CoverImageThumbnailView: View {
     var body: some View {
         if let image {
             thumbnail(image)
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         } else {
             Color.clear
-                .frame(width: size, height: size)
-                .onAppear {
-                    loadImage(named: name)
-                }
-                .onChange(of: name) { _, newName in
-                    loadImage(named: newName)
-                }
+                .frame(width: 0, height: 0)
+                .onAppear { loadImage(named: name) }
+                .onChange(of: name) { _, newName in loadImage(named: newName) }
         }
     }
 

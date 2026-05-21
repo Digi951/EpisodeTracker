@@ -178,7 +178,240 @@ struct EpisodeListGroup: Identifiable {
     }
 }
 
+struct CatalogUpdateBannerRecommendation: Equatable {
+    let missingEpisodeCount: Int
+    let universeCount: Int
+    let firstUniverseName: String
+    let firstEpisodeTitle: String
+    private let titleText: String
+    private let messageText: String
+    private let compactMessageText: String
+
+    init(
+        missingEpisodeCount: Int,
+        universeCount: Int,
+        firstUniverseName: String,
+        firstEpisodeTitle: String
+    ) {
+        self.missingEpisodeCount = missingEpisodeCount
+        self.universeCount = universeCount
+        self.firstUniverseName = firstUniverseName
+        self.firstEpisodeTitle = firstEpisodeTitle
+        titleText = missingEpisodeCount == 1 ? "1 neue Katalogfolge" : "\(missingEpisodeCount) neue Katalogfolgen"
+        if universeCount == 1 {
+            messageText = "\(firstUniverseName): \(firstEpisodeTitle) wartet auf deine Bibliothek."
+            compactMessageText = "\(firstUniverseName): \(firstEpisodeTitle)"
+        } else {
+            messageText = "Aktive Kataloge haben neue Folgen, unter anderem \(firstEpisodeTitle) in \(firstUniverseName)."
+            compactMessageText = "\(universeCount) Kataloge, u. a. \(firstUniverseName)"
+        }
+    }
+
+    private init(
+        title: String,
+        message: String,
+        compactMessage: String,
+        missingEpisodeCount: Int,
+        universeCount: Int,
+        firstUniverseName: String,
+        firstEpisodeTitle: String
+    ) {
+        self.missingEpisodeCount = missingEpisodeCount
+        self.universeCount = universeCount
+        self.firstUniverseName = firstUniverseName
+        self.firstEpisodeTitle = firstEpisodeTitle
+        titleText = title
+        messageText = message
+        compactMessageText = compactMessage
+    }
+
+    var title: String {
+        titleText
+    }
+
+    var message: String {
+        messageText
+    }
+
+    var compactMessage: String {
+        compactMessageText
+    }
+
+    var fingerprint: String {
+        "\(titleText)|\(universeCount)|\(missingEpisodeCount)|\(firstUniverseName)|\(firstEpisodeTitle)"
+    }
+
+    static func newCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {
+        guard let firstName = availability.firstName else { return nil }
+        let title = availability.count == 1
+            ? "1 neuer Katalog verfügbar"
+            : "\(availability.count) neue Kataloge verfügbar"
+        let message = availability.count == 1
+            ? "\(firstName) kann in den Katalogen aktiviert werden."
+            : "\(firstName) und weitere Kataloge können aktiviert werden."
+        return CatalogUpdateBannerRecommendation(
+            title: title,
+            message: message,
+            compactMessage: availability.count == 1 ? firstName : "\(availability.count) neue Kataloge",
+            missingEpisodeCount: 0,
+            universeCount: availability.count,
+            firstUniverseName: firstName,
+            firstEpisodeTitle: firstName
+        )
+    }
+
+    static func episodeDelta(_ delta: CatalogEpisodeDelta) -> CatalogUpdateBannerRecommendation? {
+        guard delta.addedCount > 0,
+              let firstTitle = delta.firstAddedTitle
+        else {
+            return nil
+        }
+
+        let title = delta.addedCount == 1
+            ? "1 neue Katalogfolge in \(delta.name)"
+            : "\(delta.addedCount) neue Katalogfolgen in \(delta.name)"
+        let versionText: String
+        if let previousVersion = delta.previousVersion, let currentVersion = delta.currentVersion {
+            versionText = "Version \(previousVersion) -> \(currentVersion)"
+        } else {
+            versionText = "\(delta.previousEntryCount) -> \(delta.currentEntryCount) Folgen"
+        }
+        let message = delta.addedCount == 1
+            ? "\(firstTitle) wurde ergänzt."
+            : "\(firstTitle) und weitere neue Folgen wurden ergänzt."
+
+        return CatalogUpdateBannerRecommendation(
+            title: title,
+            message: message,
+            compactMessage: "\(versionText) - \(delta.currentEntryCount) Folgen",
+            missingEpisodeCount: delta.addedCount,
+            universeCount: 1,
+            firstUniverseName: delta.name,
+            firstEpisodeTitle: firstTitle
+        )
+    }
+
+    /// Folds every pending catalog delta into a single banner so that no
+    /// catalog's update is shadowed by a larger one. A single delta keeps the
+    /// detailed per-catalog wording.
+    static func aggregatedEpisodeDeltas(_ deltas: [CatalogEpisodeDelta]) -> CatalogUpdateBannerRecommendation? {
+        let relevant = deltas
+            .filter { $0.addedCount > 0 }
+            .sorted {
+                if $0.addedCount != $1.addedCount {
+                    return $0.addedCount > $1.addedCount
+                }
+                return $0.name.localizedCompare($1.name) == .orderedAscending
+            }
+
+        guard let top = relevant.first else { return nil }
+        guard relevant.count > 1, let firstTitle = top.firstAddedTitle else {
+            return episodeDelta(top)
+        }
+
+        let totalAdded = relevant.reduce(0) { $0 + $1.addedCount }
+        return CatalogUpdateBannerRecommendation(
+            title: "\(totalAdded) neue Katalogfolgen in \(relevant.count) Katalogen",
+            message: "Neue Folgen in \(catalogList(relevant.map(\.name))).",
+            compactMessage: "\(relevant.count) Kataloge, u. a. \(top.name)",
+            missingEpisodeCount: totalAdded,
+            universeCount: relevant.count,
+            firstUniverseName: top.name,
+            firstEpisodeTitle: firstTitle
+        )
+    }
+
+    private static func catalogList(_ names: [String]) -> String {
+        switch names.count {
+        case 0:
+            return ""
+        case 1:
+            return names[0]
+        case 2:
+            return "\(names[0]) und \(names[1])"
+        case 3:
+            return "\(names[0]), \(names[1]) und \(names[2])"
+        default:
+            return "\(names[0]), \(names[1]) und \(names.count - 2) weiteren Katalogen"
+        }
+    }
+
+    #if DEBUG
+    static let previewNewCatalogs = CatalogUpdateBannerRecommendation.newCatalogs(
+        NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi", name: "Bibi und Tina", url: URL(string: "https://example.com")!),
+            ManagedCatalogSource(id: "tkkg", name: "TKKG", url: URL(string: "https://example.com")!)
+        ])
+    )
+
+    static let previewNewEpisodes = CatalogUpdateBannerRecommendation(
+        missingEpisodeCount: 5,
+        universeCount: 1,
+        firstUniverseName: "Die drei ???",
+        firstEpisodeTitle: "und der Super-Papagei"
+    )
+    #endif
+}
+
 enum EpisodeListOrganizer {
+    static func catalogUpdateBannerRecommendation(
+        newCatalogAvailability: NewCatalogAvailability?,
+        catalogEpisodeDeltas: [CatalogEpisodeDelta],
+        activeCatalogIDs: Set<String>
+    ) -> CatalogUpdateBannerRecommendation? {
+        let activeIDs = Set(activeCatalogIDs.map(normalizedKey))
+
+        if let newCatalogAvailability {
+            let inactiveNewSources = newCatalogAvailability.sources.filter {
+                !activeIDs.contains(normalizedKey($0.id))
+            }
+            if let recommendation = CatalogUpdateBannerRecommendation.newCatalogs(
+                NewCatalogAvailability(sources: inactiveNewSources)
+            ) {
+                return recommendation
+            }
+        }
+
+        let activeDeltas = catalogEpisodeDeltas
+            .filter { activeIDs.contains(normalizedKey($0.catalogID)) }
+
+        return CatalogUpdateBannerRecommendation.aggregatedEpisodeDeltas(activeDeltas)
+    }
+
+    static func catalogUpdateBannerRecommendation(
+        catalogEntries: [CatalogEntry],
+        libraryEpisodes: [Episode],
+        activeCatalogIDs: Set<String>,
+        managedSources: [ManagedCatalogSource]
+    ) -> CatalogUpdateBannerRecommendation? {
+        guard !libraryEpisodes.isEmpty, !activeCatalogIDs.isEmpty else { return nil }
+
+        let activeNames = Set(
+            managedSources
+                .filter { activeCatalogIDs.contains($0.id) }
+                .map { normalizedKey($0.name) }
+        )
+        guard !activeNames.isEmpty else { return nil }
+
+        let activeEntries = catalogEntries.filter { entry in
+            guard let collectionName = entry.collectionName else { return false }
+            return activeNames.contains(normalizedKey(collectionName))
+        }
+        let missingEntries = SmartListDefinition.missingCatalogEntries(
+            catalogEntries: activeEntries,
+            libraryEpisodes: libraryEpisodes
+        )
+        guard let first = missingEntries.first else { return nil }
+
+        let universeCount = Set(missingEntries.map { normalizedKey($0.universeName) }).count
+        return CatalogUpdateBannerRecommendation(
+            missingEpisodeCount: missingEntries.count,
+            universeCount: universeCount,
+            firstUniverseName: first.universeName,
+            firstEpisodeTitle: first.entry.title
+        )
+    }
+
     static func filteredAndSortedEpisodes(
         episodes: [Episode],
         searchText: String,
@@ -417,5 +650,9 @@ enum EpisodeListOrganizer {
             EpisodeListGroup(id: "recent:open", title: "Noch offen", episodes: open, progressTotalOverride: nil)
         ]
         .filter { !$0.episodes.isEmpty }
+    }
+
+    nonisolated private static func normalizedKey(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

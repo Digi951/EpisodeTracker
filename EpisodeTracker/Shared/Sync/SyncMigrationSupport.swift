@@ -29,8 +29,43 @@ struct LocalLibrarySnapshot: Equatable {
         let rating: Int?
         let listenCount: Int
         let lastListenedAt: Date?
+        let coverImageName: String?
+        let coverUpdatedAt: Date?
+        let moodsUpdatedAt: Date?
         let universeSyncKey: String?
         let moodSyncKeys: [String]
+
+        init(
+            syncKey: String,
+            episodeNumber: Int,
+            title: String,
+            releaseYear: Int,
+            personalNote: String?,
+            isListened: Bool,
+            rating: Int?,
+            listenCount: Int,
+            lastListenedAt: Date?,
+            coverImageName: String? = nil,
+            coverUpdatedAt: Date? = nil,
+            moodsUpdatedAt: Date? = nil,
+            universeSyncKey: String?,
+            moodSyncKeys: [String]
+        ) {
+            self.syncKey = syncKey
+            self.episodeNumber = episodeNumber
+            self.title = title
+            self.releaseYear = releaseYear
+            self.personalNote = personalNote
+            self.isListened = isListened
+            self.rating = rating
+            self.listenCount = listenCount
+            self.lastListenedAt = lastListenedAt
+            self.coverImageName = coverImageName
+            self.coverUpdatedAt = coverUpdatedAt
+            self.moodsUpdatedAt = moodsUpdatedAt
+            self.universeSyncKey = universeSyncKey
+            self.moodSyncKeys = moodSyncKeys
+        }
     }
 
     let universes: [UniverseRecord]
@@ -72,6 +107,9 @@ extension LocalLibrarySnapshot {
                     rating: episode.rating,
                     listenCount: episode.listenCount,
                     lastListenedAt: episode.lastListenedAt,
+                    coverImageName: episode.coverImageName,
+                    coverUpdatedAt: episode.coverUpdatedAt,
+                    moodsUpdatedAt: episode.moodsUpdatedAt,
                     universeSyncKey: episode.universe?.resolvedSyncKey,
                     moodSyncKeys: episode.moods.map(\.resolvedSyncKey).sorted()
                 )
@@ -96,6 +134,9 @@ extension LocalLibrarySnapshot {
             rating: episode.rating,
             listenCount: episode.listenCount,
             lastListenedAt: episode.lastListenedAt,
+            coverImageName: episode.coverImageName,
+            coverUpdatedAt: episode.coverUpdatedAt,
+            moodsUpdatedAt: episode.moodsUpdatedAt,
             universeSyncKey: episode.universe?.resolvedSyncKey,
             moodSyncKeys: episode.moods.map(\.resolvedSyncKey).sorted()
         )
@@ -167,7 +208,8 @@ enum SyncMigrationEpisodeMerger {
     ) -> LocalLibrarySnapshot.EpisodeRecord {
         let mergedNote = mergedNote(local: local.personalNote, cloud: cloud.personalNote)
         let mergedLastListenedAt = maxDate(local.lastListenedAt, cloud.lastListenedAt)
-        let mergedMoodKeys = Array(Set(local.moodSyncKeys).union(cloud.moodSyncKeys)).sorted()
+        let mergedCover = mergedCover(local: local, cloud: cloud)
+        let mergedMoods = mergedMoods(local: local, cloud: cloud)
 
         return LocalLibrarySnapshot.EpisodeRecord(
             syncKey: local.syncKey,
@@ -179,8 +221,11 @@ enum SyncMigrationEpisodeMerger {
             rating: local.rating ?? cloud.rating,
             listenCount: max(local.listenCount, cloud.listenCount),
             lastListenedAt: mergedLastListenedAt,
+            coverImageName: mergedCover.name,
+            coverUpdatedAt: mergedCover.updatedAt,
+            moodsUpdatedAt: mergedMoods.updatedAt,
             universeSyncKey: local.universeSyncKey ?? cloud.universeSyncKey,
-            moodSyncKeys: mergedMoodKeys
+            moodSyncKeys: mergedMoods.keys
         )
     }
 
@@ -203,6 +248,57 @@ enum SyncMigrationEpisodeMerger {
         return localTrimmed.count >= cloudTrimmed.count ? local : cloud
     }
 
+    private static func preferredOptionalText(_ preferred: String?, fallback: String?) -> String? {
+        let trimmedPreferred = preferred?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedPreferred.isEmpty {
+            return preferred
+        }
+
+        return fallback
+    }
+
+    private static func mergedCover(
+        local: LocalLibrarySnapshot.EpisodeRecord,
+        cloud: LocalLibrarySnapshot.EpisodeRecord
+    ) -> (name: String?, updatedAt: Date?) {
+        if preferCloud(localUpdatedAt: local.coverUpdatedAt, cloudUpdatedAt: cloud.coverUpdatedAt) {
+            return (cloud.coverImageName, cloud.coverUpdatedAt)
+        }
+
+        if local.coverUpdatedAt != nil {
+            return (local.coverImageName, local.coverUpdatedAt)
+        }
+
+        let localTrimmed = local.coverImageName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !localTrimmed.isEmpty {
+            return (local.coverImageName, nil)
+        }
+
+        return (cloud.coverImageName, cloud.coverUpdatedAt)
+    }
+
+    private static func mergedMoods(
+        local: LocalLibrarySnapshot.EpisodeRecord,
+        cloud: LocalLibrarySnapshot.EpisodeRecord
+    ) -> (keys: [String], updatedAt: Date?) {
+        if preferCloud(localUpdatedAt: local.moodsUpdatedAt, cloudUpdatedAt: cloud.moodsUpdatedAt) {
+            return (cloud.moodSyncKeys, cloud.moodsUpdatedAt)
+        }
+
+        return (local.moodSyncKeys, local.moodsUpdatedAt)
+    }
+
+    private static func preferCloud(localUpdatedAt: Date?, cloudUpdatedAt: Date?) -> Bool {
+        switch (localUpdatedAt, cloudUpdatedAt) {
+        case let (local?, cloud?):
+            return cloud > local
+        case (nil, _?):
+            return false
+        case (_?, nil), (nil, nil):
+            return false
+        }
+    }
+
     private static func maxDate(_ lhs: Date?, _ rhs: Date?) -> Date? {
         switch (lhs, rhs) {
         case let (left?, right?):
@@ -219,6 +315,8 @@ enum SyncMigrationEpisodeMerger {
 
 enum SyncMigrationStateStore {
     static let completedMigrationMarkerKey = "syncMigration.completedLocalToCloud"
+    static let completedMigrationRepairVersionKey = "syncMigration.completedLocalToCloudRepairVersion"
+    static let currentRepairVersion = 1
 
     static func hasCompletedLocalToCloudMigration(
         userDefaults: UserDefaults = .standard
@@ -230,6 +328,57 @@ enum SyncMigrationStateStore {
         userDefaults: UserDefaults = .standard
     ) {
         userDefaults.set(true, forKey: completedMigrationMarkerKey)
+    }
+
+    static func hasCompletedLocalToCloudRepair(
+        userDefaults: UserDefaults = .standard
+    ) -> Bool {
+        userDefaults.integer(forKey: completedMigrationRepairVersionKey) >= currentRepairVersion
+    }
+
+    static func markLocalToCloudRepairCompleted(
+        userDefaults: UserDefaults = .standard
+    ) {
+        userDefaults.set(currentRepairVersion, forKey: completedMigrationRepairVersionKey)
+    }
+}
+
+enum SyncMigrationCompletedRepairer {
+    @MainActor
+    static func repairMissingLocalCovers(
+        snapshot: LocalLibrarySnapshot,
+        into context: ModelContext
+    ) throws -> Int {
+        guard SyncMigrationValidator.validate(snapshot: snapshot).isEmpty else {
+            return 0
+        }
+
+        let cloudEpisodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
+        let cloudEpisodesBySyncKey = Dictionary(
+            uniqueKeysWithValues: cloudEpisodes.map { ($0.resolvedSyncKey, $0) }
+        )
+
+        var repairedCovers = 0
+        for localEpisode in snapshot.episodes {
+            guard let localCoverName = localEpisode.coverImageName?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !localCoverName.isEmpty,
+                  let cloudEpisode = cloudEpisodesBySyncKey[localEpisode.syncKey] else {
+                continue
+            }
+
+            let cloudCoverName = cloudEpisode.coverImageName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard cloudCoverName.isEmpty else { continue }
+
+            cloudEpisode.coverImageName = localEpisode.coverImageName
+            cloudEpisode.coverUpdatedAt = localEpisode.coverUpdatedAt
+            repairedCovers += 1
+        }
+
+        if repairedCovers > 0 {
+            try context.save()
+        }
+
+        return repairedCovers
     }
 }
 
@@ -427,6 +576,9 @@ enum SyncMigrationCoordinator {
         episode.rating = record.rating
         episode.listenCount = record.listenCount
         episode.lastListenedAt = record.lastListenedAt
+        episode.coverImageName = record.coverImageName
+        episode.coverUpdatedAt = record.coverUpdatedAt
+        episode.moodsUpdatedAt = record.moodsUpdatedAt
         episode.universe = record.universeSyncKey.flatMap { universesBySyncKey[$0] }
         episode.moods = record.moodSyncKeys.compactMap { moodsBySyncKey[$0] }
         episode.refreshSyncKeyIfPossible()

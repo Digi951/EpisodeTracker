@@ -172,13 +172,32 @@ private struct StatisticsSnapshot {
             .prefix(5)
             .map { $0 }
 
-        var moodCounts: [Mood: Int] = [:]
+        var moodCounts: [String: (mood: Mood, count: Int)] = [:]
         for episode in episodes {
+            var countedMoodKeys = Set<String>()
             for mood in episode.moods {
-                moodCounts[mood, default: 0] += 1
+                let key = mood.normalizedName
+                guard !key.isEmpty, countedMoodKeys.insert(key).inserted else { continue }
+
+                if let existing = moodCounts[key] {
+                    let representative = Mood.isPreferredAsCanonical(existing.mood, over: mood)
+                        ? existing.mood
+                        : mood
+                    moodCounts[key] = (representative, existing.count + 1)
+                } else {
+                    moodCounts[key] = (mood, 1)
+                }
             }
         }
-        moodDistribution = moodCounts.sorted { $0.value > $1.value }
+        moodDistribution = moodCounts.values
+            .sorted {
+                if $0.count != $1.count {
+                    return $0.count > $1.count
+                }
+
+                return $0.mood.name.localizedCompare($1.mood.name) == .orderedAscending
+            }
+            .map { ($0.mood, $0.count) }
     }
 }
 

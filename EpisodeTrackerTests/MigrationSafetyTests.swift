@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import UIKit
 @testable import EpisodeTracker
 
 @MainActor
@@ -377,6 +378,105 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(fetched[0].universe?.coverImageName, "uni-cover")
     }
 
+    func testDeduplicationKeepsCoverWhoseFileStillExists() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+        let coverDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DedupCoverTest-\(UUID().uuidString)", isDirectory: true)
+        let coverStore = CoverImageStore(baseDirectory: coverDirectory)
+        defer { try? FileManager.default.removeItem(at: coverDirectory) }
+
+        let universe = Universe(name: "Die drei ???")
+        let stale = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            universe: universe
+        )
+        stale.coverImageName = "missing-cover"
+        let valid = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            universe: universe
+        )
+        valid.coverImageName = "valid-cover"
+        try coverStore.save(makeCoverTestImage(), name: "valid-cover")
+
+        context.insert(universe)
+        context.insert(stale)
+        context.insert(valid)
+
+        var summary = SyncPreparation.ChangeSummary()
+        let didChange = EntityDeduplicator.deduplicateEpisodes(
+            [stale, valid],
+            in: context,
+            summary: &summary,
+            coverStore: coverStore
+        )
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertTrue(didChange)
+        XCTAssertEqual(summary.deduplicatedEpisodes, 1)
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].coverImageName, "valid-cover")
+    }
+
+    func testDeduplicationDoesNotInventMoodWhenCoverEpisodeHadNone() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+        let coverDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DedupMoodCoverTest-\(UUID().uuidString)", isDirectory: true)
+        let coverStore = CoverImageStore(baseDirectory: coverDirectory)
+        defer { try? FileManager.default.removeItem(at: coverDirectory) }
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Gruselig", iconName: "😱")
+        let coverEpisode = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            universe: universe,
+            moods: []
+        )
+        coverEpisode.coverImageName = "cover-without-mood"
+        try coverStore.save(makeCoverTestImage(), name: "cover-without-mood")
+
+        let metadataEpisode = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            listenCount: 1,
+            universe: universe,
+            moods: [mood]
+        )
+
+        context.insert(universe)
+        context.insert(mood)
+        context.insert(coverEpisode)
+        context.insert(metadataEpisode)
+
+        var summary = SyncPreparation.ChangeSummary()
+        let didChange = EntityDeduplicator.deduplicateEpisodes(
+            [coverEpisode, metadataEpisode],
+            in: context,
+            summary: &summary,
+            coverStore: coverStore
+        )
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertTrue(didChange)
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].coverImageName, "cover-without-mood")
+        XCTAssertTrue(episodes[0].isListened, "Listened state should still be preserved")
+        XCTAssertEqual(episodes[0].listenCount, 1)
+        XCTAssertTrue(episodes[0].moods.isEmpty, "Moods from the removed duplicate must not be added")
+    }
+
     // MARK: - Schema Metadata
 
     func testSchemaContainsOriginalNameForRenamedRelationships() throws {
@@ -439,6 +539,8 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertNotEqual(episode.id, UUID(uuidString: "00000000-0000-0000-0000-000000000000"))
         XCTAssertNotNil(episode.syncKey)
         XCTAssertNil(episode.streamingURL)
+        XCTAssertNil(episode.coverUpdatedAt)
+        XCTAssertNil(episode.moodsUpdatedAt)
         XCTAssertNotNil(mood.syncKey)
         XCTAssertNotNil(universe.syncKey)
     }
@@ -497,32 +599,34 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 4)
+        XCTAssertEqual(schemas.count, 5)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
         XCTAssertTrue(schemas[3] == SchemaV4.self)
+        XCTAssertTrue(schemas[4] == SchemaV5.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 3, "Should have V1→V2, V2→V3, and V3→V4 stages")
+        XCTAssertEqual(stages.count, 4, "Should have V1→V2, V2→V3, V3→V4, and V4→V5 stages")
     }
 
-    func testMigrationPlanIncludesV4() {
+    func testMigrationPlanIncludesV5() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 4)
+        XCTAssertEqual(schemas.count, 5)
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(4, 0, 0) }))
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(5, 0, 0) }))
 
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 3)
+        XCTAssertEqual(stages.count, 4)
     }
 
-    func testSchemaV4ReferencesCurrentModels() {
-        XCTAssertEqual(SchemaV4.models.count, 3)
+    func testSchemaV5ReferencesCurrentModels() {
+        XCTAssertEqual(SchemaV5.models.count, 3)
     }
 
-    func testSchemaVersionIsFour() async throws {
+    func testSchemaVersionIsFive() async throws {
         let container = try makeInMemoryContainer()
         let suiteName = "test-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -533,7 +637,7 @@ final class MigrationSafetyTests: XCTestCase {
             userDefaults: defaults
         )
 
-        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 4)
+        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 5)
     }
 
     func testSchemaV1ModelsMatchV1Release() {
@@ -631,6 +735,14 @@ final class MigrationSafetyTests: XCTestCase {
         }
         for mood in moods {
             XCTAssertFalse(mood.resolvedSyncKey.isEmpty, "Mood '\(mood.name)' should have a sync key")
+        }
+    }
+
+    private func makeCoverTestImage() -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16))
+        return renderer.image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
         }
     }
 }

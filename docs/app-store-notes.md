@@ -34,13 +34,29 @@ Behalte den Überblick über gehörte Folgen, Bewertungen und persönliche Notiz
 
 HörspielLog hilft dir, deine Hörspiel-Folgen übersichtlich zu verwalten.
 
-Markiere Folgen als gehört, vergib Bewertungen, notiere persönliche Eindrücke und filtere deine Sammlung nach Katalog, Stimmung oder Hörstatus. Vordefinierte Kataloge können über öffentliche JSON-Listen aktualisiert werden, damit neue Folgen auch ohne App-Update verfügbar werden.
+Markiere Folgen als gehört, vergib Bewertungen, notiere persönliche Eindrücke und filtere deine Sammlung nach Katalog, Stimmung oder Hörstatus.
 
-Die App stellt keine Audioinhalte bereit und ist nicht mit Hörspiel-Verlagen oder Markeninhabern verbunden. Deine eigenen Einträge, Bewertungen, Notizen und Backups bleiben auf deinem Gerät, sofern du sie nicht selbst exportierst.
+Für viele beliebte Reihen sind Folgenlisten bereits vorbereitet – darunter Die drei ???, TKKG, Bibi Blocksberg, Benjamin Blümchen und Fünf Freunde. Diese Kataloge lassen sich einzeln aktivieren und über öffentliche JSON-Listen aktualisieren, sodass neue Reihen und Folgen auch ohne App-Update verfügbar werden.
+
+Jede Folge lässt sich mit einem Tippen direkt in Spotify oder Apple Music öffnen – für viele Folgen sind die passenden Verknüpfungen schon hinterlegt. Den bevorzugten Dienst wählst du in den Einstellungen.
+
+Die App stellt selbst keine Audioinhalte bereit, spielt keine Hörspiele ab und ist nicht mit Hörspiel-Verlagen oder Markeninhabern verbunden. Deine eigenen Einträge, Bewertungen, Notizen und Backups bleiben auf deinem Gerät, sofern du sie nicht selbst exportierst.
 
 ### Keywords
 
 Hörspiele,Folgen,Tracker,Sammlung,Bewertung,Notizen,Katalog
+
+### What's New (Version 1.6)
+
+Diese Version macht das Pflegen deiner Sammlung ein gutes Stück angenehmer.
+
+• Cover direkt einfügen: Hast du ein Cover kopiert? Zum Beispiel als Screenshot aus deinem Streamingdienst? Dann setzt du es jetzt mit einem Tippen aus der Zwischenablage in die Folge ein. Der Umweg über die Fotos-App entfällt.
+
+• Neue Folgen im Blick: Bekommt einer deiner aktiven Kataloge Nachschub, weist dich ein dezenter Hinweis direkt an Ort und Stelle darauf hin.
+
+• Verlässlicher bei Updates: Deine Folgen-Cover und Stimmungen bleiben beim App-Update jetzt noch zuverlässiger erhalten.
+
+Dazu kommen viele Feinschliffe in der Folgenliste und unter der Haube. Danke, dass du HörspielLog nutzt. Viel Freude beim Hören!
 
 ## Future Freemium Model
 
@@ -85,6 +101,16 @@ HörspielLog is a private tracking app for audio drama episodes. User-created ep
 Version 1.1 adds native iPad support and layout improvements for larger screens. The update introduces an iPad split view for browsing episodes and viewing episode details side by side, while keeping the existing iPhone experience unchanged.
 
 This update does not add subscriptions, paid digital content, external purchase flows, audio playback, audio files, streaming access, or externally unlocked features. HörspielLog remains a free private tracking app. Remote catalog files are public HTTPS JSON metadata only and contain episode titles, ordering information, and related catalog metadata to help users create their own local tracking entries.
+
+### Version 1.6 Review Notes
+
+Version 1.6 is mainly an internal update: a cleaner project structure, more robust data migration and deduplication, and small convenience improvements such as pasting a cover image from the clipboard and a contextual hint when a subscribed catalog has new episodes.
+
+HörspielLog remains a free private tracking app for audio drama episodes. This version does not add subscriptions, In-App Purchases, external purchase flows, audio playback, audio files, or externally unlocked features.
+
+Note on streaming links: HörspielLog can show an optional link on an episode that opens that episode in the user's own Spotify or Apple Music app. The app itself does not play, stream, host, or bundle any audio and provides no audio content. These links are convenience deep-links into third-party apps the user already has installed; choosing Spotify or Apple Music is a preference in Settings. The predefined catalog files remain public HTTPS JSON metadata only (episode titles, ordering information, and the corresponding external link).
+
+User-created episodes, notes, ratings, moods, and backups remain on device unless the user manually exports a backup. HörspielLog is not affiliated with any audio drama publisher or trademark owner.
 
 ### Guideline 2.1(b) Business Model Reply
 

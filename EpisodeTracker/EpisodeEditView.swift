@@ -34,11 +34,15 @@ struct EpisodeEditView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var coverImage: UIImage?
     @State private var removeCover = false
+    @State private var clipboardHasImage = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var isNew: Bool { episode == nil }
     private var hasVisibleCover: Bool {
         if removeCover { return false }
-        return coverImage != nil || (episode?.coverImageName != nil && !(episode?.coverImageName?.isEmpty ?? true))
+        if coverImage != nil { return true }
+        guard let name = episode?.coverImageName, !name.isEmpty else { return false }
+        return CoverImageStore().exists(name: name)
     }
     private var parsedEpisodeNumber: Int? {
         Int(episodeNumberText.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -59,10 +63,40 @@ struct EpisodeEditView: View {
         && selectedUniverse != nil
         && canCreateEpisodeUnderCurrentPlan
     }
+    private var duplicateEpisodeWarning: String? {
+        guard isNew,
+              let number = parsedEpisodeNumber,
+              let universe = selectedUniverse,
+              hasDuplicateEpisodeNumber(in: universe, episodeNumber: number)
+        else { return nil }
+        return "Folge \(number) existiert bereits in \(universe.name)."
+    }
+
     private var suggestedMoods: [(name: String, icon: String)] {
         Mood.defaultSuggestions.filter { suggestion in
             !allMoods.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
         }
+    }
+    private var visibleMoods: [Mood] {
+        Dictionary(grouping: allMoods) { $0.normalizedName }
+            .values
+            .compactMap { duplicates in
+                duplicates.sorted { lhs, rhs in
+                    if lhs.episodes.count != rhs.episodes.count {
+                        return lhs.episodes.count > rhs.episodes.count
+                    }
+
+                    let lhsHasIcon = lhs.iconName?.isEmpty == false
+                    let rhsHasIcon = rhs.iconName?.isEmpty == false
+                    if lhsHasIcon != rhsHasIcon {
+                        return lhsHasIcon
+                    }
+
+                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                }
+                .first
+            }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
     private var activeUniverses: [Universe] {
         let activeIDs = ActiveCatalogStore().activeIDs
@@ -108,6 +142,7 @@ struct EpisodeEditView: View {
                 isNew: isNew,
                 yearSuggestions: yearSuggestions,
                 formValidationMessage: formValidationMessage,
+                duplicateEpisodeWarning: duplicateEpisodeWarning,
                 canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan,
                 onApplyCatalogMatch: applyCatalogMatch,
                 onSelectSuggestedEntry: applySuggestedEntry
@@ -136,6 +171,18 @@ struct EpisodeEditView: View {
                     )
                 }
 
+                Button {
+                    if let image = UIPasteboard.general.image {
+                        coverImage = image
+                        selectedPhotoItem = nil
+                        removeCover = false
+                    }
+                } label: {
+                    Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
+                        .foregroundStyle(clipboardHasImage ? Color.accentColor : Color(.tertiaryLabel))
+                }
+                .disabled(!clipboardHasImage)
+
                 if hasVisibleCover {
                     Button(role: .destructive) {
                         coverImage = nil
@@ -159,7 +206,7 @@ struct EpisodeEditView: View {
                 newMoodName: $newMoodName,
                 newMoodIcon: $newMoodIcon,
                 moodValidationMessage: moodValidationMessage,
-                allMoods: allMoods,
+                allMoods: visibleMoods,
                 selectedMoods: selectedMoods,
                 onAddSuggestedMood: addSuggestedMood,
                 onAddMood: addMood,
@@ -240,8 +287,15 @@ struct EpisodeEditView: View {
             refreshYearSuggestions()
         }
         .onAppear {
+            SyncPreparation.prepare(context: modelContext)
             populateInitialState()
             refreshCatalogMatch()
+            clipboardHasImage = UIPasteboard.general.hasImages
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                clipboardHasImage = UIPasteboard.general.hasImages
+            }
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
@@ -301,6 +355,8 @@ struct EpisodeEditView: View {
 
         if let episode {
             let wasListened = episode.isListened
+            let previousMoodKeys = Set(episode.moods.map(\.resolvedSyncKey))
+            let newMoodKeys = Set(selectedMoods.map(\.resolvedSyncKey))
             episode.episodeNumber = episodeNumber
             episode.title = title
             episode.releaseYear = releaseYear
@@ -309,6 +365,9 @@ struct EpisodeEditView: View {
             episode.rating = rating
             episode.universe = selectedUniverse
             episode.moods = Array(selectedMoods)
+            if previousMoodKeys != newMoodKeys {
+                episode.moodsUpdatedAt = .now
+            }
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
             episode.refreshSyncKeyIfPossible()
             applyCoverChange(to: episode)
@@ -329,6 +388,9 @@ struct EpisodeEditView: View {
                 moods: Array(selectedMoods)
             )
             newEpisode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
+            if !selectedMoods.isEmpty {
+                newEpisode.moodsUpdatedAt = .now
+            }
             if isListened {
                 newEpisode.listenCount = 1
                 newEpisode.lastListenedAt = .now
@@ -494,6 +556,7 @@ private struct EpisodeFormSection: View {
     let isNew: Bool
     let yearSuggestions: [CatalogEntry]
     let formValidationMessage: String?
+    let duplicateEpisodeWarning: String?
     let canCreateEpisodeUnderCurrentPlan: Bool
     let onApplyCatalogMatch: () -> Void
     let onSelectSuggestedEntry: (CatalogEntry) -> Void
@@ -548,6 +611,11 @@ private struct EpisodeFormSection: View {
                     }
                 }
                 .font(.subheadline)
+            }
+            if let duplicateEpisodeWarning {
+                Text(duplicateEpisodeWarning)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
             }
             if let formValidationMessage {
                 Text(formValidationMessage)

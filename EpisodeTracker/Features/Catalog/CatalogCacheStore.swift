@@ -12,9 +12,13 @@ struct CatalogCacheStore {
 
     private let customCatalogsURL: URL
     private let manifestURL: URL
+    private let catalogEpisodeDeltasURL: URL
+    private let newCatalogAvailabilityURL: URL
     private let remoteCatalogDirectoryURL: URL
+    private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
         guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             fatalError("Application Support directory unavailable")
         }
@@ -23,6 +27,8 @@ struct CatalogCacheStore {
 
         customCatalogsURL = directoryURL.appendingPathComponent("CustomCatalogs.json")
         manifestURL = directoryURL.appendingPathComponent("CatalogManifest.json")
+        catalogEpisodeDeltasURL = directoryURL.appendingPathComponent("CatalogEpisodeDeltas.json")
+        newCatalogAvailabilityURL = directoryURL.appendingPathComponent("NewCatalogAvailability.json")
 
         remoteCatalogDirectoryURL = directoryURL.appendingPathComponent("RemoteCatalogs", isDirectory: true)
         try? fileManager.createDirectory(at: remoteCatalogDirectoryURL, withIntermediateDirectories: true)
@@ -76,6 +82,61 @@ struct CatalogCacheStore {
         try data.write(to: remoteCacheURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey)), options: [.atomic])
     }
 
+    func loadCatalogSnapshot(universeName: String, cacheKey: String? = nil) -> CatalogSnapshot? {
+        let snapshotURL = remoteSnapshotURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey))
+        guard let data = try? Data(contentsOf: snapshotURL),
+              let decoded = try? JSONDecoder().decode(CatalogSnapshot.self, from: data)
+        else {
+            return nil
+        }
+        return decoded
+    }
+
+    func saveCatalogSnapshot(_ snapshot: CatalogSnapshot, universeName: String, cacheKey: String? = nil) throws {
+        let data = try JSONEncoder().encode(snapshot)
+        try data.write(to: remoteSnapshotURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey)), options: [.atomic])
+    }
+
+    func loadCatalogEpisodeDeltas() -> [CatalogEpisodeDelta] {
+        guard let data = try? Data(contentsOf: catalogEpisodeDeltasURL),
+              let decoded = try? JSONDecoder().decode([CatalogEpisodeDelta].self, from: data)
+        else {
+            return []
+        }
+        return decoded
+    }
+
+    func saveCatalogEpisodeDelta(_ delta: CatalogEpisodeDelta) throws {
+        var deltas = loadCatalogEpisodeDeltas()
+        deltas.removeAll { $0.catalogID == delta.catalogID }
+        deltas.append(delta)
+        try saveCatalogEpisodeDeltas(deltas)
+    }
+
+    func clearCatalogEpisodeDelta(catalogID: String) throws {
+        var deltas = loadCatalogEpisodeDeltas()
+        deltas.removeAll { $0.catalogID == catalogID }
+        try saveCatalogEpisodeDeltas(deltas)
+    }
+
+    func loadNewCatalogAvailability() -> NewCatalogAvailability? {
+        guard let data = try? Data(contentsOf: newCatalogAvailabilityURL),
+              let decoded = try? JSONDecoder().decode(NewCatalogAvailability.self, from: data)
+        else {
+            return nil
+        }
+        return decoded.sources.isEmpty ? nil : decoded
+    }
+
+    func saveNewCatalogAvailability(_ availability: NewCatalogAvailability) throws {
+        let data = try JSONEncoder().encode(availability)
+        try data.write(to: newCatalogAvailabilityURL, options: [.atomic])
+    }
+
+    func clearNewCatalogAvailability() throws {
+        try? fileManager.removeItem(at: newCatalogAvailabilityURL)
+    }
+
     func loadRemoteMetadata(universeName: String, cacheKey: String? = nil) -> RemoteCatalogMetadata? {
         let metadataURL = remoteMetadataURL(for: cacheStorageKey(universeName: universeName, cacheKey: cacheKey))
         guard let data = try? Data(contentsOf: metadataURL),
@@ -127,6 +188,15 @@ struct CatalogCacheStore {
 
     private func remoteMetadataURL(for universeName: String) -> URL {
         remoteCatalogDirectoryURL.appendingPathComponent("\(sanitizedFileName(for: universeName)).meta.json")
+    }
+
+    private func remoteSnapshotURL(for universeName: String) -> URL {
+        remoteCatalogDirectoryURL.appendingPathComponent("\(sanitizedFileName(for: universeName)).snapshot.json")
+    }
+
+    private func saveCatalogEpisodeDeltas(_ deltas: [CatalogEpisodeDelta]) throws {
+        let data = try JSONEncoder().encode(deltas)
+        try data.write(to: catalogEpisodeDeltasURL, options: [.atomic])
     }
 
     private func cacheStorageKey(universeName: String, cacheKey: String?) -> String {

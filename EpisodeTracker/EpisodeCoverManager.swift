@@ -33,10 +33,12 @@ struct EpisodeCoverManager {
             try store.delete(name: coverName)
             cache.removeImage(named: coverName)
             episode.coverImageName = nil
+            episode.coverUpdatedAt = .now
         case .replace(let image):
             try store.save(image, name: coverName)
             cache.removeImage(named: coverName)
             episode.coverImageName = coverName
+            episode.coverUpdatedAt = .now
         }
     }
 }

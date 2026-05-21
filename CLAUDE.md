@@ -2,7 +2,7 @@
 
 ## Obsidian Vault
 
-- Primary vault path: `/Users/christopherdieckmann/Library/Mobile Documents/iCloud~md~obsidian/Documents`
+- Primary vault path: `/Users/christopherdieckmann/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault Code`
 
 ## Working Agreement
 

@@ -115,6 +115,16 @@ private struct PhoneEpisodesRoot: View {
                         EpisodeEditView()
                     }
                 }
+                .navigationDestination(for: SmartListNavigation.self) { destination in
+                    switch destination {
+                    case .detail(let smartList):
+                        SmartListDetailView(smartList: smartList)
+                    case .moodPicker:
+                        MoodPickerView()
+                    case .moodDetail(let mood):
+                        SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                    }
+                }
                 .navigationTitle(libraryTitle)
         }
     }
@@ -256,6 +266,15 @@ private struct IPadEpisodeListView: View {
         )
     }
 
+    private var catalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        guard !isEditing, controls.searchText.isEmpty, !controls.hasActiveFilter else { return nil }
+        return EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
+            catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs
+        )
+    }
+
     var body: some View {
         Group {
             if isEditing {
@@ -272,6 +291,20 @@ private struct IPadEpisodeListView: View {
         .listStyle(.sidebar)
         .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
+        .navigationDestination(for: SmartListNavigation.self) { destination in
+            switch destination {
+            case .detail(let smartList):
+                SmartListDetailView(smartList: smartList, iPadSelection: $selection)
+            case .moodPicker:
+                MoodPickerView()
+            case .moodDetail(let mood):
+                SmartListDetailView(
+                    smartList: .zufaelligNachStimmung,
+                    mood: mood,
+                    iPadSelection: $selection
+                )
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if !episodes.isEmpty {
@@ -369,6 +402,8 @@ private struct IPadEpisodeListView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         }
+
+        CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
 
         if filteredEpisodes.isEmpty {
             ContentUnavailableView {

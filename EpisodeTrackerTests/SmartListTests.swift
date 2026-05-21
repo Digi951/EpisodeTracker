@@ -407,6 +407,22 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result[1].count, 1)
     }
 
+    func testAvailableMoodsCollapsesDuplicateMoodObjectsByName() {
+        let moodA = Mood(name: "Gruselig", iconName: "😱", syncKey: "legacy-gruselig")
+        let moodB = Mood(name: "Gruselig", iconName: "😱", syncKey: "mood:gruselig")
+        let universe = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: universe, moods: [moodA]),
+            makeEpisode(number: 2, universe: universe, moods: [moodB])
+        ]
+
+        let result = SmartListDefinition.availableMoods(from: episodes, filter: .all, allMoods: [moodA, moodB])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].mood.normalizedName, "gruselig")
+        XCTAssertEqual(result[0].count, 2)
+    }
+
     func testAvailableMoodsReturnsEmptyWhenNoUnlistenedWithMoods() {
         let mood1 = Mood(name: "Test", iconName: "🧪")
         let u1 = makeUniverse("Test")
