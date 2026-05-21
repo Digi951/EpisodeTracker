@@ -544,6 +544,7 @@ private struct OnboardingStepRow: View {
 struct EpisodeRowView: View {
     let episode: Episode
     let anyEpisodeHasCover: Bool
+    var isInSidebar: Bool = false
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private var notePreview: String? {
@@ -567,11 +568,11 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: isInSidebar ? 8 : 12) {
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .center)
+                .frame(width: isInSidebar ? 26 : 40, alignment: .center)
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
                 CoverImageThumbnailView(name: coverName)
@@ -587,7 +588,7 @@ struct EpisodeRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(episode.title)
                     .font(.body)
-                    .lineLimit(1)
+                    .lineLimit(isInSidebar ? 2 : 1)
 
                 if let notePreview {
                     Text(notePreview)
@@ -612,6 +613,7 @@ struct EpisodeRowView: View {
                     }
                 }
             }
+            .layoutPriority(1)
 
             Spacer()
 

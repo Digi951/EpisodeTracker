@@ -464,11 +464,11 @@ private struct IPadEpisodeListView: View {
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
             }
             .swipeActions(edge: .leading) {
                 Button {

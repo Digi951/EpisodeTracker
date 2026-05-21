@@ -52,7 +52,9 @@ struct EpisodeDetailView: View {
                 }
                 contentPanel
             }
-            .padding(.horizontal, panelHorizontalInset)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: contentMaxWidth)
+            .frame(maxWidth: .infinity)
             .padding(.top, scrollTopPadding)
             .padding(.bottom, DetailMetrics.scrollBottom)
         }
@@ -254,8 +256,8 @@ struct EpisodeDetailView: View {
         static let scrollBottom: CGFloat = 28
     }
 
-    private var panelHorizontalInset: CGFloat {
-        horizontalSizeClass == .regular ? 48 : 16
+    private var contentMaxWidth: CGFloat {
+        horizontalSizeClass == .regular ? 640 : .infinity
     }
 
     private var scrollTopPadding: CGFloat {
@@ -263,7 +265,7 @@ struct EpisodeDetailView: View {
     }
 
     private var coverMaxHeight: CGFloat {
-        horizontalSizeClass == .regular ? 380 : 420
+        640
     }
 
     // MARK: - Cover loading
