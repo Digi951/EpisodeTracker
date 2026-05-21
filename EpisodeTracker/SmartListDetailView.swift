@@ -44,6 +44,12 @@ struct SmartListDetailView: View {
         return years.sorted()
     }
 
+    private var anyEpisodeHasCover: Bool {
+        allEpisodes.contains { episode in
+            episode.coverImageName?.isEmpty == false
+        }
+    }
+
     private var catalogGroups: [CatalogSuggestionGroup] {
         let grouped = Dictionary(grouping: catalogSuggestions, by: \.universeName)
         let allMissingGrouped = Dictionary(grouping: allMissingCatalogSuggestions, by: \.universeName)
@@ -155,13 +161,15 @@ struct SmartListDetailView: View {
             SmartListGroupedEpisodeContent(
                 displayedEpisodes: displayedEpisodes,
                 smartListDisplayName: smartList.displayName,
-                emptyMessage: emptyMessage
+                emptyMessage: emptyMessage,
+                anyEpisodeHasCover: anyEpisodeHasCover
             )
         } else {
             SmartListEpisodeContent(
                 displayedEpisodes: displayedEpisodes,
                 smartListDisplayName: smartList.displayName,
-                emptyMessage: emptyMessage
+                emptyMessage: emptyMessage,
+                anyEpisodeHasCover: anyEpisodeHasCover
             )
         }
     }
@@ -390,6 +398,7 @@ private struct SmartListEpisodeContent: View {
     let displayedEpisodes: [Episode]
     let smartListDisplayName: String
     let emptyMessage: String
+    let anyEpisodeHasCover: Bool
 
     var body: some View {
         if displayedEpisodes.isEmpty {
@@ -400,7 +409,7 @@ private struct SmartListEpisodeContent: View {
         } else {
             ForEach(displayedEpisodes) { episode in
                 NavigationLink(value: episode) {
-                    EpisodeRowView(episode: episode)
+                    EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                 }
             }
         }
@@ -411,6 +420,7 @@ private struct SmartListGroupedEpisodeContent: View {
     let displayedEpisodes: [Episode]
     let smartListDisplayName: String
     let emptyMessage: String
+    let anyEpisodeHasCover: Bool
 
     private var groupedEpisodes: [(universeName: String, episodes: [Episode])] {
         let grouped = Dictionary(grouping: displayedEpisodes) { $0.universe?.name ?? "Ohne Sammlung" }
@@ -430,7 +440,7 @@ private struct SmartListGroupedEpisodeContent: View {
                 Section {
                     ForEach(group.episodes) { episode in
                         NavigationLink(value: episode) {
-                            EpisodeRowView(episode: episode)
+                            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                         }
                     }
                 } header: {

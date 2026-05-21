@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private let splitLayoutWidthThreshold = SplitLayoutDecider.defaultWidthThreshold
 
@@ -15,6 +16,10 @@ struct ContentView: View {
 
     private var appearanceMode: AppearanceMode {
         AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
+
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
     }
 
     var body: some View {
@@ -29,6 +34,7 @@ struct ContentView: View {
                 }
             }
         }
+        .tint(appAccentColor.color)
         .preferredColorScheme(appearanceMode.colorScheme)
     }
 
@@ -255,6 +261,12 @@ private struct IPadEpisodeListView: View {
         )
     }
 
+    private var anyEpisodeHasCover: Bool {
+        episodes.contains { episode in
+            episode.coverImageName?.isEmpty == false
+        }
+    }
+
     private var groupCollapseScopeKey: String {
         controls.collapseScopeKey(universeCount: universes.count)
     }
@@ -404,6 +416,9 @@ private struct IPadEpisodeListView: View {
         }
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
+        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+            AccentColorAnnouncementBannerRow(style: .sidebar)
+        }
 
         if filteredEpisodes.isEmpty {
             ContentUnavailableView {
@@ -449,11 +464,11 @@ private struct IPadEpisodeListView: View {
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
             }
             .swipeActions(edge: .leading) {
                 Button {
@@ -597,10 +612,15 @@ private struct CompactLibrarySnapshotView: View {
     let listenedCount: Int
     let openCount: Int
     let totalListens: Int
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
         return Double(listenedCount) / Double(episodeCount)
+    }
+
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
     }
 
     var body: some View {
@@ -624,6 +644,7 @@ private struct CompactLibrarySnapshotView: View {
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(appAccentColor.color.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

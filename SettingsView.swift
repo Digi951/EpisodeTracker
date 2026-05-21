@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @AppStorage(AppModelContainerFactory.cloudSyncPreferenceKey) private var prefersICloudSync = false
@@ -64,6 +65,7 @@ struct SettingsView: View {
             SettingsLibrarySection(
                 libraryTitle: $libraryTitle,
                 appearanceModeRawValue: $appearanceModeRawValue,
+                appAccentColorRawValue: $appAccentColorRawValue,
                 showsLibrarySnapshot: $showsLibrarySnapshot,
                 prefersCatalogProgressTotals: $prefersCatalogProgressTotals
             )
@@ -211,6 +213,7 @@ struct SettingsView: View {
     private func resetDisplaySettings() {
         libraryTitle = "Meine Hörspiele"
         appearanceModeRawValue = AppearanceMode.system.rawValue
+        appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
         showsLibrarySnapshot = true
         prefersCatalogProgressTotals = true
     }
@@ -357,6 +360,7 @@ struct SettingsView: View {
 private struct SettingsLibrarySection: View {
     @Binding var libraryTitle: String
     @Binding var appearanceModeRawValue: String
+    @Binding var appAccentColorRawValue: String
     @Binding var showsLibrarySnapshot: Bool
     @Binding var prefersCatalogProgressTotals: Bool
 
@@ -368,6 +372,7 @@ private struct SettingsLibrarySection: View {
                     Text(mode.title).tag(mode.rawValue)
                 }
             }
+            AccentColorPickerRow(selection: $appAccentColorRawValue)
             Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
             Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
         } header: {
@@ -375,6 +380,43 @@ private struct SettingsLibrarySection: View {
         } footer: {
             Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
         }
+    }
+}
+
+private struct AccentColorPickerRow: View {
+    @Binding var selection: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Akzentfarbe")
+
+            HStack(spacing: 14) {
+                ForEach(AppAccentColor.allCases) { accentColor in
+                    Button {
+                        selection = accentColor.rawValue
+                    } label: {
+                        Circle()
+                            .fill(accentColor.color)
+                            .frame(width: 30, height: 30)
+                            .overlay {
+                                if selection == accentColor.rawValue {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .overlay(
+                                Circle()
+                                    .stroke(selection == accentColor.rawValue ? Color.primary : Color.secondary.opacity(0.22), lineWidth: selection == accentColor.rawValue ? 2 : 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(accentColor.title)
+                    .accessibilityAddTraits(selection == accentColor.rawValue ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
