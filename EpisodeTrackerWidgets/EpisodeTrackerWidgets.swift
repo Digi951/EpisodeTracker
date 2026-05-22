@@ -356,10 +356,6 @@ private struct FooterMetaRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if episode.releaseYear > 0 {
-                Label(String(episode.releaseYear), systemImage: "calendar")
-            }
-
             if episode.isListened, let listenedAt = episode.lastListenedAt {
                 Label(
                     listenedAt.formatted(.dateTime.day().month(.abbreviated)),
@@ -380,13 +376,12 @@ private struct CompactFooterMetaRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if episode.releaseYear > 0 {
-                Text(String(episode.releaseYear))
+            if episode.isListened {
+                Image(systemName: "checkmark.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
-        .font(.caption2.weight(.medium))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
     }
 }
 
@@ -459,8 +454,8 @@ private struct WidgetCoverBackground: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-                .opacity(0.2)
-                .overlay(Color(.systemBackground).opacity(0.6))
+                .opacity(0.28)
+                .overlay(Color(.systemBackground).opacity(0.5))
         } else {
             Color(.systemBackground).opacity(0.001)
         }
