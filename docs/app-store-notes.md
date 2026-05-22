@@ -110,9 +110,15 @@ Diese Version gibt der App eine persönlichere Note und macht die Cover-Ansicht 
 
 • Neue Detailansicht: Das Cover einer Folge füllt jetzt den gesamten Hintergrund aus – weich unscharf und getönt. Bewertung, Stimmungen und Notiz liegen auf einer klaren Glasfläche davor.
 
+• Cover in Widgets: Die Widgets „Als nächstes" und „Zufällige Folge" zeigen jetzt das Folgencover – als sanften Hintergrund im kleinen Widget und als Vorschaubild im mittleren.
+
 • Platzhalter in der Folgenliste: Sobald mindestens eine Folge ein Cover hat, zeigen alle anderen Folgen ein kleines Serien-Initial als Platzhalter – die Liste wirkt damit einheitlicher.
 
-• iPad zuverlässiger: Bibliothek und „Als nächstes" nutzen auf dem iPad jetzt vollständig die Splitscreen-Ansicht. Ein Tipp auf eine Folge öffnet sie direkt in der Detailspalte.
+• Neue Folge schneller anlegen: Der Plus-Button schwebt jetzt unten rechts – immer griffbereit, wie in Apples eigenen Apps.
+
+• iPad zuverlässiger: Bibliothek und „Als nächstes" nutzen auf dem iPad jetzt vollständig die Splitscreen-Ansicht. Katalog-Import und alle Buttons funktionieren wieder korrekt.
+
+• Feinschliff: Sanfte Animationen beim Ein- und Ausklappen von Gruppen, haptisches Feedback bei Aktionen.
 
 Danke, dass du HörspielLog nutzt. Viel Freude beim Hören!
 
