@@ -283,10 +283,13 @@ struct EpisodeListView: View {
             }
             .swipeActions(edge: .leading) {
                 Button {
-                    episode.isListened.toggle()
-                    if episode.isListened {
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened.toggle()
+                        if episode.isListened {
+                            episode.listenCount += 1
+                            episode.lastListenedAt = .now
+                        }
                     }
                 } label: {
                     Label(
@@ -298,9 +301,12 @@ struct EpisodeListView: View {
             }
             .swipeActions(edge: .trailing) {
                 Button {
-                    episode.isListened = true
-                    episode.listenCount += 1
-                    episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")
                 }
@@ -311,6 +317,7 @@ struct EpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
             }
         }
     }
@@ -347,11 +354,13 @@ struct EpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
-            groupID: group.id,
-            in: collapsedGroupIDsRaw,
-            scopeKey: groupCollapseScopeKey
-        )
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
+                groupID: group.id,
+                in: collapsedGroupIDsRaw,
+                scopeKey: groupCollapseScopeKey
+            )
+        }
     }
 }
 
@@ -620,6 +629,7 @@ struct EpisodeRowView: View {
             if episode.isListened {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
             }
         }
     }

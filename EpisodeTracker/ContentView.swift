@@ -472,10 +472,13 @@ private struct IPadEpisodeListView: View {
             }
             .swipeActions(edge: .leading) {
                 Button {
-                    episode.isListened.toggle()
-                    if episode.isListened {
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened.toggle()
+                        if episode.isListened {
+                            episode.listenCount += 1
+                            episode.lastListenedAt = .now
+                        }
                     }
                 } label: {
                     Label(
@@ -487,9 +490,12 @@ private struct IPadEpisodeListView: View {
             }
             .swipeActions(edge: .trailing) {
                 Button {
-                    episode.isListened = true
-                    episode.listenCount += 1
-                    episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")
                 }
@@ -500,6 +506,7 @@ private struct IPadEpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
             }
         }
     }
@@ -541,11 +548,13 @@ private struct IPadEpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
-            groupID: group.id,
-            in: collapsedGroupIDsRaw,
-            scopeKey: groupCollapseScopeKey
-        )
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
+                groupID: group.id,
+                in: collapsedGroupIDsRaw,
+                scopeKey: groupCollapseScopeKey
+            )
+        }
     }
 }
 

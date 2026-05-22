@@ -51,10 +51,12 @@ struct EpisodeGroupHeader: View {
     var body: some View {
         Button(action: toggle) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 12, height: 20, alignment: .center)
+                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isCollapsed)
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {

@@ -62,9 +62,12 @@ struct EpisodeDetailView: View {
         .background(fullScreenCoverBackground)
         .toolbar {
             Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    episode.isListened = true
+                    episode.listenCount += 1
+                    episode.lastListenedAt = .now
+                }
             } label: {
                 Label("Hördurchgang zählen", systemImage: "plus")
             }
