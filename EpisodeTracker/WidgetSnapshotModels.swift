@@ -16,4 +16,5 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
     var isListened: Bool
     var rating: Int?
     var lastListenedAt: Date?
+    var coverImageName: String?
 }

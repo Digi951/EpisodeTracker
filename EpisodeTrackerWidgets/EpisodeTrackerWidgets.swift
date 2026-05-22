@@ -217,12 +217,27 @@ private struct SmallEpisodeWidgetCard: View {
     let entry: EpisodeWidgetEntry
     let episode: WidgetEpisodeSnapshot
 
+    private var coverImage: UIImage? {
+        episode.coverImageName.flatMap { WidgetSnapshotStore.coverImage(named: $0) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(primaryTitle)
-                .font(.body.weight(.semibold))
-                .lineLimit(3)
-                .minimumScaleFactor(0.8)
+            HStack(alignment: .top, spacing: 8) {
+                Text(primaryTitle)
+                    .font(.body.weight(.semibold))
+                    .lineLimit(coverImage != nil ? 2 : 3)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if let image = coverImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+            }
 
             if let universeName = episode.universeName {
                 Text(universeName)
@@ -253,10 +268,7 @@ private struct SmallEpisodeWidgetCard: View {
     }
 
     private var primaryTitle: String {
-        if episode.title.isEmpty {
-            return "Unbenannte Folge"
-        }
-        return episode.title
+        episode.title.isEmpty ? "Unbenannte Folge" : episode.title
     }
 
     private var statusLabel: String {
@@ -270,6 +282,10 @@ private struct SmallEpisodeWidgetCard: View {
 private struct MediumEpisodeWidgetCard: View {
     let entry: EpisodeWidgetEntry
     let episode: WidgetEpisodeSnapshot
+
+    private var coverImage: UIImage? {
+        episode.coverImageName.flatMap { WidgetSnapshotStore.coverImage(named: $0) }
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -287,23 +303,36 @@ private struct MediumEpisodeWidgetCard: View {
 
                 FooterMetaRow(episode: episode)
 
-                if let rating = episode.rating {
+                if coverImage != nil {
+                    StatusPill(
+                        label: statusLabel,
+                        emphasized: !episode.isListened || entry.kind == .upNext
+                    )
+                } else if let rating = episode.rating {
                     RatingBadge(rating: rating)
                 }
             }
 
             Spacer(minLength: 0)
 
-            VStack(alignment: .trailing, spacing: 10) {
-                Text("\(episode.episodeNumber)")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
+            if let image = coverImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 76, height: 76)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            } else {
+                VStack(alignment: .trailing, spacing: 10) {
+                    Text("\(episode.episodeNumber)")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.tint)
 
-                StatusPill(
-                    label: statusLabel,
-                    emphasized: !episode.isListened || entry.kind == .upNext
-                )
+                    StatusPill(
+                        label: statusLabel,
+                        emphasized: !episode.isListened || entry.kind == .upNext
+                    )
+                }
             }
         }
     }
@@ -506,7 +535,8 @@ private extension EpisodeWidgetEntry {
                 universeName: "Die drei ???",
                 isListened: false,
                 rating: 4,
-                lastListenedAt: nil
+                lastListenedAt: nil,
+                coverImageName: nil
             ),
             libraryTitle: "HörspielLog"
         )
