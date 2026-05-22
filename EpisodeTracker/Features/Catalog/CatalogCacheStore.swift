@@ -18,11 +18,15 @@ struct CatalogCacheStore {
     private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {
-        self.fileManager = fileManager
         guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             fatalError("Application Support directory unavailable")
         }
         let directoryURL = appSupportURL.appendingPathComponent("EpisodeTracker", isDirectory: true)
+        self.init(directoryURL: directoryURL, fileManager: fileManager)
+    }
+
+    init(directoryURL: URL, fileManager: FileManager = .default) {
+        self.fileManager = fileManager
         try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
         customCatalogsURL = directoryURL.appendingPathComponent("CustomCatalogs.json")

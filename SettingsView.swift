@@ -733,6 +733,7 @@ private struct CatalogManagementView: View {
     @State private var validationMessage: String?
     @State private var catalogStatusMessage: String?
     @State private var catalogStatusIsError = false
+    @State private var isRefreshingCatalogs = false
     @State private var activeCatalogIDs: Set<String> = []
     private let activeCatalogStore = ActiveCatalogStore()
 
@@ -810,8 +811,18 @@ private struct CatalogManagementView: View {
                 Button {
                     refreshAllManagedCatalogs()
                 } label: {
-                    Label("Alle aktualisieren", systemImage: "arrow.triangle.2.circlepath")
+                    Label {
+                        Text(isRefreshingCatalogs ? "Aktualisiere…" : "Alle aktualisieren")
+                    } icon: {
+                        if isRefreshingCatalogs {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                    }
                 }
+                .disabled(isRefreshingCatalogs)
 
                 if let catalogStatusMessage {
                     Text(catalogStatusMessage)
@@ -883,9 +894,12 @@ private struct CatalogManagementView: View {
     }
 
     private func refreshAllManagedCatalogs() {
+        isRefreshingCatalogs = true
+        catalogStatusMessage = nil
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
             await MainActor.run {
+                isRefreshingCatalogs = false
                 catalogStatusIsError = false
                 catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
             }

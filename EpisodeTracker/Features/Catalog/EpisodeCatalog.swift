@@ -9,11 +9,21 @@ final class EpisodeCatalog {
     private let cacheStore: CatalogCacheStore
     private let remoteDataSource: CatalogRemoteDataSource
     private(set) var lastRefreshError: String?
+    private(set) var newCatalogAvailability: NewCatalogAvailability?
 
     init() {
         parser = CatalogParser()
         cacheStore = CatalogCacheStore()
         remoteDataSource = CatalogRemoteDataSource()
+        newCatalogAvailability = cacheStore.loadNewCatalogAvailability()
+        reload()
+    }
+
+    init(cacheStore: CatalogCacheStore) {
+        self.parser = CatalogParser()
+        self.cacheStore = cacheStore
+        self.remoteDataSource = CatalogRemoteDataSource()
+        self.newCatalogAvailability = cacheStore.loadNewCatalogAvailability()
         reload()
     }
 
@@ -33,8 +43,13 @@ final class EpisodeCatalog {
         cacheStore.loadCatalogEpisodeDeltas()
     }
 
-    var newCatalogAvailability: NewCatalogAvailability? {
-        cacheStore.loadNewCatalogAvailability()
+    func updateNewCatalogAvailability(_ availability: NewCatalogAvailability?) {
+        newCatalogAvailability = availability
+        if let availability {
+            try? cacheStore.saveNewCatalogAvailability(availability)
+        } else {
+            try? cacheStore.clearNewCatalogAvailability()
+        }
     }
 
     func entry(for number: Int, in collectionName: String?) -> CatalogEntry? {
@@ -108,11 +123,7 @@ final class EpisodeCatalog {
             case .updated(let data, let eTag, let lastModified):
                 let manifest = try parser.parseManifest(from: data)
                 let newSources = newCatalogSources(in: manifest.catalogs, previousSources: previousSources)
-                if newSources.isEmpty {
-                    try cacheStore.clearNewCatalogAvailability()
-                } else {
-                    try cacheStore.saveNewCatalogAvailability(NewCatalogAvailability(sources: newSources))
-                }
+                updateNewCatalogAvailability(newSources.isEmpty ? nil : NewCatalogAvailability(sources: newSources))
                 try cacheStore.saveManifest(manifest)
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
