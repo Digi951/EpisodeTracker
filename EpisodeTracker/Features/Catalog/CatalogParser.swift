@@ -26,7 +26,8 @@ struct CatalogParser {
                     releaseYear: $0.releaseYear,
                     collectionName: $0.collectionName ?? fallbackCollectionName,
                     spotifyURL: $0.spotifyURL,
-                    appleMusicURL: $0.appleMusicURL
+                    appleMusicURL: $0.appleMusicURL,
+                    deezerURL: $0.deezerURL
                 )
             }
         }
@@ -58,7 +59,8 @@ struct CatalogParser {
                     releaseYear: $0.releaseYear,
                     collectionName: $0.collectionName ?? fallbackCollectionName,
                     spotifyURL: $0.spotifyURL,
-                    appleMusicURL: $0.appleMusicURL
+                    appleMusicURL: $0.appleMusicURL,
+                    deezerURL: $0.deezerURL
                 )
             }
             return NormalizedCatalogDocument(

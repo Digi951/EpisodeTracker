@@ -7,6 +7,7 @@ struct CatalogEntry: Codable, Equatable {
     let collectionName: String?
     let spotifyURL: String?
     let appleMusicURL: String?
+    let deezerURL: String?
 
     init(
         number: Int,
@@ -14,7 +15,8 @@ struct CatalogEntry: Codable, Equatable {
         releaseYear: Int,
         collectionName: String? = nil,
         spotifyURL: String? = nil,
-        appleMusicURL: String? = nil
+        appleMusicURL: String? = nil,
+        deezerURL: String? = nil
     ) {
         self.number = number
         self.title = title
@@ -22,10 +24,11 @@ struct CatalogEntry: Codable, Equatable {
         self.collectionName = collectionName
         self.spotifyURL = spotifyURL
         self.appleMusicURL = appleMusicURL
+        self.deezerURL = deezerURL
     }
 
     var hasStreamingLink: Bool {
-        [spotifyURL, appleMusicURL].contains { urlString in
+        [spotifyURL, appleMusicURL, deezerURL].contains { urlString in
             urlString?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         }
     }

@@ -735,14 +735,14 @@ private struct EpisodeStreamingSection: View {
 
     var body: some View {
         Section {
-            TextField("https://open.spotify.com/album/...", text: $streamingURL)
+            TextField("https://open.spotify.com/album/…", text: $streamingURL)
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
         } header: {
             Text("Streaming-Link")
         } footer: {
-            Text("Direktlink zu Spotify oder Apple Music. Wird in der Folgendetailansicht als Button angezeigt.")
+            Text("Direktlink zu Spotify, Apple Music oder Deezer. Wird in der Folgendetailansicht als Button angezeigt.")
         }
     }
 }
