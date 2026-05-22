@@ -6,7 +6,12 @@ enum RemoteCatalogFetchResult {
     case skipped
 }
 
-struct CatalogRemoteDataSource {
+protocol CatalogFetching: Sendable {
+    func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult
+    func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult
+}
+
+struct CatalogRemoteDataSource: CatalogFetching {
     func fetch(
         from url: URL,
         metadata: RemoteCatalogMetadata?

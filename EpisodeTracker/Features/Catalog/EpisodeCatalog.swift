@@ -7,7 +7,7 @@ final class EpisodeCatalog {
     private var entries: [CatalogEntry] = []
     private let parser: CatalogParser
     private let cacheStore: CatalogCacheStore
-    private let remoteDataSource: CatalogRemoteDataSource
+    private let remoteDataSource: any CatalogFetching
     private(set) var lastRefreshError: String?
     private(set) var newCatalogAvailability: NewCatalogAvailability?
 
@@ -19,10 +19,10 @@ final class EpisodeCatalog {
         reload()
     }
 
-    init(cacheStore: CatalogCacheStore) {
+    init(cacheStore: CatalogCacheStore, remoteDataSource: any CatalogFetching = CatalogRemoteDataSource()) {
         self.parser = CatalogParser()
         self.cacheStore = cacheStore
-        self.remoteDataSource = CatalogRemoteDataSource()
+        self.remoteDataSource = remoteDataSource
         self.newCatalogAvailability = cacheStore.loadNewCatalogAvailability()
         reload()
     }
@@ -36,7 +36,9 @@ final class EpisodeCatalog {
     }
 
     var managedSources: [ManagedCatalogSource] {
-        CatalogSourceRegistry.managedSources
+        CatalogSourceRegistry.deduplicatedManagedSources(
+            cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
+        )
     }
 
     var catalogEpisodeDeltas: [CatalogEpisodeDelta] {
@@ -69,7 +71,8 @@ final class EpisodeCatalog {
                 releaseYear: $0.releaseYear,
                 collectionName: collectionName,
                 spotifyURL: $0.spotifyURL,
-                appleMusicURL: $0.appleMusicURL
+                appleMusicURL: $0.appleMusicURL,
+                deezerURL: $0.deezerURL
             )
         }
         try cacheStore.replaceCustomCatalog(collectionName: collectionName, entries: normalizedEntries)
@@ -144,11 +147,15 @@ final class EpisodeCatalog {
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
         let hasStreamingLinks = cachedEntries?.contains(where: \.hasStreamingLink) == true
+        let hasDeezerLinks = cachedEntries?.contains { entry in
+            entry.deezerURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        } == true
         let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
-        guard force || !hasCachedEntries || needsStreamingLinkRefresh || shouldRefresh(previousMetadata) else { return }
+        let needsDeezerLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasDeezerLinks
+        guard force || !hasCachedEntries || needsStreamingLinkRefresh || needsDeezerLinkRefresh || shouldRefresh(previousMetadata) else { return }
 
         do {
-            let requestMetadata = hasCachedEntries && !needsStreamingLinkRefresh ? previousMetadata : nil
+            let requestMetadata = force || needsStreamingLinkRefresh || needsDeezerLinkRefresh ? nil : previousMetadata
             let result = try await remoteDataSource.fetch(from: source, metadata: requestMetadata)
             var metadata = previousMetadata ?? RemoteCatalogMetadata()
 

@@ -29,6 +29,18 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertEqual(url?.absoluteString, "https://music.apple.com/album/1234567")
     }
 
+    func testCatalogURLReturnsDeezerLink() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            deezerURL: "https://www.deezer.com/album/1234567"
+        )
+
+        let url = StreamingService.deezer.catalogURL(from: entry)
+        XCTAssertEqual(url?.absoluteString, "https://www.deezer.com/album/1234567")
+    }
+
     func testCatalogURLReturnsNilWhenMissing() {
         let entry = CatalogEntry(
             number: 1,
@@ -38,6 +50,7 @@ final class StreamingServiceTests: XCTestCase {
 
         XCTAssertNil(StreamingService.spotify.catalogURL(from: entry))
         XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
     }
 
     func testCatalogURLReturnsNilForWrongService() {
@@ -50,6 +63,7 @@ final class StreamingServiceTests: XCTestCase {
 
         XCTAssertNotNil(StreamingService.spotify.catalogURL(from: entry))
         XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
     }
 
     func testCatalogEntryDetectsStreamingLinks() {
@@ -90,9 +104,10 @@ final class StreamingServiceTests: XCTestCase {
     func testDisplayNames() {
         XCTAssertEqual(StreamingService.spotify.displayName, "Spotify")
         XCTAssertEqual(StreamingService.appleMusic.displayName, "Apple Music")
+        XCTAssertEqual(StreamingService.deezer.displayName, "Deezer")
     }
 
-    func testAllCasesContainsBothServices() {
-        XCTAssertEqual(StreamingService.allCases.count, 2)
+    func testAllCasesContainsSupportedServices() {
+        XCTAssertEqual(StreamingService.allCases, [.spotify, .appleMusic, .deezer])
     }
 }
