@@ -16,6 +16,7 @@ struct EpisodeListView: View {
     @State private var showingDeleteConfirmation = false
     @State private var selectionController = EpisodeSelectionController()
     @State private var isEditing = false
+    @State private var showingAddEpisode = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -133,19 +134,31 @@ struct EpisodeListView: View {
                     }
                 }
             } else {
-                ToolbarItemGroup(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: universes
                     )
-                    NavigationLink(value: NavigationDestination.addEpisode) {
-                        Label("Neue Folge", systemImage: "plus")
-                    }
                 }
             }
         }
+        .contentMargins(.bottom, isEditing ? 0 : 80, for: .scrollContent)
         .safeAreaInset(edge: .bottom) {
             bottomActionInset
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !isEditing {
+                FloatingAddButton {
+                    showingAddEpisode = true
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .sheet(isPresented: $showingAddEpisode) {
+            NavigationStack {
+                EpisodeEditView()
+            }
         }
         .confirmationDialog(
             deleteState.title,
@@ -360,6 +373,24 @@ struct EpisodeListView: View {
                 in: collapsedGroupIDsRaw,
                 scopeKey: groupCollapseScopeKey
             )
+        }
+    }
+}
+
+struct FloatingAddButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(.tint, in: Circle())
+                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         }
     }
 }
