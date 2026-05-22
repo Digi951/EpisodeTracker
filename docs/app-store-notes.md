@@ -102,6 +102,20 @@ Version 1.1 adds native iPad support and layout improvements for larger screens.
 
 This update does not add subscriptions, paid digital content, external purchase flows, audio playback, audio files, streaming access, or externally unlocked features. HörspielLog remains a free private tracking app. Remote catalog files are public HTTPS JSON metadata only and contain episode titles, ordering information, and related catalog metadata to help users create their own local tracking entries.
 
+### What's New (Version 1.7)
+
+Diese Version gibt der App eine persönlichere Note und macht die Cover-Ansicht deutlich schöner.
+
+• Deine Farbe wählen: In den Einstellungen wählst du jetzt aus sechs Akzentfarben – Blau, Indigo, Lila, Teal, Grün oder Rot. Die gewählte Farbe zieht sich durch die ganze App.
+
+• Neue Detailansicht: Das Cover einer Folge füllt jetzt den gesamten Hintergrund aus – weich unscharf und getönt. Bewertung, Stimmungen und Notiz liegen auf einer klaren Glasfläche davor.
+
+• Platzhalter in der Folgenliste: Sobald mindestens eine Folge ein Cover hat, zeigen alle anderen Folgen ein kleines Serien-Initial als Platzhalter – die Liste wirkt damit einheitlicher.
+
+• iPad zuverlässiger: Bibliothek und „Als nächstes" nutzen auf dem iPad jetzt vollständig die Splitscreen-Ansicht. Ein Tipp auf eine Folge öffnet sie direkt in der Detailspalte.
+
+Danke, dass du HörspielLog nutzt. Viel Freude beim Hören!
+
 ### Version 1.6 Review Notes
 
 Version 1.6 is mainly an internal update: a cleaner project structure, more robust data migration and deduplication, and small convenience improvements such as pasting a cover image from the clipboard and a contextual hint when a subscribed catalog has new episodes.
