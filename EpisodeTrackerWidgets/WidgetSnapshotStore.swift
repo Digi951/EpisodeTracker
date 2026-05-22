@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import WidgetKit
 
 enum WidgetSnapshotStore {
@@ -29,6 +30,17 @@ enum WidgetSnapshotStore {
         let nextValue = (sharedDefaults?.integer(forKey: key) ?? 0) + 1
         sharedDefaults?.set(nextValue, forKey: key)
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    static func coverImage(named name: String) -> UIImage? {
+        guard !name.isEmpty,
+              let url = FileManager.default
+                .containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)?
+                .appendingPathComponent("covers")
+                .appendingPathComponent("\(name).jpg"),
+              let data = try? Data(contentsOf: url)
+        else { return nil }
+        return UIImage(data: data)
     }
 
     private static var sharedDefaults: UserDefaults? {

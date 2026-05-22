@@ -9,7 +9,6 @@ struct EpisodeListView: View {
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
     @AppStorage("collapsedEpisodeGroupIDs") private var collapsedGroupIDsRaw = ""
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
-
     @AppStorage("prefersICloudSync") private var prefersICloudSync = false
 
     @State private var controls = EpisodeListControlsState()
@@ -17,6 +16,7 @@ struct EpisodeListView: View {
     @State private var showingDeleteConfirmation = false
     @State private var selectionController = EpisodeSelectionController()
     @State private var isEditing = false
+    @State private var showingAddEpisode = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -67,6 +67,12 @@ struct EpisodeListView: View {
         }
     }
 
+    private var anyEpisodeHasCover: Bool {
+        episodes.contains { episode in
+            episode.coverImageName?.isEmpty == false
+        }
+    }
+
     private var groupCollapseScopeKey: String {
         controls.collapseScopeKey(universeCount: universes.count)
     }
@@ -102,6 +108,7 @@ struct EpisodeListView: View {
                     librarySnapshotRow
                     moodFilterRow
                     CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
+                    accentColorAnnouncementRow
                     contentRows
                 }
             }
@@ -118,14 +125,16 @@ struct EpisodeListView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if isEditing {
+            if isEditing {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         selectAllVisible()
                     } label: {
                         Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
                     }
-                } else {
+                }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: universes
@@ -133,8 +142,23 @@ struct EpisodeListView: View {
                 }
             }
         }
+        .contentMargins(.bottom, isEditing ? 0 : 80, for: .scrollContent)
         .safeAreaInset(edge: .bottom) {
             bottomActionInset
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !isEditing {
+                FloatingAddButton {
+                    showingAddEpisode = true
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .sheet(isPresented: $showingAddEpisode) {
+            NavigationStack {
+                EpisodeEditView()
+            }
         }
         .confirmationDialog(
             deleteState.title,
@@ -168,27 +192,7 @@ struct EpisodeListView: View {
             .tint(.red)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
-        } else if !episodes.isEmpty && !isEditing {
-            HStack {
-                Spacer()
-                floatingAddButton
-            }
-            .padding(.trailing, 18)
-            .padding(.bottom, 16)
         }
-    }
-
-    private var floatingAddButton: some View {
-        NavigationLink(value: NavigationDestination.addEpisode) {
-            Image(systemName: "plus")
-                .font(.title2.weight(.semibold))
-                .frame(width: 58, height: 58)
-                .foregroundStyle(.white)
-                .background(Color.accentColor, in: Circle())
-                .shadow(color: Color.accentColor.opacity(0.28), radius: 14, x: 0, y: 8)
-                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
-        }
-        .accessibilityLabel("Neue Folge")
     }
 
     @ViewBuilder
@@ -213,6 +217,13 @@ struct EpisodeListView: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
+        }
+    }
+
+    @ViewBuilder
+    private var accentColorAnnouncementRow: some View {
+        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+            AccentColorAnnouncementBannerRow(style: .phone)
         }
     }
 
@@ -277,18 +288,21 @@ struct EpisodeListView: View {
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
             }
             .swipeActions(edge: .leading) {
                 Button {
-                    episode.isListened.toggle()
-                    if episode.isListened {
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened.toggle()
+                        if episode.isListened {
+                            episode.listenCount += 1
+                            episode.lastListenedAt = .now
+                        }
                     }
                 } label: {
                     Label(
@@ -300,9 +314,12 @@ struct EpisodeListView: View {
             }
             .swipeActions(edge: .trailing) {
                 Button {
-                    episode.isListened = true
-                    episode.listenCount += 1
-                    episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")
                 }
@@ -313,6 +330,7 @@ struct EpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
             }
         }
     }
@@ -349,11 +367,31 @@ struct EpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
-            groupID: group.id,
-            in: collapsedGroupIDsRaw,
-            scopeKey: groupCollapseScopeKey
-        )
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
+                groupID: group.id,
+                in: collapsedGroupIDsRaw,
+                scopeKey: groupCollapseScopeKey
+            )
+        }
+    }
+}
+
+struct FloatingAddButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(.tint, in: Circle())
+                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+        }
     }
 }
 
@@ -376,10 +414,15 @@ struct LibrarySnapshotView: View {
     let listenedCount: Int
     let openCount: Int
     let totalListens: Int
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
         return Double(listenedCount) / Double(episodeCount)
+    }
+
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
     }
 
     var body: some View {
@@ -411,6 +454,7 @@ struct LibrarySnapshotView: View {
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(appAccentColor.color.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -539,6 +583,10 @@ private struct OnboardingStepRow: View {
 
 struct EpisodeRowView: View {
     let episode: Episode
+    let anyEpisodeHasCover: Bool
+    var isInSidebar: Bool = false
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+
     private var notePreview: String? {
         guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty else {
             return nil
@@ -549,21 +597,38 @@ struct EpisodeRowView: View {
         return (first?.isEmpty == false) ? first : note
     }
 
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
+    }
+
+    private var collectionInitial: String {
+        let name = episode.universe?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard let first = name.first else { return "?" }
+        return String(first).uppercased()
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: isInSidebar ? 8 : 12) {
             Text("\(episode.episodeNumber)")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .center)
+                .frame(width: isInSidebar ? 26 : 40, alignment: .center)
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
                 CoverImageThumbnailView(name: coverName)
+            } else if anyEpisodeHasCover {
+                Text(collectionInitial)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(appAccentColor.color)
+                    .frame(width: 44, height: 44)
+                    .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(episode.title)
                     .font(.body)
-                    .lineLimit(1)
+                    .lineLimit(isInSidebar ? 2 : 1)
 
                 if let notePreview {
                     Text(notePreview)
@@ -588,12 +653,14 @@ struct EpisodeRowView: View {
                     }
                 }
             }
+            .layoutPriority(1)
 
             Spacer()
 
             if episode.isListened {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
             }
         }
     }

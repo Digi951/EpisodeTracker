@@ -9,6 +9,7 @@ struct EpisodeWidgetEntry: TimelineEntry {
     let selectedCatalogName: String
     let episode: WidgetEpisodeSnapshot?
     let libraryTitle: String
+    let coverImage: UIImage?
 }
 
 private struct EpisodeWidgetDisplayContext {
@@ -50,13 +51,16 @@ struct EpisodeWidgetProvider: AppIntentTimelineProvider {
             )
         }
 
+        let coverImage = episode?.coverImageName.flatMap { WidgetSnapshotStore.coverImage(named: $0) }
+
         return EpisodeWidgetEntry(
             date: date,
             kind: kind,
             selectedCatalogID: selectedCatalog,
             selectedCatalogName: selectedCatalogName,
             episode: episode,
-            libraryTitle: snapshot?.libraryTitle ?? "HörspielLog"
+            libraryTitle: snapshot?.libraryTitle ?? "HörspielLog",
+            coverImage: coverImage
         )
     }
 }
@@ -99,7 +103,9 @@ struct EpisodeWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(for: .widget) {
+            WidgetCoverBackground(family: family, coverImage: entry.coverImage)
+        }
     }
 
     private var widgetTitle: String {
@@ -253,10 +259,7 @@ private struct SmallEpisodeWidgetCard: View {
     }
 
     private var primaryTitle: String {
-        if episode.title.isEmpty {
-            return "Unbenannte Folge"
-        }
-        return episode.title
+        episode.title.isEmpty ? "Unbenannte Folge" : episode.title
     }
 
     private var statusLabel: String {
@@ -273,37 +276,47 @@ private struct MediumEpisodeWidgetCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 8) {
-                if let universeName = episode.universeName {
-                    Text(universeName)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if let universeName = episode.universeName {
+                        Text(universeName)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    Text("\(episode.episodeNumber)")
+                        .font(.system(.caption, design: .rounded, weight: .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(.tint)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(.tint.opacity(0.12), in: Capsule())
                 }
 
                 Text(titleText)
                     .font(.title3.weight(.semibold))
-                    .lineLimit(2)
+                    .lineLimit(3)
 
-                FooterMetaRow(episode: episode)
+                Spacer(minLength: 4)
 
-                if let rating = episode.rating {
-                    RatingBadge(rating: rating)
+                HStack(alignment: .center) {
+                    FooterMetaRow(episode: episode)
+                    Spacer(minLength: 8)
+                    StatusPill(
+                        label: statusLabel,
+                        emphasized: !episode.isListened || entry.kind == .upNext
+                    )
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
-            Spacer(minLength: 0)
-
-            VStack(alignment: .trailing, spacing: 10) {
-                Text("\(episode.episodeNumber)")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
-
-                StatusPill(
-                    label: statusLabel,
-                    emphasized: !episode.isListened || entry.kind == .upNext
-                )
+            if let image = entry.coverImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 90, height: 90)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
     }
@@ -343,10 +356,6 @@ private struct FooterMetaRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if episode.releaseYear > 0 {
-                Label(String(episode.releaseYear), systemImage: "calendar")
-            }
-
             if episode.isListened, let listenedAt = episode.lastListenedAt {
                 Label(
                     listenedAt.formatted(.dateTime.day().month(.abbreviated)),
@@ -367,13 +376,12 @@ private struct CompactFooterMetaRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if episode.releaseYear > 0 {
-                Text(String(episode.releaseYear))
+            if episode.isListened {
+                Image(systemName: "checkmark.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
-        .font(.caption2.weight(.medium))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
     }
 }
 
@@ -434,6 +442,23 @@ struct ShuffleRandomEpisodeIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         WidgetSnapshotStore.bumpRandomRefreshToken(for: catalogID)
         return .result()
+    }
+}
+
+private struct WidgetCoverBackground: View {
+    let family: WidgetFamily
+    let coverImage: UIImage?
+
+    var body: some View {
+        if family == .systemSmall, let image = coverImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .opacity(0.28)
+                .overlay(Color(.systemBackground).opacity(0.5))
+        } else {
+            Color(.systemBackground).opacity(0.001)
+        }
     }
 }
 
@@ -506,9 +531,11 @@ private extension EpisodeWidgetEntry {
                 universeName: "Die drei ???",
                 isListened: false,
                 rating: 4,
-                lastListenedAt: nil
+                lastListenedAt: nil,
+                coverImageName: nil
             ),
-            libraryTitle: "HörspielLog"
+            libraryTitle: "HörspielLog",
+            coverImage: nil
         )
     }
 }

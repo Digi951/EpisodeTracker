@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private let splitLayoutWidthThreshold = SplitLayoutDecider.defaultWidthThreshold
 
@@ -15,6 +16,10 @@ struct ContentView: View {
 
     private var appearanceMode: AppearanceMode {
         AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
+
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
     }
 
     var body: some View {
@@ -29,6 +34,7 @@ struct ContentView: View {
                 }
             }
         }
+        .tint(appAccentColor.color)
         .preferredColorScheme(appearanceMode.colorScheme)
     }
 
@@ -255,6 +261,12 @@ private struct IPadEpisodeListView: View {
         )
     }
 
+    private var anyEpisodeHasCover: Bool {
+        episodes.contains { episode in
+            episode.coverImageName?.isEmpty == false
+        }
+    }
+
     private var groupCollapseScopeKey: String {
         controls.collapseScopeKey(universeCount: universes.count)
     }
@@ -404,6 +416,9 @@ private struct IPadEpisodeListView: View {
         }
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
+        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+            AccentColorAnnouncementBannerRow(style: .sidebar)
+        }
 
         if filteredEpisodes.isEmpty {
             ContentUnavailableView {
@@ -449,18 +464,21 @@ private struct IPadEpisodeListView: View {
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
             }
             .swipeActions(edge: .leading) {
                 Button {
-                    episode.isListened.toggle()
-                    if episode.isListened {
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened.toggle()
+                        if episode.isListened {
+                            episode.listenCount += 1
+                            episode.lastListenedAt = .now
+                        }
                     }
                 } label: {
                     Label(
@@ -472,9 +490,12 @@ private struct IPadEpisodeListView: View {
             }
             .swipeActions(edge: .trailing) {
                 Button {
-                    episode.isListened = true
-                    episode.listenCount += 1
-                    episode.lastListenedAt = .now
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                    }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")
                 }
@@ -485,6 +506,7 @@ private struct IPadEpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
             }
         }
     }
@@ -526,11 +548,13 @@ private struct IPadEpisodeListView: View {
     }
 
     private func toggleGroup(_ group: EpisodeListGroup) {
-        collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
-            groupID: group.id,
-            in: collapsedGroupIDsRaw,
-            scopeKey: groupCollapseScopeKey
-        )
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            collapsedGroupIDsRaw = EpisodeGroupCollapseStore.toggle(
+                groupID: group.id,
+                in: collapsedGroupIDsRaw,
+                scopeKey: groupCollapseScopeKey
+            )
+        }
     }
 }
 
@@ -549,46 +573,53 @@ private struct SidebarLibrarySnapshot {
 }
 
 private struct UpNextSplitView: View {
-    @State private var selectedEpisode: Episode?
+    @State private var selectedNavigation: SmartListNavigation?
 
     var body: some View {
         NavigationSplitView {
-            NavigationStack {
-                UpNextView()
-                    .navigationDestination(for: SmartListNavigation.self) { destination in
-                        switch destination {
-                        case .detail(let smartList):
-                            SmartListDetailView(
-                                smartList: smartList,
-                                iPadSelection: $selectedEpisode
-                            )
-                        case .moodPicker:
-                            MoodPickerView()
-                        case .moodDetail(let mood):
-                            SmartListDetailView(
-                                smartList: .zufaelligNachStimmung,
-                                mood: mood,
-                                iPadSelection: $selectedEpisode
-                            )
-                        }
-                    }
-                    .navigationTitle("Als nächstes")
-            }
-            .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 380)
+            UpNextView(iPadNavSelection: $selectedNavigation)
+                .navigationTitle("Als nächstes")
+                .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 360)
         } detail: {
             NavigationStack {
-                if let selectedEpisode {
-                    EpisodeDetailView(episode: selectedEpisode)
+                if let selectedNavigation {
+                    detailContent(for: selectedNavigation)
+                        .navigationDestination(for: Episode.self) { episode in
+                            EpisodeDetailView(episode: episode)
+                        }
+                        .navigationDestination(for: SmartListNavigation.self) { destination in
+                            switch destination {
+                            case .moodDetail(let mood):
+                                SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                                    .navigationDestination(for: Episode.self) { episode in
+                                        EpisodeDetailView(episode: episode)
+                                    }
+                            default:
+                                EmptyView()
+                            }
+                        }
                 } else {
                     SplitSelectionPlaceholder(
-                        title: "Folge auswählen",
+                        title: "Liste auswählen",
                         systemImage: "list.bullet.rectangle",
-                        message: "Wähle links eine Liste oder Folge aus, um Details, Bewertung und Notizen zu sehen."
+                        message: "Wähle links eine Liste aus, um Vorschläge und Folgen zu sehen."
                     )
                 }
             }
         }
         .navigationSplitViewStyle(.balanced)
+    }
+
+    @ViewBuilder
+    private func detailContent(for navigation: SmartListNavigation) -> some View {
+        switch navigation {
+        case .detail(let smartList):
+            SmartListDetailView(smartList: smartList)
+        case .moodPicker:
+            MoodPickerView()
+        case .moodDetail(let mood):
+            SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+        }
     }
 }
 
@@ -597,10 +628,15 @@ private struct CompactLibrarySnapshotView: View {
     let listenedCount: Int
     let openCount: Int
     let totalListens: Int
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
         return Double(listenedCount) / Double(episodeCount)
+    }
+
+    private var appAccentColor: AppAccentColor {
+        AppAccentColor.resolved(from: appAccentColorRawValue)
     }
 
     var body: some View {
@@ -624,6 +660,7 @@ private struct CompactLibrarySnapshotView: View {
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(appAccentColor.color.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

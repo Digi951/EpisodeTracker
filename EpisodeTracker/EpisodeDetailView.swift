@@ -6,6 +6,8 @@ struct EpisodeDetailView: View {
     let episode: Episode
     @State private var catalog = EpisodeCatalog.shared
     @State private var showingEdit = false
+    @State private var heroCoverImage: UIImage?
+    @State private var heroCoverTint = Color.pink
 
     private var streamingService: StreamingService {
         StreamingService(rawValue: preferredServiceRaw) ?? .spotify
@@ -43,94 +45,29 @@ struct EpisodeDetailView: View {
     }
 
     var body: some View {
-        List {
-            if let coverName = episode.coverImageName, !coverName.isEmpty {
-                Section {
-                    CoverImageView(name: coverName, maxHeight: 280)
-                        .frame(maxWidth: .infinity)
+        ScrollView {
+            VStack(spacing: DetailMetrics.heroToPanel) {
+                if let coverName = episode.coverImageName, !coverName.isEmpty {
+                    heroCover(coverName: coverName)
                 }
-                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                contentPanel
             }
-
-            Section {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Katalog + Jahr
-                    Text("\(episode.universe?.name ?? "Allgemein") · \(String(episode.releaseYear))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    // Titel
-                    Text(episode.title)
-                        .font(.title2.weight(.bold))
-
-                    // Status + Rating Zeile
-                    HStack(spacing: 12) {
-                        Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(statusColor)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(statusColor.opacity(0.12), in: .capsule)
-
-                        HStack(spacing: 2) {
-                            ForEach(1...5, id: \.self) { star in
-                                Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
-                                    .font(.subheadline)
-                                    .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
-                            }
-                        }
-
-                        Spacer()
-                    }
-
-                    if let lastListened = episode.lastListenedAt {
-                        Text("Zuletzt gehört: \(lastListened.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .listRowSeparator(.hidden)
-            }
-
-            if !episode.moods.isEmpty {
-                Section("Stimmungen") {
-                    FlowLayout(spacing: 8) {
-                        ForEach(episode.moods) { mood in
-                            Text("\(mood.iconName ?? "") \(mood.name)")
-                                .font(.subheadline)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(.fill.tertiary, in: .capsule)
-                        }
-                    }
-                }
-            }
-
-            if let streamingLink = resolvedStreamingLink {
-                Section {
-                    Link(destination: streamingLink.url) {
-                        Label(streamingLink.label, systemImage: streamingService.iconName)
-                    }
-                }
-            }
-
-            if let note = episode.personalNote, !note.isEmpty {
-                Section("Persönliche Notiz") {
-                    Text(note)
-                }
-            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: contentMaxWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.top, scrollTopPadding)
+            .padding(.bottom, DetailMetrics.scrollBottom)
         }
         .navigationTitle("Folge \(episode.episodeNumber)")
-        .listStyle(.insetGrouped)
-        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 48 : 0, for: .scrollContent)
-        .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
+        .background(fullScreenCoverBackground)
         .toolbar {
             Button {
-                episode.isListened = true
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    episode.isListened = true
+                    episode.listenCount += 1
+                    episode.lastListenedAt = .now
+                }
             } label: {
                 Label("Hördurchgang zählen", systemImage: "plus")
             }
@@ -143,6 +80,283 @@ struct EpisodeDetailView: View {
                 EpisodeEditView(episode: episode)
             }
         }
+        .onAppear { loadHeroCover(named: episode.coverImageName) }
+        .onChange(of: episode.coverImageName) { _, newName in
+            loadHeroCover(named: newName)
+        }
+    }
+
+    // MARK: - Hero cover
+
+    private func heroCover(coverName: String) -> some View {
+        CoverImageView(name: coverName, maxHeight: coverMaxHeight)
+            .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Continuous glass panel
+
+    private var contentPanel: some View {
+        VStack(spacing: 0) {
+            infoBlock
+
+            if !episode.moods.isEmpty {
+                panelDivider
+                moodsBlock
+            }
+
+            if let streamingLink = resolvedStreamingLink {
+                panelDivider
+                streamingBlock(streamingLink)
+            }
+
+            if let note = episode.personalNote, !note.isEmpty {
+                panelDivider
+                noteBlock(note)
+            }
+        }
+        .background {
+            ZStack {
+                Rectangle().fill(.regularMaterial)
+                Rectangle().fill(heroCoverTint.opacity(heroCoverImage == nil ? 0 : 0.07))
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DetailMetrics.panelCornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: DetailMetrics.panelCornerRadius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.1), radius: 16, x: 0, y: 6)
+    }
+
+    private var panelDivider: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(height: 0.5)
+    }
+
+    private var infoBlock: some View {
+        VStack(alignment: .leading, spacing: DetailMetrics.intraBlock) {
+            // Katalog + Jahr
+            Text("\(episode.universe?.name ?? "Allgemein") · \(String(episode.releaseYear))")
+                .font(.subheadline)
+                .foregroundStyle(.primary.opacity(0.62))
+
+            // Titel
+            Text(episode.title)
+                .font(.title2.weight(.bold))
+
+            // Status + Rating Zeile
+            HStack(spacing: 12) {
+                Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(statusColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(statusColor.opacity(0.12), in: .capsule)
+
+                HStack(spacing: 2) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
+                            .font(.subheadline)
+                            .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
+                    }
+                }
+
+                Spacer()
+            }
+
+            if let lastListened = episode.lastListenedAt {
+                Text("Zuletzt gehört: \(lastListened.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.primary.opacity(0.58))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(DetailMetrics.blockPadding)
+    }
+
+    private var moodsBlock: some View {
+        VStack(alignment: .leading, spacing: DetailMetrics.intraBlock) {
+            Text("Stimmungen")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.primary.opacity(0.62))
+
+            FlowLayout(spacing: 8) {
+                ForEach(episode.moods) { mood in
+                    Text("\(mood.iconName ?? "") \(mood.name)")
+                        .font(.subheadline)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(.fill.tertiary.opacity(0.84), in: .capsule)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(DetailMetrics.blockPadding)
+    }
+
+    private func streamingBlock(_ link: (url: URL, label: String)) -> some View {
+        Link(destination: link.url) {
+            Label(link.label, systemImage: streamingService.iconName)
+                .font(.body)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(DetailMetrics.blockPadding)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func noteBlock(_ note: String) -> some View {
+        VStack(alignment: .leading, spacing: DetailMetrics.intraBlock) {
+            Text("Persönliche Notiz")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.primary.opacity(0.62))
+
+            Text(note)
+                .font(.body)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(DetailMetrics.blockPadding)
+    }
+
+    // MARK: - Background
+
+    @ViewBuilder
+    private var fullScreenCoverBackground: some View {
+        if let heroCoverImage {
+            ZStack {
+                Image(uiImage: heroCoverImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .scaleEffect(1.12)
+                    .blur(radius: 56)
+                    .opacity(0.72)
+                    .ignoresSafeArea()
+
+                LinearGradient(
+                    colors: [
+                        Color(.systemGroupedBackground).opacity(0.45),
+                        Color(.systemGroupedBackground).opacity(0.34),
+                        Color(.systemGroupedBackground).opacity(0.66)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
+        } else {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
+        }
+    }
+
+    // MARK: - Metrics
+
+    private enum DetailMetrics {
+        static let heroToPanel: CGFloat = 20
+        static let panelCornerRadius: CGFloat = 24
+        static let blockPadding: CGFloat = 18
+        static let intraBlock: CGFloat = 12
+        static let scrollBottom: CGFloat = 28
+    }
+
+    private var contentMaxWidth: CGFloat {
+        horizontalSizeClass == .regular ? 640 : .infinity
+    }
+
+    private var scrollTopPadding: CGFloat {
+        horizontalSizeClass == .regular ? 12 : 8
+    }
+
+    private var coverMaxHeight: CGFloat {
+        640
+    }
+
+    // MARK: - Cover loading
+
+    private func loadHeroCover(named name: String?) {
+        guard let name, !name.isEmpty else {
+            heroCoverImage = nil
+            heroCoverTint = .pink
+            return
+        }
+
+        let image = CoverImageCache.shared.image(named: name)
+        heroCoverImage = image
+        heroCoverTint = image?.vibrantAverageColor.map(Color.init(uiColor:)) ?? .pink
+    }
+}
+
+private extension UIImage {
+    var vibrantAverageColor: UIColor? {
+        guard let cgImage else { return nil }
+
+        let width = 24
+        let height = 24
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+        guard let context = CGContext(
+            data: &pixelData,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return nil
+        }
+
+        context.interpolationQuality = .medium
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var totalWeight: CGFloat = 0
+
+        for index in stride(from: 0, to: pixelData.count, by: bytesPerPixel) {
+            let r = CGFloat(pixelData[index]) / 255
+            let g = CGFloat(pixelData[index + 1]) / 255
+            let b = CGFloat(pixelData[index + 2]) / 255
+            let maxChannel = max(r, g, b)
+            let minChannel = min(r, g, b)
+            let saturation = maxChannel == 0 ? 0 : (maxChannel - minChannel) / maxChannel
+
+            guard saturation > 0.28, maxChannel > 0.22 else { continue }
+
+            let weight = saturation * maxChannel
+            red += r * weight
+            green += g * weight
+            blue += b * weight
+            totalWeight += weight
+        }
+
+        guard totalWeight > 0 else { return nil }
+
+        let averageColor = UIColor(
+            red: red / totalWeight,
+            green: green / totalWeight,
+            blue: blue / totalWeight,
+            alpha: 1
+        )
+
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        guard averageColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else {
+            return averageColor
+        }
+
+        return UIColor(
+            hue: hue,
+            saturation: max(saturation, 0.58),
+            brightness: min(max(brightness, 0.46), 0.82),
+            alpha: 1
+        )
     }
 }
 
