@@ -79,16 +79,8 @@ struct SmartListDetailView: View {
     }
 
     var body: some View {
-        Group {
-            if let iPadSelection {
-                List(selection: iPadSelection) {
-                    listContent
-                }
-            } else {
-                List {
-                    listContent
-                }
-            }
+        List {
+            listContent
         }
         .navigationTitle(navigationTitle)
         .listStyle(.insetGrouped)
@@ -112,6 +104,11 @@ struct SmartListDetailView: View {
         }
         .onChange(of: episodeFilter) { _, _ in
             reshuffle()
+        }
+        .onChange(of: availableCatalogYears) { _, years in
+            if let year = catalogYearFilter, !years.contains(year) {
+                catalogYearFilter = nil
+            }
         }
         .sheet(item: $catalogAddItem) { item in
             NavigationStack {
@@ -162,14 +159,16 @@ struct SmartListDetailView: View {
                 displayedEpisodes: displayedEpisodes,
                 smartListDisplayName: smartList.displayName,
                 emptyMessage: emptyMessage,
-                anyEpisodeHasCover: anyEpisodeHasCover
+                anyEpisodeHasCover: anyEpisodeHasCover,
+                iPadSelection: iPadSelection
             )
         } else {
             SmartListEpisodeContent(
                 displayedEpisodes: displayedEpisodes,
                 smartListDisplayName: smartList.displayName,
                 emptyMessage: emptyMessage,
-                anyEpisodeHasCover: anyEpisodeHasCover
+                anyEpisodeHasCover: anyEpisodeHasCover,
+                iPadSelection: iPadSelection
             )
         }
     }
@@ -399,6 +398,7 @@ private struct SmartListEpisodeContent: View {
     let smartListDisplayName: String
     let emptyMessage: String
     let anyEpisodeHasCover: Bool
+    var iPadSelection: Binding<Episode?>?
 
     var body: some View {
         if displayedEpisodes.isEmpty {
@@ -408,8 +408,21 @@ private struct SmartListEpisodeContent: View {
             )
         } else {
             ForEach(displayedEpisodes) { episode in
-                NavigationLink(value: episode) {
-                    EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                if let iPadSelection {
+                    Button {
+                        iPadSelection.wrappedValue = episode
+                    } label: {
+                        EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                    }
+                    .listRowBackground(
+                        iPadSelection.wrappedValue == episode
+                            ? Color.accentColor.opacity(0.12)
+                            : nil
+                    )
+                } else {
+                    NavigationLink(value: episode) {
+                        EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                    }
                 }
             }
         }
@@ -421,6 +434,7 @@ private struct SmartListGroupedEpisodeContent: View {
     let smartListDisplayName: String
     let emptyMessage: String
     let anyEpisodeHasCover: Bool
+    var iPadSelection: Binding<Episode?>?
 
     private var groupedEpisodes: [(universeName: String, episodes: [Episode])] {
         let grouped = Dictionary(grouping: displayedEpisodes) { $0.universe?.name ?? "Ohne Sammlung" }
@@ -439,8 +453,21 @@ private struct SmartListGroupedEpisodeContent: View {
             ForEach(groupedEpisodes, id: \.universeName) { group in
                 Section {
                     ForEach(group.episodes) { episode in
-                        NavigationLink(value: episode) {
-                            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                        if let iPadSelection {
+                            Button {
+                                iPadSelection.wrappedValue = episode
+                            } label: {
+                                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                            }
+                            .listRowBackground(
+                                iPadSelection.wrappedValue == episode
+                                    ? Color.accentColor.opacity(0.12)
+                                    : nil
+                            )
+                        } else {
+                            NavigationLink(value: episode) {
+                                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                            }
                         }
                     }
                 } header: {
