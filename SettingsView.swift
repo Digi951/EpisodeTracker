@@ -829,6 +829,22 @@ private struct CatalogManagementView: View {
                         .font(.footnote)
                         .foregroundStyle(catalogStatusIsError ? .red : .secondary)
                 }
+
+                if let refreshError = EpisodeCatalog.shared.lastRefreshError, catalogStatusMessage == nil {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(refreshError)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Erneut versuchen") {
+                            refreshAllManagedCatalogs()
+                        }
+                        .font(.footnote.weight(.medium))
+                        .disabled(isRefreshingCatalogs)
+                    }
+                }
             } footer: {
                 if let lastGlobalRefreshText {
                     Text(lastGlobalRefreshText)
@@ -900,8 +916,13 @@ private struct CatalogManagementView: View {
             await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
             await MainActor.run {
                 isRefreshingCatalogs = false
-                catalogStatusIsError = false
-                catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
+                if let error = EpisodeCatalog.shared.lastRefreshError {
+                    catalogStatusIsError = true
+                    catalogStatusMessage = error
+                } else {
+                    catalogStatusIsError = false
+                    catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
+                }
             }
         }
     }
