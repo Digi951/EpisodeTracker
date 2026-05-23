@@ -44,6 +44,10 @@ struct EpisodeDetailView: View {
         episode.isListened ? .green : (episode.listenCount > 0 ? .orange : .secondary)
     }
 
+    private var listenActionColor: Color {
+        episode.isListened ? .accentColor : .green
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: DetailMetrics.heroToPanel) {
@@ -61,16 +65,6 @@ struct EpisodeDetailView: View {
         .navigationTitle("Folge \(episode.episodeNumber)")
         .background(fullScreenCoverBackground)
         .toolbar {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                    episode.isListened = true
-                    episode.listenCount += 1
-                    episode.lastListenedAt = .now
-                }
-            } label: {
-                Label("Hördurchgang zählen", systemImage: "plus")
-            }
             Button("Bearbeiten") {
                 showingEdit = true
             }
@@ -146,23 +140,28 @@ struct EpisodeDetailView: View {
                 .font(.title2.weight(.bold))
 
             // Status + Rating Zeile
-            HStack(spacing: 12) {
-                Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(statusColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(statusColor.opacity(0.12), in: .capsule)
-
-                HStack(spacing: 2) {
-                    ForEach(1...5, id: \.self) { star in
-                        Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
-                            .font(.subheadline)
-                            .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
-                    }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    statusBadge
+                    ratingStars
+                    Spacer(minLength: 0)
+                    listenAgainButton
                 }
 
-                Spacer()
+                HStack(spacing: 10) {
+                    statusBadge
+                    ratingStars
+                    Spacer(minLength: 0)
+                    compactListenAgainButton
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        statusBadge
+                        compactListenAgainButton
+                    }
+                    ratingStars
+                }
             }
 
             if let lastListened = episode.lastListenedAt {
@@ -173,6 +172,60 @@ struct EpisodeDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(DetailMetrics.blockPadding)
+    }
+
+    private var statusBadge: some View {
+        Label(statusLabel, systemImage: episode.isListened ? "checkmark.circle.fill" : "circle")
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(statusColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(statusColor.opacity(0.12), in: .capsule)
+    }
+
+    private var ratingStars: some View {
+        HStack(spacing: 2) {
+            ForEach(1...5, id: \.self) { star in
+                Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
+                    .font(.subheadline)
+                    .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
+            }
+        }
+    }
+
+    private var listenAgainButton: some View {
+        Button(action: recordListen) {
+            Label(
+                episode.isListened ? "Nochmal" : "Gehört",
+                systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
+            )
+            .font(.subheadline.weight(.semibold))
+            .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .tint(listenActionColor)
+    }
+
+    private var compactListenAgainButton: some View {
+        Button(action: recordListen) {
+            Image(systemName: episode.isListened ? "arrow.counterclockwise" : "ear")
+                .font(.subheadline.weight(.semibold))
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.circle)
+        .tint(listenActionColor)
+        .accessibilityLabel(episode.isListened ? "Nochmal hören" : "Als gehört markieren")
+    }
+
+    private func recordListen() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            episode.isListened = true
+            episode.listenCount += 1
+            episode.lastListenedAt = .now
+        }
     }
 
     private var moodsBlock: some View {
