@@ -5,6 +5,8 @@ import SwiftData
 struct EpisodeTrackerApp: App {
     private let containerSet: AppModelContainerSet
     @StateObject private var containerAccess: AppContainerAccess
+    @State private var syncCoordinator: SyncCoordinator
+    @Environment(\.scenePhase) private var scenePhase
 
     private var usesCloudSync: Bool {
         containerSet.runtimeMode.usesCloudSync
@@ -14,6 +16,10 @@ struct EpisodeTrackerApp: App {
         let containerSet = AppModelContainerFactory.makeSharedContainerSet()
         self.containerSet = containerSet
         _containerAccess = StateObject(wrappedValue: AppContainerAccess(containerSet: containerSet))
+        _syncCoordinator = State(wrappedValue: SyncCoordinator(
+            container: containerSet.primary,
+            isEnabled: containerSet.runtimeMode.usesCloudSync
+        ))
     }
 
     var body: some Scene {
@@ -21,12 +27,17 @@ struct EpisodeTrackerApp: App {
             ZStack {
                 ContentView()
                 WidgetSyncObserverView()
-                CloudSyncRepairObserverView(isEnabled: usesCloudSync)
             }
             .task { @MainActor in
                 await AppDataBootstrapper.bootstrap(
                     containerSet: containerSet
                 )
+                syncCoordinator.handleBootstrapComplete()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    syncCoordinator.handleSceneActivation()
+                }
             }
             .environmentObject(containerAccess)
         }

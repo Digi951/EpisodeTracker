@@ -21,12 +21,17 @@ enum AppDataBootstrapper {
         var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
+        // Pre-Migration: prepare local container and run sync repair before migration
         if let localContainer = containerSet.localPersistent {
             report = prepareContainer(
                 localContainer,
                 usesCloudSync: false,
                 lastSchemaVersion: lastSchemaVersion
             )
+            let preMigrationSummary = SyncPreparation.prepare(context: localContainer.mainContext)
+            if preMigrationSummary.hasChanges {
+                bootstrapLogger.info("Bootstrap: pre-migration sync repair applied (\(preMigrationSummary.logDescription, privacy: .public))")
+            }
         }
 
         let shouldPreparePrimary: Bool
@@ -52,9 +57,14 @@ enum AppDataBootstrapper {
                 report: &report
             )
 
-            let syncSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
-            report.syncPreparationSummary = syncSummary
             repairCloudSyncReadinessIfNeeded(container: containerSet.primary)
+        }
+
+        // Post-Migration: run sync repair on the primary container
+        let postMigrationSummary = SyncPreparation.prepare(context: containerSet.primary.mainContext)
+        report.syncPreparationSummary = postMigrationSummary
+        if postMigrationSummary.hasChanges {
+            bootstrapLogger.info("Bootstrap: post-migration sync repair applied (\(postMigrationSummary.logDescription, privacy: .public))")
         }
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
@@ -75,11 +85,14 @@ enum AppDataBootstrapper {
         userDefaults: UserDefaults = .standard
     ) async -> BootstrapReport {
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
-        let report = prepareContainer(
+        var report = prepareContainer(
             container,
             usesCloudSync: usesCloudSync,
             lastSchemaVersion: lastSchemaVersion
         )
+
+        let syncSummary = SyncPreparation.prepare(context: container.mainContext)
+        report.syncPreparationSummary = syncSummary
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
@@ -103,8 +116,6 @@ enum AppDataBootstrapper {
         report.seededCollections = seedCollectionsIfNeeded(container: container)
         ensureBundledCollectionExists(container: container)
         report.assignedOrphanEpisodes = assignMissingCollectionsIfNeeded(container: container)
-        let syncSummary = SyncPreparation.prepare(context: container.mainContext)
-        report.syncPreparationSummary = syncSummary
 
         if usesCloudSync {
             repairCloudSyncReadinessIfNeeded(container: container)
