@@ -142,7 +142,7 @@ final class EpisodeCatalog {
         }
     }
 
-    private func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
+    func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
