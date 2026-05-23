@@ -629,6 +629,7 @@ private struct CompactLibrarySnapshotView: View {
     let openCount: Int
     let totalListens: Int
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    @Environment(\.colorScheme) private var colorScheme
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
@@ -660,7 +661,7 @@ private struct CompactLibrarySnapshotView: View {
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(appAccentColor.color.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(appAccentColor.color.opacity(colorScheme == .dark ? 0.10 : 0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

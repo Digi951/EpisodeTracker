@@ -170,7 +170,8 @@ final class EpisodeCatalog {
                         collectionName: source.name,
                         spotifyURL: $0.spotifyURL,
                         appleMusicURL: $0.appleMusicURL,
-                        deezerURL: $0.deezerURL
+                        deezerURL: $0.deezerURL,
+                        audibleURL: $0.audibleURL
                     )
                 }
                 let previousSnapshot = cacheStore.loadCatalogSnapshot(universeName: source.name, cacheKey: source.id)

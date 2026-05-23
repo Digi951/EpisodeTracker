@@ -188,7 +188,7 @@ struct EpisodeDetailView: View {
             ForEach(1...5, id: \.self) { star in
                 Image(systemName: star <= (episode.rating ?? 0) ? "star.fill" : "star")
                     .font(.subheadline)
-                    .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.3))
+                    .foregroundStyle(star <= (episode.rating ?? 0) ? .yellow : .gray.opacity(0.4))
             }
         }
     }

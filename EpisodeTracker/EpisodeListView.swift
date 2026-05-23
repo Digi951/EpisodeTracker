@@ -415,6 +415,7 @@ struct LibrarySnapshotView: View {
     let openCount: Int
     let totalListens: Int
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    @Environment(\.colorScheme) private var colorScheme
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
@@ -423,6 +424,10 @@ struct LibrarySnapshotView: View {
 
     private var appAccentColor: AppAccentColor {
         AppAccentColor.resolved(from: appAccentColorRawValue)
+    }
+
+    private var accentTintOpacity: Double {
+        colorScheme == .dark ? 0.10 : 0.06
     }
 
     var body: some View {
@@ -454,7 +459,7 @@ struct LibrarySnapshotView: View {
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(appAccentColor.color.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(appAccentColor.color.opacity(accentTintOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -643,7 +648,7 @@ struct EpisodeRowView: View {
                             ForEach(1...5, id: \.self) { star in
                                 Image(systemName: star <= rating ? "star.fill" : "star")
                                     .font(.caption2)
-                                    .foregroundStyle(star <= rating ? .yellow : .gray.opacity(0.3))
+                                    .foregroundStyle(star <= rating ? .yellow : .gray.opacity(0.4))
                             }
                         }
                     }

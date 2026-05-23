@@ -764,7 +764,7 @@ struct RatingPicker: View {
                         }
                     } label: {
                         Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
-                            .foregroundStyle(star <= (rating ?? 0) ? .yellow : .gray.opacity(0.3))
+                            .foregroundStyle(star <= (rating ?? 0) ? .yellow : .gray.opacity(0.4))
                     }
                     .buttonStyle(.plain)
                 }
