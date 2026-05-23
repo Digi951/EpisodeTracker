@@ -4,6 +4,7 @@ enum StreamingService: String, CaseIterable, Identifiable {
     case spotify
     case appleMusic
     case deezer
+    case audible
 
     var id: String { rawValue }
 
@@ -12,6 +13,7 @@ enum StreamingService: String, CaseIterable, Identifiable {
         case .spotify: "Spotify"
         case .appleMusic: "Apple Music"
         case .deezer: "Deezer"
+        case .audible: "Audible"
         }
     }
 
@@ -20,6 +22,7 @@ enum StreamingService: String, CaseIterable, Identifiable {
         case .spotify: "play.circle"
         case .appleMusic: "music.note"
         case .deezer: "music.note.list"
+        case .audible: "headphones"
         }
     }
 
@@ -31,6 +34,8 @@ enum StreamingService: String, CaseIterable, Identifiable {
             return entry.appleMusicURL.flatMap { URL(string: $0) }
         case .deezer:
             return entry.deezerURL.flatMap { URL(string: $0) }
+        case .audible:
+            return entry.audibleURL.flatMap { URL(string: $0) }
         }
     }
 

@@ -41,6 +41,18 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertEqual(url?.absoluteString, "https://www.deezer.com/album/1234567")
     }
 
+    func testCatalogURLReturnsAudibleLink() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "und der Super-Papagei",
+            releaseYear: 1979,
+            audibleURL: "https://www.audible.de/pd/B004V3EXGO"
+        )
+
+        let url = StreamingService.audible.catalogURL(from: entry)
+        XCTAssertEqual(url?.absoluteString, "https://www.audible.de/pd/B004V3EXGO")
+    }
+
     func testCatalogURLReturnsNilWhenMissing() {
         let entry = CatalogEntry(
             number: 1,
@@ -51,6 +63,7 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertNil(StreamingService.spotify.catalogURL(from: entry))
         XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
         XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.audible.catalogURL(from: entry))
     }
 
     func testCatalogURLReturnsNilForWrongService() {
@@ -64,6 +77,7 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertNotNil(StreamingService.spotify.catalogURL(from: entry))
         XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
         XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.audible.catalogURL(from: entry))
     }
 
     func testCatalogEntryDetectsStreamingLinks() {
@@ -105,9 +119,10 @@ final class StreamingServiceTests: XCTestCase {
         XCTAssertEqual(StreamingService.spotify.displayName, "Spotify")
         XCTAssertEqual(StreamingService.appleMusic.displayName, "Apple Music")
         XCTAssertEqual(StreamingService.deezer.displayName, "Deezer")
+        XCTAssertEqual(StreamingService.audible.displayName, "Audible")
     }
 
     func testAllCasesContainsSupportedServices() {
-        XCTAssertEqual(StreamingService.allCases, [.spotify, .appleMusic, .deezer])
+        XCTAssertEqual(StreamingService.allCases, [.spotify, .appleMusic, .deezer, .audible])
     }
 }
