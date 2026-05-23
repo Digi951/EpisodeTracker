@@ -10,6 +10,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
     case teal
     case green
     case red
+    case amber
 
     var id: String { rawValue }
 
@@ -21,6 +22,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
         case .teal: "Teal"
         case .green: "Grün"
         case .red: "Rot"
+        case .amber: "Bernstein"
         }
     }
 
@@ -32,6 +34,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
         case .teal: .teal
         case .green: .green
         case .red: .red
+        case .amber: Color(red: 0.79, green: 0.53, blue: 0.23)
         }
     }
 
