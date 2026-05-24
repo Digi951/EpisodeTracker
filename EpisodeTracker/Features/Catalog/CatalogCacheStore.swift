@@ -176,7 +176,11 @@ struct CatalogCacheStore {
                 number: $0.number,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
-                collectionName: CatalogSourceRegistry.bundledCollectionName
+                collectionName: CatalogSourceRegistry.bundledCollectionName,
+                spotifyURL: $0.spotifyURL,
+                appleMusicURL: $0.appleMusicURL,
+                deezerURL: $0.deezerURL,
+                audibleURL: $0.audibleURL
             )
         }
     }

@@ -367,9 +367,14 @@ private struct SettingsLibrarySection: View {
     var body: some View {
         Section {
             TextField("Sammlungsname", text: $libraryTitle)
-            Picker("Darstellung", selection: $appearanceModeRawValue) {
+            Picker("Design", selection: $appearanceModeRawValue) {
                 ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode.rawValue)
+                    HStack(spacing: 12) {
+                        Image(systemName: mode.iconName)
+                            .symbolRenderingMode(.multicolor)
+                        Text(mode.title)
+                    }
+                    .tag(mode.rawValue)
                 }
             }
             AccentColorPickerRow(selection: $appAccentColorRawValue)

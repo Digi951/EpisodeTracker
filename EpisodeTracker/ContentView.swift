@@ -712,23 +712,31 @@ enum SplitLayoutDecider {
 }
 
 enum AppearanceMode: String, CaseIterable {
+    case system
     case light
     case dark
-    case system
 
     var title: String {
         switch self {
+        case .system: "System"
         case .light: "Hell"
         case .dark: "Dunkel"
-        case .system: "System"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .system: "circle.righthalf.filled"
+        case .light: "sun.max.fill"
+        case .dark: "moon.fill"
         }
     }
 
     var colorScheme: ColorScheme? {
         switch self {
+        case .system: nil
         case .light: .light
         case .dark: .dark
-        case .system: nil
         }
     }
 }

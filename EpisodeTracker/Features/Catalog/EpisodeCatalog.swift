@@ -72,7 +72,8 @@ final class EpisodeCatalog {
                 collectionName: collectionName,
                 spotifyURL: $0.spotifyURL,
                 appleMusicURL: $0.appleMusicURL,
-                deezerURL: $0.deezerURL
+                deezerURL: $0.deezerURL,
+                audibleURL: $0.audibleURL
             )
         }
         try cacheStore.replaceCustomCatalog(collectionName: collectionName, entries: normalizedEntries)

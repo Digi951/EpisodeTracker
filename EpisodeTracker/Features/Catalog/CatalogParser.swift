@@ -27,7 +27,8 @@ struct CatalogParser {
                     collectionName: $0.collectionName ?? fallbackCollectionName,
                     spotifyURL: $0.spotifyURL,
                     appleMusicURL: $0.appleMusicURL,
-                    deezerURL: $0.deezerURL
+                    deezerURL: $0.deezerURL,
+                    audibleURL: $0.audibleURL
                 )
             }
         }
@@ -42,7 +43,8 @@ struct CatalogParser {
                 collectionName: $0.collectionName ?? collection,
                 spotifyURL: $0.spotifyURL,
                 appleMusicURL: $0.appleMusicURL,
-                deezerURL: $0.deezerURL
+                deezerURL: $0.deezerURL,
+                audibleURL: $0.audibleURL
             )
         }
     }
@@ -61,7 +63,8 @@ struct CatalogParser {
                     collectionName: $0.collectionName ?? fallbackCollectionName,
                     spotifyURL: $0.spotifyURL,
                     appleMusicURL: $0.appleMusicURL,
-                    deezerURL: $0.deezerURL
+                    deezerURL: $0.deezerURL,
+                    audibleURL: $0.audibleURL
                 )
             }
             return NormalizedCatalogDocument(
@@ -83,7 +86,8 @@ struct CatalogParser {
                 collectionName: $0.collectionName ?? collection,
                 spotifyURL: $0.spotifyURL,
                 appleMusicURL: $0.appleMusicURL,
-                deezerURL: $0.deezerURL
+                deezerURL: $0.deezerURL,
+                audibleURL: $0.audibleURL
             )
         }
         return NormalizedCatalogDocument(
