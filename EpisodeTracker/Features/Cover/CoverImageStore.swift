@@ -59,6 +59,29 @@ struct CoverImageStore {
         try FileManager.default.removeItem(at: url)
     }
 
+    /// Removes cover files that don't belong to any known episode.
+    /// Returns the number of orphaned files deleted.
+    @discardableResult
+    func removeOrphanedFiles(knownCoverNames: Set<String>) -> Int {
+        let fileManager = FileManager.default
+        guard let files = try? fileManager.contentsOfDirectory(
+            at: coverDirectory,
+            includingPropertiesForKeys: nil
+        ) else {
+            return 0
+        }
+
+        var removedCount = 0
+        for fileURL in files where fileURL.pathExtension == "jpg" {
+            let name = fileURL.deletingPathExtension().lastPathComponent
+            if !knownCoverNames.contains(name) {
+                try? fileManager.removeItem(at: fileURL)
+                removedCount += 1
+            }
+        }
+        return removedCount
+    }
+
     static func coverName(for episodeID: UUID) -> String {
         episodeID.uuidString
     }

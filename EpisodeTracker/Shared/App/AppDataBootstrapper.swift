@@ -69,6 +69,7 @@ enum AppDataBootstrapper {
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
+        report.removedOrphanCovers = cleanupOrphanedCovers(container: containerSet.primary)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -353,6 +354,24 @@ enum AppDataBootstrapper {
         if didChange {
             try? context.save()
         }
+    }
+
+    @discardableResult
+    @MainActor
+    static func cleanupOrphanedCovers(container: ModelContainer) -> Int {
+        let context = container.mainContext
+        let episodes = (try? context.fetch(FetchDescriptor<Episode>())) ?? []
+        let knownCoverNames = Set(
+            episodes.compactMap { $0.coverImageName }
+                .filter { !$0.isEmpty }
+        )
+
+        let store = CoverImageStore()
+        let removed = store.removeOrphanedFiles(knownCoverNames: knownCoverNames)
+        if removed > 0 {
+            bootstrapLogger.info("Bootstrap: removed \(removed, privacy: .public) orphaned cover file(s)")
+        }
+        return removed
     }
 
     @MainActor

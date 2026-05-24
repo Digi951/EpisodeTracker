@@ -113,6 +113,40 @@ final class CoverImageStoreTests: XCTestCase {
         XCTAssertNoThrow(try store.delete(name: "../escape"))
     }
 
+    func testRemoveOrphanedFilesDeletesUnknownCovers() throws {
+        let image = makeTestImage(width: 100, height: 100)
+        try store.save(image, name: "known-cover")
+        try store.save(image, name: "orphan-1")
+        try store.save(image, name: "orphan-2")
+
+        let removed = store.removeOrphanedFiles(knownCoverNames: ["known-cover"])
+
+        XCTAssertEqual(removed, 2)
+        XCTAssertTrue(store.exists(name: "known-cover"))
+        XCTAssertFalse(store.exists(name: "orphan-1"))
+        XCTAssertFalse(store.exists(name: "orphan-2"))
+    }
+
+    func testRemoveOrphanedFilesWithEmptyDirectoryReturnsZero() {
+        let removed = store.removeOrphanedFiles(knownCoverNames: [])
+
+        XCTAssertEqual(removed, 0)
+    }
+
+    func testRemoveOrphanedFilesIgnoresNonJpgFiles() throws {
+        let image = makeTestImage(width: 100, height: 100)
+        try store.save(image, name: "known")
+
+        // Write a non-jpg file manually
+        let txtURL = testDirectory.appendingPathComponent("notes.txt")
+        try "test".write(to: txtURL, atomically: true, encoding: .utf8)
+
+        let removed = store.removeOrphanedFiles(knownCoverNames: ["known"])
+
+        XCTAssertEqual(removed, 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: txtURL.path))
+    }
+
     private func makeTestImage(width: Int, height: Int, color: UIColor = .blue) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0

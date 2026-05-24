@@ -7,6 +7,7 @@ struct BootstrapReport: Sendable {
     var repairedPostMigrationIDs = 0
     var syncPreparationSummary: SyncPreparation.ChangeSummary?
     var cloudMigrationStatus: String?
+    var removedOrphanCovers = 0
 
     var logDescription: String {
         var parts: [String] = []
@@ -20,6 +21,7 @@ struct BootstrapReport: Sendable {
         if let migration = cloudMigrationStatus {
             parts.append("cloudMigration=\(migration)")
         }
+        if removedOrphanCovers > 0 { parts.append("removedOrphanCovers=\(removedOrphanCovers)") }
         return parts.isEmpty ? "no changes" : parts.joined(separator: ", ")
     }
 }
