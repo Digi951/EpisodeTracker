@@ -69,7 +69,7 @@ struct SettingsView: View {
                 showsLibrarySnapshot: $showsLibrarySnapshot,
                 prefersCatalogProgressTotals: $prefersCatalogProgressTotals
             )
-            SettingsStreamingSection()
+            SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsManagementSection(
                 activeCatalogCount: activeCatalogCount,
                 managedCatalogCount: managedCatalogCount,
@@ -105,6 +105,7 @@ struct SettingsView: View {
             SettingsAboutSection()
         }
         .navigationTitle("Einstellungen")
+        .tint(AppAccentColor.resolved(from: appAccentColorRawValue).color)
         .listStyle(.insetGrouped)
         .contentMargins(.horizontal, horizontalSizeClass == .regular ? 104 : 0, for: .scrollContent)
         .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
@@ -364,17 +365,29 @@ private struct SettingsLibrarySection: View {
     @Binding var showsLibrarySnapshot: Bool
     @Binding var prefersCatalogProgressTotals: Bool
 
+    private var appAccentColor: Color {
+        AppAccentColor.resolved(from: appAccentColorRawValue).color
+    }
+
+    private var appearanceMode: AppearanceMode {
+        AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
+
     var body: some View {
         Section {
             TextField("Sammlungsname", text: $libraryTitle)
-            Picker("Design", selection: $appearanceModeRawValue) {
+            SettingsMenuSelectionRow(
+                title: "Design",
+                valueSystemImage: appearanceMode.iconName,
+                value: appearanceMode.title,
+                accentColor: appAccentColor
+            ) {
                 ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                    HStack(spacing: 12) {
-                        Image(systemName: mode.iconName)
-                            .symbolRenderingMode(.multicolor)
-                        Text(mode.title)
+                    Button {
+                        appearanceModeRawValue = mode.rawValue
+                    } label: {
+                        Label(mode.title, systemImage: mode.iconName)
                     }
-                    .tag(mode.rawValue)
                 }
             }
             AccentColorPickerRow(selection: $appAccentColorRawValue)
@@ -506,7 +519,12 @@ private struct SettingsResetSection: View {
 }
 
 private struct SettingsStreamingSection: View {
+    @Binding var appAccentColorRawValue: String
     @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
+
+    private var appAccentColor: Color {
+        AppAccentColor.resolved(from: appAccentColorRawValue).color
+    }
 
     private var selectedService: Binding<StreamingService> {
         Binding(
@@ -517,9 +535,18 @@ private struct SettingsStreamingSection: View {
 
     var body: some View {
         Section {
-            Picker("Streaming-Dienst", selection: selectedService) {
+            SettingsMenuSelectionRow(
+                title: "Streaming-Dienst",
+                valueSystemImage: selectedService.wrappedValue.iconName,
+                value: selectedService.wrappedValue.displayName,
+                accentColor: appAccentColor
+            ) {
                 ForEach(StreamingService.allCases) { service in
-                    Text(service.displayName).tag(service)
+                    Button {
+                        selectedService.wrappedValue = service
+                    } label: {
+                        Label(service.displayName, systemImage: service.iconName)
+                    }
                 }
             }
         } header: {
@@ -527,6 +554,37 @@ private struct SettingsStreamingSection: View {
         } footer: {
             Text("In der Folgendetailansicht kannst du verfügbare Kataloglinks direkt im gewählten Dienst öffnen.")
         }
+    }
+}
+
+private struct SettingsMenuSelectionRow<MenuContent: View>: View {
+    let title: String
+    let valueSystemImage: String
+    let value: String
+    let accentColor: Color
+    @ViewBuilder let menuContent: () -> MenuContent
+
+    var body: some View {
+        Menu {
+            menuContent()
+        } label: {
+            HStack {
+                Text(title)
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 12)
+
+                HStack(spacing: 4) {
+                    Image(systemName: valueSystemImage)
+                    Text(value)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.footnote.weight(.semibold))
+                }
+                .foregroundStyle(accentColor)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
