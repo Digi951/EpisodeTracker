@@ -9,6 +9,11 @@ struct EpisodeEditView: View {
     @Query(sort: \Episode.episodeNumber) private var allEpisodes: [Episode]
     @Query(sort: \Mood.name) private var allMoods: [Mood]
     @AppStorage(FreemiumAccess.unlockStorageKey) private var isPlusUnlocked = false
+    @AppStorage("episodeEditCoverSectionCollapsed") private var isCoverSectionCollapsed = false
+    @AppStorage("episodeEditStatusSectionCollapsed") private var isStatusSectionCollapsed = false
+    @AppStorage("episodeEditMoodSectionCollapsed") private var isMoodSectionCollapsed = false
+    @AppStorage("episodeEditNoteSectionCollapsed") private var isNoteSectionCollapsed = false
+    @AppStorage("episodeEditStreamingSectionCollapsed") private var isStreamingSectionCollapsed = false
 
     var episode: Episode?
     var prefillEntry: CatalogEntry?
@@ -117,6 +122,36 @@ struct EpisodeEditView: View {
         }
     }
 
+    private var titleSuggestions: [CatalogEntry] {
+        guard isNew else { return [] }
+        let activeCollectionNames = activeCatalogCollectionNames
+        return CatalogTitleAutocomplete.suggestions(
+            for: title,
+            entries: EpisodeCatalog.shared.allEntries,
+            activeCollectionNames: activeCollectionNames,
+            selectedCollectionName: selectedUniverse?.name,
+            existingEpisodeNumbersByCollection: existingEpisodeNumbersByCollection
+        )
+    }
+
+    private var activeCatalogCollectionNames: Set<String> {
+        let activeIDs = ActiveCatalogStore().activeIDs
+        return Set(
+            EpisodeCatalog.shared.managedSources
+                .filter { activeIDs.contains($0.id) }
+                .map { CatalogTitleAutocomplete.normalizedKey($0.name) }
+        )
+    }
+
+    private var existingEpisodeNumbersByCollection: [String: Set<Int>] {
+        Dictionary(grouping: allEpisodes) {
+            CatalogTitleAutocomplete.normalizedKey($0.universe?.name ?? "")
+        }
+        .mapValues { episodes in
+            Set(episodes.map(\.episodeNumber))
+        }
+    }
+
     private var preferredCatalogUniverse: Universe? {
         let sourceNames = CatalogSourceRegistry.managedSources.map(\.name)
         if let bundledUniverse = universes.first(where: {
@@ -141,6 +176,7 @@ struct EpisodeEditView: View {
                 catalogMatch: catalogMatch,
                 isNew: isNew,
                 yearSuggestions: yearSuggestions,
+                titleSuggestions: titleSuggestions,
                 formValidationMessage: formValidationMessage,
                 duplicateEpisodeWarning: duplicateEpisodeWarning,
                 canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan,
@@ -148,7 +184,7 @@ struct EpisodeEditView: View {
                 onSelectSuggestedEntry: applySuggestedEntry
             )
 
-            Section {
+            CollapsibleEpisodeSection("Cover", isCollapsed: $isCoverSectionCollapsed) {
                 if let coverImage {
                     Image(uiImage: coverImage)
                         .resizable()
@@ -196,16 +232,16 @@ struct EpisodeEditView: View {
                         Label("Cover entfernen", systemImage: "trash")
                     }
                 }
-            } header: {
-                Text("Cover")
             }
 
             EpisodeStatusSection(
+                isCollapsed: $isStatusSectionCollapsed,
                 isListened: $isListened,
                 rating: $rating
             )
 
             EpisodeMoodSection(
+                isCollapsed: $isMoodSectionCollapsed,
                 suggestedMoods: suggestedMoods,
                 newMoodName: $newMoodName,
                 newMoodIcon: $newMoodIcon,
@@ -217,9 +253,15 @@ struct EpisodeEditView: View {
                 onToggleMood: toggleMoodSelection
             )
 
-            EpisodeNoteSection(personalNote: $personalNote)
+            EpisodeNoteSection(
+                isCollapsed: $isNoteSectionCollapsed,
+                personalNote: $personalNote
+            )
 
-            EpisodeStreamingSection(streamingURL: $streamingURL)
+            EpisodeStreamingSection(
+                isCollapsed: $isStreamingSectionCollapsed,
+                streamingURL: $streamingURL
+            )
         }
         .navigationTitle(isNew ? "Neue Folge" : "Folge bearbeiten")
         .navigationBarTitleDisplayMode(.inline)
@@ -550,6 +592,75 @@ struct EpisodeEditView: View {
     }
 }
 
+private struct CollapsibleEpisodeSection<Content: View>: View {
+    let title: String
+    @Binding var isCollapsed: Bool
+    @ViewBuilder let content: Content
+
+    init(
+        _ title: String,
+        isCollapsed: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        _isCollapsed = isCollapsed
+        self.content = content()
+    }
+
+    var body: some View {
+        Section {
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isCollapsed.toggle()
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    AnimatedDisclosureChevron(isCollapsed: isCollapsed)
+
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if !isCollapsed {
+                content
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isCollapsed)
+    }
+}
+
+private struct AnimatedDisclosureChevron: View {
+    let isCollapsed: Bool
+    @State private var rotation = 0.0
+
+    private var targetRotation: Double {
+        isCollapsed ? 0 : 90
+    }
+
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.tertiary)
+            .frame(width: 18, height: 18)
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                rotation = targetRotation
+            }
+            .onChange(of: isCollapsed) { _, _ in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    rotation = targetRotation
+                }
+            }
+    }
+}
+
 private struct EpisodeFormSection: View {
     let universes: [Universe]
     @Binding var selectedUniverse: Universe?
@@ -559,6 +670,7 @@ private struct EpisodeFormSection: View {
     let catalogMatch: CatalogEntry?
     let isNew: Bool
     let yearSuggestions: [CatalogEntry]
+    let titleSuggestions: [CatalogEntry]
     let formValidationMessage: String?
     let duplicateEpisodeWarning: String?
     let canCreateEpisodeUnderCurrentPlan: Bool
@@ -591,6 +703,34 @@ private struct EpisodeFormSection: View {
                 }
             }
             TextField("Titel der Folge", text: $title)
+            if isNew && !titleSuggestions.isEmpty {
+                DisclosureGroup("Katalogtreffer") {
+                    ForEach(Array(titleSuggestions.enumerated()), id: \.offset) { _, entry in
+                        Button {
+                            onSelectSuggestedEntry(entry)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("\(entry.number)")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 28, alignment: .trailing)
+                                    Text(entry.title)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+                                }
+                                if let collectionName = entry.collectionName {
+                                    Text(collectionName)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.leading, 36)
+                                }
+                            }
+                        }
+                    }
+                }
+                .font(.subheadline)
+            }
             LabeledContent("Erscheinungsjahr") {
                 TextField("Jahr", text: $releaseYearText)
                     .multilineTextAlignment(.trailing)
@@ -636,11 +776,12 @@ private struct EpisodeFormSection: View {
 }
 
 private struct EpisodeStatusSection: View {
+    @Binding var isCollapsed: Bool
     @Binding var isListened: Bool
     @Binding var rating: Int?
 
     var body: some View {
-        Section("Status") {
+        CollapsibleEpisodeSection("Status", isCollapsed: $isCollapsed) {
             Toggle("Bereits gehört", isOn: $isListened)
             RatingPicker(rating: $rating)
         }
@@ -648,6 +789,7 @@ private struct EpisodeStatusSection: View {
 }
 
 private struct EpisodeMoodSection: View {
+    @Binding var isCollapsed: Bool
     let suggestedMoods: [(name: String, icon: String)]
     @Binding var newMoodName: String
     @Binding var newMoodIcon: String
@@ -659,7 +801,7 @@ private struct EpisodeMoodSection: View {
     let onToggleMood: (Mood) -> Void
 
     var body: some View {
-        Section("Stimmungen") {
+        CollapsibleEpisodeSection("Stimmungen", isCollapsed: $isCollapsed) {
             if !suggestedMoods.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Vorschläge")
@@ -720,10 +862,11 @@ private struct EpisodeMoodSection: View {
 }
 
 private struct EpisodeNoteSection: View {
+    @Binding var isCollapsed: Bool
     @Binding var personalNote: String
 
     var body: some View {
-        Section("Persönliche Notiz") {
+        CollapsibleEpisodeSection("Persönliche Notiz", isCollapsed: $isCollapsed) {
             TextField("Was möchtest du dir merken?", text: $personalNote, axis: .vertical)
                 .lineLimit(3...6)
         }
@@ -731,18 +874,15 @@ private struct EpisodeNoteSection: View {
 }
 
 private struct EpisodeStreamingSection: View {
+    @Binding var isCollapsed: Bool
     @Binding var streamingURL: String
 
     var body: some View {
-        Section {
+        CollapsibleEpisodeSection("Streaming-Link", isCollapsed: $isCollapsed) {
             TextField("https://open.spotify.com/album/…", text: $streamingURL)
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-        } header: {
-            Text("Streaming-Link")
-        } footer: {
-            Text("Direktlink zu Spotify, Apple Music oder Deezer. Wird in der Folgendetailansicht als Button angezeigt.")
         }
     }
 }

@@ -26,12 +26,12 @@ final class Mood {
 
 extension Mood {
     static let defaultSuggestions: [(name: String, icon: String)] = [
-        ("Gruselig", "😱"),
-        ("Spannend", "⚡"),
-        ("Witzig", "😄"),
-        ("Nachdenklich", "🧠"),
-        ("Klassiker", "⭐"),
-        ("Abenteuer", "🧭")
+        (String(localized: "Mood.Gruselig", defaultValue: "Gruselig"), "😱"),
+        (String(localized: "Mood.Spannend", defaultValue: "Spannend"), "⚡"),
+        (String(localized: "Mood.Witzig", defaultValue: "Witzig"), "😄"),
+        (String(localized: "Mood.Nachdenklich", defaultValue: "Nachdenklich"), "🧠"),
+        (String(localized: "Mood.Klassiker", defaultValue: "Klassiker"), "⭐"),
+        (String(localized: "Mood.Abenteuer", defaultValue: "Abenteuer"), "🧭")
     ]
 
     var normalizedName: String {

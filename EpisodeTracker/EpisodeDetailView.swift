@@ -131,7 +131,7 @@ struct EpisodeDetailView: View {
     private var infoBlock: some View {
         VStack(alignment: .leading, spacing: DetailMetrics.intraBlock) {
             // Katalog + Jahr
-            Text("\(episode.universe?.name ?? "Allgemein") · \(String(episode.releaseYear))")
+            Text("\(AppLocalization.displayName(forUniverseName: episode.universe?.name)) · \(String(episode.releaseYear))")
                 .font(.subheadline)
                 .foregroundStyle(.primary.opacity(0.62))
 

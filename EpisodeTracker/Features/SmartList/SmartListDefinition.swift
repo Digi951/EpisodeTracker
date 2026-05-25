@@ -9,9 +9,9 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .unlistened: "Ungehört"
-        case .listened: "Gehört"
-        case .all: "Alle"
+        case .unlistened: String(localized: "EpisodeFilter.Unlistened", defaultValue: "Ungehört")
+        case .listened: String(localized: "EpisodeFilter.Listened", defaultValue: "Gehört")
+        case .all: String(localized: "EpisodeFilter.All", defaultValue: "Alle")
         }
     }
 
@@ -25,85 +25,85 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
 }
 
 enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
-    case fortsetzen
-    case naechsteAusKatalog
-    case langeNichtGehoert
-    case uebersprungen
-    case topBewertet
-    case zufaellig
-    case zufaelligNachStimmung
+    case continueListening
+    case nextFromCatalog
+    case longPaused
+    case skipped
+    case topRated
+    case random
+    case randomByMood
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .fortsetzen: "play.circle.fill"
-        case .naechsteAusKatalog: "text.badge.plus"
-        case .langeNichtGehoert: "clock.arrow.circlepath"
-        case .uebersprungen: "arrow.right.to.line"
-        case .topBewertet: "star.fill"
-        case .zufaellig: "dice.fill"
-        case .zufaelligNachStimmung: "theatermasks.fill"
+        case .continueListening: "play.circle.fill"
+        case .nextFromCatalog: "text.badge.plus"
+        case .longPaused: "clock.arrow.circlepath"
+        case .skipped: "arrow.right.to.line"
+        case .topRated: "star.fill"
+        case .random: "dice.fill"
+        case .randomByMood: "theatermasks.fill"
         }
     }
 
     var accentColor: String {
         switch self {
-        case .fortsetzen: "blue"
-        case .naechsteAusKatalog: "green"
-        case .langeNichtGehoert: "orange"
-        case .uebersprungen: "red"
-        case .topBewertet: "yellow"
-        case .zufaellig: "purple"
-        case .zufaelligNachStimmung: "pink"
+        case .continueListening: "blue"
+        case .nextFromCatalog: "green"
+        case .longPaused: "orange"
+        case .skipped: "red"
+        case .topRated: "yellow"
+        case .random: "purple"
+        case .randomByMood: "pink"
         }
     }
 
     var displayName: String {
         switch self {
-        case .fortsetzen: "Fortsetzen"
-        case .naechsteAusKatalog: "Nächste aus dem Katalog"
-        case .langeNichtGehoert: "Lange nicht gehört"
-        case .uebersprungen: "Übersprungen"
-        case .topBewertet: "Top bewertet"
-        case .zufaellig: "Zufällig"
-        case .zufaelligNachStimmung: "Zufällig nach Stimmung"
+        case .continueListening: String(localized: "SmartList.ContinueListening.Title", defaultValue: "Fortsetzen")
+        case .nextFromCatalog: String(localized: "SmartList.NextFromCatalog.Title", defaultValue: "Nächste aus dem Katalog")
+        case .longPaused: String(localized: "SmartList.LongPaused.Title", defaultValue: "Lange nicht gehört")
+        case .skipped: String(localized: "SmartList.Skipped.Title", defaultValue: "Übersprungen")
+        case .topRated: String(localized: "SmartList.TopRated.Title", defaultValue: "Top bewertet")
+        case .random: String(localized: "SmartList.Random.Title", defaultValue: "Zufällig")
+        case .randomByMood: String(localized: "SmartList.RandomByMood.Title", defaultValue: "Zufällig nach Stimmung")
         }
     }
 
     var emptyStateMessage: String {
         switch self {
-        case .fortsetzen: "Du bist überall auf dem neuesten Stand"
-        case .naechsteAusKatalog: "Keine weiteren Katalog-Folgen verfügbar"
-        case .langeNichtGehoert: "Keine lang pausierten Serien"
-        case .uebersprungen: "Keine übersprungenen Folgen"
-        case .topBewertet: "Keine bewerteten ungehörten Folgen"
-        case .zufaellig: "Alles gehört!"
-        case .zufaelligNachStimmung: "Keine Stimmungen in deiner Bibliothek"
+        case .continueListening: String(localized: "SmartList.ContinueListening.Empty", defaultValue: "Du bist überall auf dem neuesten Stand")
+        case .nextFromCatalog: String(localized: "SmartList.NextFromCatalog.Empty", defaultValue: "Keine weiteren Katalog-Folgen verfügbar")
+        case .longPaused: String(localized: "SmartList.LongPaused.Empty", defaultValue: "Keine lang pausierten Serien")
+        case .skipped: String(localized: "SmartList.Skipped.Empty", defaultValue: "Keine übersprungenen Folgen")
+        case .topRated: String(localized: "SmartList.TopRated.Empty", defaultValue: "Keine bewerteten ungehörten Folgen")
+        case .random: String(localized: "SmartList.Random.Empty", defaultValue: "Alles gehört!")
+        case .randomByMood: String(localized: "SmartList.RandomByMood.Empty", defaultValue: "Keine Stimmungen in deiner Bibliothek")
         }
     }
 
     var infoText: String {
         switch self {
-        case .fortsetzen:
-            "Zeigt pro Serie die nächste ungehörte Folge nach der höchsten gehörten. Sortiert nach letzter Aktivität."
-        case .naechsteAusKatalog:
-            "Pro Serie die nächste Folge aus dem Katalog, die du noch nicht in deiner Bibliothek hast. Ideal um neue Folgen zu entdecken."
-        case .langeNichtGehoert:
-            "Serien, bei denen du seit über 30 Tagen keine Folge mehr gehört hast und noch offene Folgen übrig sind."
-        case .uebersprungen:
-            "Folgen mit niedrigerer Nummer als eine bereits gehörte — also Lücken in deiner Hörhistorie."
-        case .topBewertet:
-            "Ungehörte Folgen, die bereits eine Bewertung haben. Sortiert nach Sternzahl."
-        case .zufaellig:
-            "Zufällige Auswahl aus deiner Bibliothek. Wähle oben, ob du aus ungehörten, gehörten oder allen Folgen würfeln möchtest."
-        case .zufaelligNachStimmung:
-            "Wähle eine Stimmung und erhalte eine zufällige Auswahl passender Folgen. Danach kannst du auf ungehörte, gehörte oder alle Folgen eingrenzen."
+        case .continueListening:
+            String(localized: "SmartList.ContinueListening.Info", defaultValue: "Zeigt pro Serie die nächste ungehörte Folge nach der höchsten gehörten. Sortiert nach letzter Aktivität.")
+        case .nextFromCatalog:
+            String(localized: "SmartList.NextFromCatalog.Info", defaultValue: "Pro Serie die nächste Folge aus dem Katalog, die du noch nicht in deiner Bibliothek hast. Ideal um neue Folgen zu entdecken.")
+        case .longPaused:
+            String(localized: "SmartList.LongPaused.Info", defaultValue: "Serien, bei denen du seit über 30 Tagen keine Folge mehr gehört hast und noch offene Folgen übrig sind.")
+        case .skipped:
+            String(localized: "SmartList.Skipped.Info", defaultValue: "Folgen mit niedrigerer Nummer als eine bereits gehörte — also Lücken in deiner Hörhistorie.")
+        case .topRated:
+            String(localized: "SmartList.TopRated.Info", defaultValue: "Ungehörte Folgen, die bereits eine Bewertung haben. Sortiert nach Sternzahl.")
+        case .random:
+            String(localized: "SmartList.Random.Info", defaultValue: "Zufällige Auswahl aus deiner Bibliothek. Wähle oben, ob du aus ungehörten, gehörten oder allen Folgen würfeln möchtest.")
+        case .randomByMood:
+            String(localized: "SmartList.RandomByMood.Info", defaultValue: "Wähle eine Stimmung und erhalte eine zufällige Auswahl passender Folgen. Danach kannst du auf ungehörte, gehörte oder alle Folgen eingrenzen.")
         }
     }
 
     var isRandomList: Bool {
-        self == .zufaellig || self == .zufaelligNachStimmung
+        self == .random || self == .randomByMood
     }
 
     static let longPauseDays: Int = 30
@@ -111,24 +111,24 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     // MARK: - Query Dispatch
 
     var needsCatalog: Bool {
-        self == .naechsteAusKatalog
+        self == .nextFromCatalog
     }
 
     func episodes(from allEpisodes: [Episode], referenceDate: Date = .now) -> [Episode] {
         switch self {
-        case .fortsetzen:
+        case .continueListening:
             return Self.continuationEpisodes(from: allEpisodes)
-        case .naechsteAusKatalog:
+        case .nextFromCatalog:
             return []
-        case .langeNichtGehoert:
+        case .longPaused:
             return Self.longPauseEpisodes(from: allEpisodes, referenceDate: referenceDate)
-        case .uebersprungen:
+        case .skipped:
             return Self.skippedEpisodes(from: allEpisodes)
-        case .topBewertet:
+        case .topRated:
             return Self.topRatedEpisodes(from: allEpisodes)
-        case .zufaellig:
+        case .random:
             return Self.randomEpisodes(from: allEpisodes)
-        case .zufaelligNachStimmung:
+        case .randomByMood:
             return []
         }
     }
@@ -328,15 +328,27 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func catalogTeaserText(for entry: CatalogEntry) -> String {
-        let universeName = entry.collectionName ?? "Allgemein"
-        return "\(universeName): Folge \(entry.number) — \(entry.title)"
+        let universeName = AppLocalization.displayName(forUniverseName: entry.collectionName)
+        return AppLocalization.format(
+            "SmartList.CatalogTeaser",
+            defaultValue: "%@: Folge %d - %@",
+            universeName,
+            entry.number,
+            entry.title
+        )
     }
 
     // MARK: - Teaser
 
     static func teaserText(for episode: Episode) -> String {
-        let universeName = episode.universe?.name ?? "Allgemein"
-        return "\(universeName): Folge \(episode.episodeNumber) — \(episode.title)"
+        let universeName = AppLocalization.displayName(forUniverseName: episode.universe?.name)
+        return AppLocalization.format(
+            "SmartList.EpisodeTeaser",
+            defaultValue: "%@: Folge %d - %@",
+            universeName,
+            episode.episodeNumber,
+            episode.title
+        )
     }
 }
 

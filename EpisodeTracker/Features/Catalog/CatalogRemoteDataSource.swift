@@ -12,6 +12,8 @@ protocol CatalogFetching: Sendable {
 }
 
 struct CatalogRemoteDataSource: CatalogFetching {
+    nonisolated init() {}
+
     func fetch(
         from url: URL,
         metadata: RemoteCatalogMetadata?

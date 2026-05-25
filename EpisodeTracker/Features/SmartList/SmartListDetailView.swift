@@ -63,7 +63,7 @@ struct SmartListDetailView: View {
     }
 
     private var navigationTitle: String {
-        if smartList == .zufaelligNachStimmung, let mood {
+        if smartList == .randomByMood, let mood {
             return "\(mood.iconName ?? "") \(mood.name)"
         }
         return smartList.displayName
@@ -176,12 +176,12 @@ struct SmartListDetailView: View {
     private var emptyMessage: String {
         if smartList.isRandomList {
             switch episodeFilter {
-            case .unlistened: "Keine ungehörten Folgen"
-            case .listened: "Keine gehörten Folgen"
-            case .all: "Keine Folgen vorhanden"
+            case .unlistened: String(localized: "SmartList.Empty.NoUnlistened", defaultValue: "Keine ungehörten Folgen")
+            case .listened: String(localized: "SmartList.Empty.NoListened", defaultValue: "Keine gehörten Folgen")
+            case .all: String(localized: "SmartList.Empty.NoEpisodes", defaultValue: "Keine Folgen vorhanden")
             }
-        } else if smartList == .zufaelligNachStimmung {
-            "Keine Folgen mit dieser Stimmung"
+        } else if smartList == .randomByMood {
+            String(localized: "SmartList.Empty.NoMoodEpisodes", defaultValue: "Keine Folgen mit dieser Stimmung")
         } else {
             smartList.emptyStateMessage
         }
@@ -220,9 +220,9 @@ struct SmartListDetailView: View {
     }
 
     private func reshuffle() {
-        if smartList == .zufaelligNachStimmung, let mood {
+        if smartList == .randomByMood, let mood {
             shuffledEpisodes = SmartListDefinition.episodesForMood(mood, from: allEpisodes, filter: episodeFilter)
-        } else if smartList == .zufaellig {
+        } else if smartList == .random {
             shuffledEpisodes = SmartListDefinition.randomEpisodes(from: allEpisodes, filter: episodeFilter)
         }
     }
@@ -252,7 +252,7 @@ struct SmartListDetailView: View {
     }
 
     private var catalogBulkImportConfirmationTitle: String {
-        pendingCatalogBulkImport?.title ?? "Folgen übernehmen?"
+        pendingCatalogBulkImport?.title ?? String(localized: "CatalogImport.ConfirmFallbackTitle", defaultValue: "Folgen übernehmen?")
     }
 
     @ViewBuilder
@@ -387,7 +387,7 @@ private struct SmartListCatalogContent: View {
 
     private var emptyCatalogMessage: String {
         if let catalogYearFilter {
-            return "Keine fehlenden Folgen aus \(String(catalogYearFilter))"
+            return AppLocalization.format("CatalogImport.NoMissingForYear", defaultValue: "Keine fehlenden Folgen aus %d", catalogYearFilter)
         }
         return emptyStateMessage
     }
@@ -437,7 +437,9 @@ private struct SmartListGroupedEpisodeContent: View {
     var iPadSelection: Binding<Episode?>?
 
     private var groupedEpisodes: [(universeName: String, episodes: [Episode])] {
-        let grouped = Dictionary(grouping: displayedEpisodes) { $0.universe?.name ?? "Ohne Sammlung" }
+        let grouped = Dictionary(grouping: displayedEpisodes) {
+            AppLocalization.displayName(forUniverseName: $0.universe?.name)
+        }
         return grouped.keys.sorted().map { name in
             (universeName: name, episodes: grouped[name]!.sorted { $0.episodeNumber < $1.episodeNumber })
         }
@@ -507,15 +509,15 @@ private struct CatalogBulkImportCard: View {
 
     private var buttonTitle: String {
         suggestionCount == 1
-            ? "Die sichtbare Folge übernehmen"
-            : "Alle \(suggestionCount) sichtbaren Folgen übernehmen"
+            ? String(localized: "CatalogImport.ImportVisibleOne", defaultValue: "Die sichtbare Folge übernehmen")
+            : AppLocalization.format("CatalogImport.ImportVisibleMany", defaultValue: "Alle %d sichtbaren Folgen übernehmen", suggestionCount)
     }
 
     private var detailText: String {
         if universeCount == 1 {
-            return "\(suggestionCount) fehlende Folgen in 1 Katalog"
+            return AppLocalization.format("CatalogImport.MissingInOneCatalog", defaultValue: "%d fehlende Folgen in 1 Katalog", suggestionCount)
         }
-        return "\(suggestionCount) fehlende Folgen in \(universeCount) Katalogen"
+        return AppLocalization.format("CatalogImport.MissingInManyCatalogs", defaultValue: "%d fehlende Folgen in %d Katalogen", suggestionCount, universeCount)
     }
 
     var body: some View {
@@ -551,14 +553,14 @@ private struct CatalogGroupFooter: View {
 
     private var buttonTitle: String {
         if totalMissingCount == 1 {
-            return "Die fehlende Folge aus dem Katalog übernehmen"
+            return String(localized: "CatalogImport.ImportAllFromCatalogOne", defaultValue: "Die fehlende Folge aus dem Katalog übernehmen")
         }
-        return "Alle \(totalMissingCount) fehlenden Folgen aus dem Katalog übernehmen"
+        return AppLocalization.format("CatalogImport.ImportAllFromCatalogMany", defaultValue: "Alle %d fehlenden Folgen aus dem Katalog übernehmen", totalMissingCount)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Die Vorschläge werden direkt im Katalog „\(universeName)“ angelegt.")
+            Text(AppLocalization.format("CatalogImport.FooterMessage", defaultValue: "Die Vorschläge werden direkt im Katalog \"%@\" angelegt.", universeName))
 
             if hiddenCount > 0 {
                 Button(action: action) {
@@ -579,23 +581,22 @@ private struct CatalogGroupHeader: View {
     let action: () -> Void
 
     private var detailText: String {
-        count == 1 ? "1 sichtbare fehlende Folge" : "\(count) sichtbare fehlende Folgen"
+        count == 1
+            ? String(localized: "CatalogImport.VisibleMissingOne", defaultValue: "1 sichtbare fehlende Folge")
+            : AppLocalization.format("CatalogImport.VisibleMissingMany", defaultValue: "%d sichtbare fehlende Folgen", count)
     }
 
     private var importLabel: String {
         count == 1
-            ? "Die sichtbare Folge aus \(title) übernehmen"
-            : "Alle \(count) sichtbaren Folgen aus \(title) übernehmen"
+            ? AppLocalization.format("CatalogImport.AccessibilityImportOneFromCatalog", defaultValue: "Die sichtbare Folge aus %@ übernehmen", title)
+            : AppLocalization.format("CatalogImport.AccessibilityImportManyFromCatalog", defaultValue: "Alle %d sichtbaren Folgen aus %@ übernehmen", count, title)
     }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Button(action: action) {
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 12, height: 20, alignment: .center)
+                    CatalogGroupDisclosureChevron(isCollapsed: isCollapsed)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
@@ -627,6 +628,31 @@ private struct CatalogGroupHeader: View {
         }
         .padding(.vertical, 2)
         .textCase(nil)
+    }
+}
+
+private struct CatalogGroupDisclosureChevron: View {
+    let isCollapsed: Bool
+    @State private var rotation = 0.0
+
+    private var targetRotation: Double {
+        isCollapsed ? 0 : 90
+    }
+
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 12, height: 20, alignment: .center)
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                rotation = targetRotation
+            }
+            .onChange(of: isCollapsed) { _, _ in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    rotation = targetRotation
+                }
+            }
     }
 }
 
@@ -688,18 +714,18 @@ private struct CatalogBulkImportRequest: Identifiable {
     let suggestions: [(universeName: String, entry: CatalogEntry)]
 
     var title: String {
-        "Folgen aus \(universeName) übernehmen?"
+        AppLocalization.format("CatalogImport.ConfirmTitle", defaultValue: "Folgen aus %@ übernehmen?", universeName)
     }
 
     var confirmationButtonTitle: String {
         suggestions.count == 1
-            ? "1 Folge übernehmen"
-            : "\(suggestions.count) Folgen übernehmen"
+            ? String(localized: "CatalogImport.ConfirmButtonOne", defaultValue: "1 Folge übernehmen")
+            : AppLocalization.format("CatalogImport.ConfirmButtonMany", defaultValue: "%d Folgen übernehmen", suggestions.count)
     }
 
     var message: String {
         suggestions.count == 1
-            ? "Diese sichtbare fehlende Folge wird im Katalog „\(universeName)“ angelegt."
-            : "Alle \(suggestions.count) aktuell sichtbaren fehlenden Folgen werden im Katalog „\(universeName)“ angelegt."
+            ? AppLocalization.format("CatalogImport.ConfirmMessageOne", defaultValue: "Diese sichtbare fehlende Folge wird im Katalog \"%@\" angelegt.", universeName)
+            : AppLocalization.format("CatalogImport.ConfirmMessageMany", defaultValue: "Alle %d aktuell sichtbaren fehlenden Folgen werden im Katalog \"%@\" angelegt.", suggestions.count, universeName)
     }
 }

@@ -568,20 +568,23 @@ private struct SettingsMenuSelectionRow<MenuContent: View>: View {
         Menu {
             menuContent()
         } label: {
-            HStack {
+            HStack(alignment: .center, spacing: 12) {
                 Text(title)
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer(minLength: 12)
-
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: valueSystemImage)
                     Text(value)
+                        .lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.footnote.weight(.semibold))
                 }
                 .foregroundStyle(accentColor)
+                .fixedSize(horizontal: true, vertical: false)
             }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

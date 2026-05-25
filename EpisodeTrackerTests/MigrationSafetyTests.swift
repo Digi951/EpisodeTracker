@@ -424,7 +424,7 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(episodes[0].coverImageName, "valid-cover")
     }
 
-    func testDeduplicationDoesNotInventMoodWhenCoverEpisodeHadNone() throws {
+    func testDeduplicationMergesMoodWhenCoverEpisodeHadNone() throws {
         let container = try makeInMemoryContainer()
         let context = container.mainContext
         let coverDirectory = FileManager.default.temporaryDirectory
@@ -474,7 +474,92 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(episodes[0].coverImageName, "cover-without-mood")
         XCTAssertTrue(episodes[0].isListened, "Listened state should still be preserved")
         XCTAssertEqual(episodes[0].listenCount, 1)
-        XCTAssertTrue(episodes[0].moods.isEmpty, "Moods from the removed duplicate must not be added")
+        XCTAssertEqual(episodes[0].moods.map(\.resolvedSyncKey), ["mood:gruselig"])
+        XCTAssertEqual(summary.deduplicatedEpisodeMoods, 1)
+    }
+
+    func testDeduplicationDoesNotDuplicateSameMood() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let keeperMood = Mood(name: "Gruselig", iconName: "😱", syncKey: "mood:gruselig")
+        let duplicateMood = Mood(name: " gruselig ", iconName: nil, syncKey: "mood:gruselig")
+        let keeper = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            universe: universe,
+            moods: [keeperMood]
+        )
+        let duplicate = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            universe: universe,
+            moods: [duplicateMood]
+        )
+
+        context.insert(universe)
+        context.insert(keeperMood)
+        context.insert(duplicateMood)
+        context.insert(keeper)
+        context.insert(duplicate)
+
+        var summary = SyncPreparation.ChangeSummary()
+        let didChange = EntityDeduplicator.deduplicateEpisodes(
+            [keeper, duplicate],
+            in: context,
+            summary: &summary
+        )
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertTrue(didChange)
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].moods.map(\.resolvedSyncKey), ["mood:gruselig"])
+    }
+
+    func testDeduplicationKeepsExistingMoodWhenDuplicateHasNone() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let mood = Mood(name: "Spannend", iconName: "⚡")
+        let keeper = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            isListened: true,
+            universe: universe,
+            moods: [mood]
+        )
+        let duplicate = Episode(
+            episodeNumber: 25,
+            title: "und die singende Schlange",
+            releaseYear: 1981,
+            universe: universe,
+            moods: []
+        )
+
+        context.insert(universe)
+        context.insert(mood)
+        context.insert(keeper)
+        context.insert(duplicate)
+
+        var summary = SyncPreparation.ChangeSummary()
+        let didChange = EntityDeduplicator.deduplicateEpisodes(
+            [keeper, duplicate],
+            in: context,
+            summary: &summary
+        )
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertTrue(didChange)
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].moods.map(\.resolvedSyncKey), ["mood:spannend"])
     }
 
     // MARK: - Schema Metadata

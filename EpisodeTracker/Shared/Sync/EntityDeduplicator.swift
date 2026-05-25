@@ -261,11 +261,41 @@ enum EntityDeduplicator {
                     }
                 }
 
+                if mergeMoods(from: duplicate, into: keeper) {
+                    didChange = true
+                    summary.deduplicatedEpisodeMoods += 1
+                }
+
                 logger.info("Dedup: removing duplicate episode #\(key.episodeNumber) in '\(key.universeKey)'")
                 context.delete(duplicate)
                 didChange = true
                 summary.deduplicatedEpisodes += 1
             }
+        }
+
+        return didChange
+    }
+
+    private static func mergeMoods(from duplicate: Episode, into keeper: Episode) -> Bool {
+        var mergedMoods: [Mood] = []
+        var seenMoodKeys = Set<String>()
+        var didChange = false
+
+        for mood in keeper.moods + duplicate.moods {
+            let previousKey = mood.resolvedSyncKey
+            mood.ensureSyncKey()
+            if previousKey != mood.resolvedSyncKey {
+                didChange = true
+            }
+
+            if seenMoodKeys.insert(mood.resolvedSyncKey).inserted {
+                mergedMoods.append(mood)
+            }
+        }
+
+        if keeper.moods.map(\.id) != mergedMoods.map(\.id) {
+            keeper.moods = mergedMoods
+            didChange = true
         }
 
         return didChange

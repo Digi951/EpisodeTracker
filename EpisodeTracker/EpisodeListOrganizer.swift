@@ -585,7 +585,7 @@ enum EpisodeListOrganizer {
         preferCatalogTotals: Bool
     ) -> [EpisodeListGroup] {
         let grouped = Dictionary(grouping: episodes) { episode in
-            episode.universe?.name ?? "Allgemein"
+            AppLocalization.displayName(forUniverseName: episode.universe?.name)
         }
         return grouped.keys.sorted().map { key in
             let totalOverride = preferCatalogTotals ? catalogTotalsByUniverse[key.lowercased()] : nil

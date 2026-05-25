@@ -128,7 +128,7 @@ private struct PhoneEpisodesRoot: View {
                     case .moodPicker:
                         MoodPickerView()
                     case .moodDetail(let mood):
-                        SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                        SmartListDetailView(smartList: .randomByMood, mood: mood)
                     }
                 }
                 .navigationTitle(libraryTitle)
@@ -150,7 +150,7 @@ private struct PhoneUpNextRoot: View {
                     case .moodPicker:
                         MoodPickerView()
                     case .moodDetail(let mood):
-                        SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                        SmartListDetailView(smartList: .randomByMood, mood: mood)
                     }
                 }
                 .navigationTitle("Als nächstes")
@@ -253,7 +253,7 @@ private struct IPadEpisodeListView: View {
     private var catalogTotalsByUniverse: [String: Int] {
         Dictionary(
             uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
-                ($0.collectionName ?? "Allgemein").lowercased()
+                AppLocalization.displayName(forUniverseName: $0.collectionName).lowercased()
             }.map { key, entries in
                 let uniqueNumbers = Set(entries.map(\.number))
                 return (key, uniqueNumbers.count)
@@ -311,7 +311,7 @@ private struct IPadEpisodeListView: View {
                 MoodPickerView()
             case .moodDetail(let mood):
                 SmartListDetailView(
-                    smartList: .zufaelligNachStimmung,
+                    smartList: .randomByMood,
                     mood: mood,
                     iPadSelection: $selection
                 )
@@ -590,7 +590,7 @@ private struct UpNextSplitView: View {
                         .navigationDestination(for: SmartListNavigation.self) { destination in
                             switch destination {
                             case .moodDetail(let mood):
-                                SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+                                SmartListDetailView(smartList: .randomByMood, mood: mood)
                                     .navigationDestination(for: Episode.self) { episode in
                                         EpisodeDetailView(episode: episode)
                                     }
@@ -618,7 +618,7 @@ private struct UpNextSplitView: View {
         case .moodPicker:
             MoodPickerView()
         case .moodDetail(let mood):
-            SmartListDetailView(smartList: .zufaelligNachStimmung, mood: mood)
+            SmartListDetailView(smartList: .randomByMood, mood: mood)
         }
     }
 }

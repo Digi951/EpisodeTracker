@@ -28,9 +28,9 @@ struct UpNextView: View {
 
     private func count(for smartList: SmartListDefinition) -> Int {
         switch smartList {
-        case .naechsteAusKatalog:
+        case .nextFromCatalog:
             return catalogSuggestions.count
-        case .zufaelligNachStimmung:
+        case .randomByMood:
             return SmartListDefinition.availableMoods(from: episodes, filter: .all, allMoods: moods).count
         default:
             return smartList.episodes(from: episodes).count
@@ -67,30 +67,30 @@ struct UpNextView: View {
     @ViewBuilder
     private func smartListRow(_ smartList: SmartListDefinition) -> some View {
         let itemCount = count(for: smartList)
-        let hasItems = itemCount > 0 || smartList == .zufaelligNachStimmung
+        let hasItems = itemCount > 0 || smartList == .randomByMood
 
-        let navValue: SmartListNavigation = smartList == .zufaelligNachStimmung
+        let navValue: SmartListNavigation = smartList == .randomByMood
             ? .moodPicker
             : .detail(smartList)
 
         let content: SmartListRowContent = {
             switch smartList {
-            case .naechsteAusKatalog:
+            case .nextFromCatalog:
                 return SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
                     teaser: catalogSuggestions.first.map { SmartListDefinition.catalogTeaserText(for: $0.entry) },
                     onInfoTap: { showingInfo = smartList }
                 )
-            case .zufaelligNachStimmung:
+            case .randomByMood:
                 return SmartListRowContent(
                     smartList: smartList,
                     count: itemCount,
                     teaser: itemCount == 0
-                        ? "Stimmung wählen…"
+                        ? String(localized: "SmartList.RandomByMood.PickMood", defaultValue: "Stimmung wählen…")
                         : itemCount == 1
-                            ? "1 Stimmung verfügbar"
-                            : "\(itemCount) Stimmungen verfügbar",
+                            ? String(localized: "SmartList.RandomByMood.OneMoodAvailable", defaultValue: "1 Stimmung verfügbar")
+                            : AppLocalization.format("SmartList.RandomByMood.MoodsAvailable", defaultValue: "%d Stimmungen verfügbar", itemCount),
                     onInfoTap: { showingInfo = smartList }
                 )
             default:

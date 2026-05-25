@@ -51,7 +51,7 @@ struct EpisodeListView: View {
     private var catalogTotalsByUniverse: [String: Int] {
         Dictionary(
             uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
-                ($0.collectionName ?? "Allgemein").lowercased()
+                AppLocalization.displayName(forUniverseName: $0.collectionName).lowercased()
             }.map { key, entries in
                 let uniqueNumbers = Set(entries.map(\.number))
                 return (key, uniqueNumbers.count)
