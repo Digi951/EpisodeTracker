@@ -1856,8 +1856,8 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(keeper.listenCount, 2, "Keeper should have higher listen count")
         XCTAssertEqual(keeper.personalNote, "Klassiker!", "Note should be merged from duplicate")
         XCTAssertEqual(
-            keeper.moods.map(\.resolvedSyncKey),
-            ["mood:spannend", "mood:gruselig"],
+            Set(keeper.moods.map(\.resolvedSyncKey)),
+            Set(["mood:spannend", "mood:gruselig"]),
             "Keeper should preserve the union of moods from duplicate episodes"
         )
     }
