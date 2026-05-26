@@ -153,8 +153,12 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     // MARK: - Query Logic
 
+    private static func visible(_ episodes: [Episode]) -> [Episode] {
+        episodes.filter { !$0.isHidden }
+    }
+
     static func favoriteEpisodes(from episodes: [Episode]) -> [Episode] {
-        episodes
+        visible(episodes)
             .filter(\.isFavorite)
             .sorted {
                 let name0 = $0.universe?.name ?? ""
@@ -167,7 +171,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func laterListenEpisodes(from episodes: [Episode]) -> [Episode] {
-        episodes
+        visible(episodes)
             .filter { $0.isBookmarked && !$0.isListened }
             .sorted {
                 let name0 = $0.universe?.name ?? ""
@@ -180,7 +184,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func continuationEpisodes(from episodes: [Episode]) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(episode: Episode, lastActivity: Date)] = []
@@ -206,7 +210,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func skippedEpisodes(from episodes: [Episode]) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(universeName: String, episode: Episode)] = []
@@ -238,7 +242,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func longPauseEpisodes(from episodes: [Episode], referenceDate: Date = .now) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         guard let thresholdDate = Calendar.current.date(
@@ -274,7 +278,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func topRatedEpisodes(from episodes: [Episode]) -> [Episode] {
-        episodes
+        visible(episodes)
             .filter { !$0.isListened && $0.rating != nil }
             .sorted {
                 let r0 = $0.rating ?? 0
@@ -287,7 +291,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func randomEpisodes(from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10, maxPerUniverse: Int = 3) -> [Episode] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         let grouped = Dictionary(grouping: filtered) { $0.universe?.name ?? "" }
         var picked: [Episode] = []
         for (_, group) in grouped {
@@ -297,7 +301,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         let matching = filtered.filter { episode in
             episode.moods.contains(where: { $0.matches(mood) })
         }
@@ -305,7 +309,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func availableMoods(from episodes: [Episode], filter: EpisodeFilter = .unlistened, allMoods: [Mood]) -> [(mood: Mood, count: Int)] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         var results: [(mood: Mood, count: Int)] = []
 
         for mood in canonicalMoods(from: allMoods) {

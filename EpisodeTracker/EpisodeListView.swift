@@ -298,6 +298,23 @@ struct EpisodeListView: View {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                        episode.listenStatusUpdatedAt = .now
+                        if episode.isBookmarked {
+                            episode.isBookmarked = false
+                            episode.bookmarkedUpdatedAt = .now
+                        }
+                    }
+                } label: {
+                    Label("Durchgang +1", systemImage: "plus")
+                }
+                .tint(.green)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         episode.isListened.toggle()
                         if episode.isListened {
                             episode.listenCount += 1
@@ -315,32 +332,28 @@ struct EpisodeListView: View {
                         systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
                     )
                 }
-                .tint(episode.isListened ? .gray : .green)
+                .tint(.blue)
             }
             .swipeActions(edge: .trailing) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        episode.isListened = true
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
-                        episode.listenStatusUpdatedAt = .now
-                        if episode.isBookmarked {
-                            episode.isBookmarked = false
-                            episode.bookmarkedUpdatedAt = .now
-                        }
-                    }
-                } label: {
-                    Label("Hördurchgang zählen", systemImage: "plus")
-                }
-                .tint(.blue)
-
                 Button(role: .destructive) {
                     requestDeleteEpisode(episode)
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
-                .tint(.red)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isHidden.toggle()
+                        episode.hiddenUpdatedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isHidden ? "Einblenden" : "Ausblenden",
+                        systemImage: episode.isHidden ? "eye" : "eye.slash"
+                    )
+                }
+                .tint(.orange)
             }
         }
     }

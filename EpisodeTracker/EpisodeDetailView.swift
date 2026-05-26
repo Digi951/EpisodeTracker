@@ -146,6 +146,20 @@ struct EpisodeDetailView: View {
                 .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
         }
         .shadow(color: .black.opacity(0.1), radius: 16, x: 0, y: 6)
+        .contextMenu {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    episode.isHidden.toggle()
+                    episode.hiddenUpdatedAt = .now
+                }
+            } label: {
+                Label(
+                    episode.isHidden ? "Einblenden" : "Ausblenden",
+                    systemImage: episode.isHidden ? "eye" : "eye.slash"
+                )
+            }
+        }
     }
 
     private var panelDivider: some View {
