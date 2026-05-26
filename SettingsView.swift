@@ -541,7 +541,7 @@ private struct SettingsStreamingSection: View {
                 value: selectedService.wrappedValue.displayName,
                 accentColor: appAccentColor
             ) {
-                ForEach(StreamingService.allCases) { service in
+                ForEach(StreamingMarketProfile.current.services) { service in
                     Button {
                         selectedService.wrappedValue = service
                     } label: {

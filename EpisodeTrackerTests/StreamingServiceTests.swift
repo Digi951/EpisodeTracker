@@ -25,7 +25,7 @@ final class StreamingServiceTests: XCTestCase {
             appleMusicURL: "https://music.apple.com/album/1234567"
         )
 
-        let url = StreamingService.appleMusic.catalogURL(from: entry)
+        let url = StreamingService.apple.catalogURL(from: entry)
         XCTAssertEqual(url?.absoluteString, "https://music.apple.com/album/1234567")
     }
 
@@ -61,7 +61,7 @@ final class StreamingServiceTests: XCTestCase {
         )
 
         XCTAssertNil(StreamingService.spotify.catalogURL(from: entry))
-        XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.apple.catalogURL(from: entry))
         XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
         XCTAssertNil(StreamingService.audible.catalogURL(from: entry))
     }
@@ -75,7 +75,7 @@ final class StreamingServiceTests: XCTestCase {
         )
 
         XCTAssertNotNil(StreamingService.spotify.catalogURL(from: entry))
-        XCTAssertNil(StreamingService.appleMusic.catalogURL(from: entry))
+        XCTAssertNil(StreamingService.apple.catalogURL(from: entry))
         XCTAssertNil(StreamingService.deezer.catalogURL(from: entry))
         XCTAssertNil(StreamingService.audible.catalogURL(from: entry))
     }
@@ -117,12 +117,97 @@ final class StreamingServiceTests: XCTestCase {
 
     func testDisplayNames() {
         XCTAssertEqual(StreamingService.spotify.displayName, "Spotify")
-        XCTAssertEqual(StreamingService.appleMusic.displayName, "Apple Music")
+        XCTAssertEqual(StreamingService.apple.displayName, "Apple")
         XCTAssertEqual(StreamingService.deezer.displayName, "Deezer")
         XCTAssertEqual(StreamingService.audible.displayName, "Audible")
     }
 
     func testAllCasesContainsSupportedServices() {
-        XCTAssertEqual(StreamingService.allCases, [.spotify, .appleMusic, .deezer, .audible])
+        XCTAssertEqual(StreamingService.allCases, [.spotify, .apple, .deezer, .audible])
+    }
+
+    // MARK: - Backward Compatibility
+
+    func testAppleMusicRawValueParsesAsApple() {
+        let service = StreamingService(rawValue: "appleMusic")
+        XCTAssertEqual(service, .apple)
+    }
+
+    func testAppleRawValueParsesAsApple() {
+        let service = StreamingService(rawValue: "apple")
+        XCTAssertEqual(service, .apple)
+    }
+
+    func testAppleRawValueIsApple() {
+        XCTAssertEqual(StreamingService.apple.rawValue, "apple")
+    }
+
+    // MARK: - Dynamic Display Names
+
+    func testAppleDisplayNameForAppleMusicURL() {
+        let name = StreamingService.apple.displayName(for: "https://music.apple.com/de/album/test/123")
+        XCTAssertEqual(name, "Apple Music")
+    }
+
+    func testAppleDisplayNameForAppleBooksURL() {
+        let name = StreamingService.apple.displayName(for: "https://books.apple.com/de/audiobook/test/id123")
+        XCTAssertEqual(name, "Apple Books")
+    }
+
+    func testAppleDisplayNameForGenericURL() {
+        let name = StreamingService.apple.displayName(for: "https://apple.com/something")
+        XCTAssertEqual(name, "Apple")
+    }
+
+    func testAppleDisplayNameForNilURL() {
+        let name = StreamingService.apple.displayName(for: nil)
+        XCTAssertEqual(name, "Apple")
+    }
+
+    func testNonAppleServiceIgnoresURLForDisplayName() {
+        let name = StreamingService.spotify.displayName(for: "https://music.apple.com/test")
+        XCTAssertEqual(name, "Spotify")
+    }
+
+    // MARK: - Market Profile
+
+    func testMarketProfileContainsAllServices() {
+        let profile = StreamingMarketProfile.current
+        XCTAssertFalse(profile.services.isEmpty)
+        XCTAssertTrue(profile.services.contains(.spotify))
+        XCTAssertTrue(profile.services.contains(.apple))
+    }
+
+    // MARK: - Link Resolver
+
+    func testResolverPrioritizesDirectURLOverCatalog() {
+        let catalog = EpisodeCatalog.shared
+        let episode = Episode(
+            episodeNumber: 1,
+            title: "Test",
+            releaseYear: 2020,
+            isListened: false
+        )
+        episode.streamingURL = "https://open.spotify.com/album/direct123"
+
+        let resolver = StreamingLinkResolver(service: .spotify, catalog: catalog)
+        let result = resolver.resolve(for: episode)
+
+        XCTAssertEqual(result?.url.absoluteString, "https://open.spotify.com/album/direct123")
+    }
+
+    func testResolverReturnsNilWhenNoLinksAvailable() {
+        let catalog = EpisodeCatalog.shared
+        let episode = Episode(
+            episodeNumber: 99999,
+            title: "Test",
+            releaseYear: 2020,
+            isListened: false
+        )
+
+        let resolver = StreamingLinkResolver(service: .spotify, catalog: catalog)
+        let result = resolver.resolve(for: episode)
+
+        XCTAssertNil(result)
     }
 }

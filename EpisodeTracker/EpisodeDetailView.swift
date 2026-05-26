@@ -14,20 +14,8 @@ struct EpisodeDetailView: View {
     }
 
     private var resolvedStreamingLink: (url: URL, label: String)? {
-        if let directURL = streamingService.directURL(from: episode.streamingURL) {
-            return (directURL, "In \(streamingService.displayName) öffnen")
-        }
-
-        let catalogEntry = catalog.entry(
-            for: episode.episodeNumber,
-            in: episode.universe?.name
-        )
-
-        if let entry = catalogEntry, let catalogURL = streamingService.catalogURL(from: entry) {
-            return (catalogURL, "In \(streamingService.displayName) öffnen")
-        }
-
-        return nil
+        StreamingLinkResolver(service: streamingService, catalog: catalog)
+            .resolve(for: episode)
     }
 
     private var statusLabel: String {
