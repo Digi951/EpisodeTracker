@@ -9,7 +9,7 @@ private let bootstrapLogger = Logger(
 
 enum AppDataBootstrapper {
     static let schemaVersionKey = "schemaVersion"
-    static let currentSchemaVersion = 5
+    static let currentSchemaVersion = 6
     static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
 
     @discardableResult

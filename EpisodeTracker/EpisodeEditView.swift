@@ -403,6 +403,10 @@ struct EpisodeEditView: View {
             let wasListened = episode.isListened
             let previousMoodKeys = Set(episode.moods.map(\.resolvedSyncKey))
             let newMoodKeys = Set(selectedMoods.map(\.resolvedSyncKey))
+            let previousNote = episode.personalNote
+            let previousRating = episode.rating
+            let previousStreamingURL = episode.streamingURL
+            let previousListenStatus = episode.isListened
             episode.episodeNumber = episodeNumber
             episode.title = title
             episode.releaseYear = releaseYear
@@ -415,6 +419,10 @@ struct EpisodeEditView: View {
                 episode.moodsUpdatedAt = .now
             }
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
+            if episode.personalNote != previousNote { episode.noteUpdatedAt = .now }
+            if episode.rating != previousRating { episode.ratingUpdatedAt = .now }
+            if episode.streamingURL != previousStreamingURL { episode.streamingURLUpdatedAt = .now }
+            if episode.isListened != previousListenStatus { episode.listenStatusUpdatedAt = .now }
             episode.refreshSyncKeyIfPossible()
             applyCoverChange(to: episode)
 

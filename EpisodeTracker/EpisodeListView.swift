@@ -303,6 +303,7 @@ struct EpisodeListView: View {
                             episode.listenCount += 1
                             episode.lastListenedAt = .now
                         }
+                        episode.listenStatusUpdatedAt = .now
                     }
                 } label: {
                     Label(
@@ -319,6 +320,7 @@ struct EpisodeListView: View {
                         episode.isListened = true
                         episode.listenCount += 1
                         episode.lastListenedAt = .now
+                        episode.listenStatusUpdatedAt = .now
                     }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")

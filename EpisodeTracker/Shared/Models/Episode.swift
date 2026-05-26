@@ -17,6 +17,16 @@ final class Episode {
     var coverImageName: String?
     var coverUpdatedAt: Date?
     var moodsUpdatedAt: Date?
+    var isFavorite: Bool = false
+    var isBookmarked: Bool = false
+    var isHidden: Bool = false
+    var ratingUpdatedAt: Date?
+    var noteUpdatedAt: Date?
+    var favoriteUpdatedAt: Date?
+    var bookmarkedUpdatedAt: Date?
+    var hiddenUpdatedAt: Date?
+    var streamingURLUpdatedAt: Date?
+    var listenStatusUpdatedAt: Date?
     @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
     @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
 
@@ -31,6 +41,9 @@ final class Episode {
         rating: Int? = nil,
         listenCount: Int = 0,
         lastListenedAt: Date? = nil,
+        isFavorite: Bool = false,
+        isBookmarked: Bool = false,
+        isHidden: Bool = false,
         universe: Universe? = nil,
         moods: [Mood] = []
     ) {
@@ -47,6 +60,9 @@ final class Episode {
         self.rating = rating
         self.listenCount = listenCount
         self.lastListenedAt = lastListenedAt
+        self.isFavorite = isFavorite
+        self.isBookmarked = isBookmarked
+        self.isHidden = isHidden
         self.universe = universe
         self.moodRelationships = moods
     }

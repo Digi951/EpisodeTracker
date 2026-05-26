@@ -225,6 +225,7 @@ struct EpisodeDetailView: View {
             episode.isListened = true
             episode.listenCount += 1
             episode.lastListenedAt = .now
+            episode.listenStatusUpdatedAt = .now
         }
     }
 

@@ -684,34 +684,39 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 5)
+        XCTAssertEqual(schemas.count, 6)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
         XCTAssertTrue(schemas[3] == SchemaV4.self)
         XCTAssertTrue(schemas[4] == SchemaV5.self)
+        XCTAssertTrue(schemas[5] == SchemaV6.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 4, "Should have V1→V2, V2→V3, V3→V4, and V4→V5 stages")
+        XCTAssertEqual(stages.count, 5, "Should have V1→V2, V2→V3, V3→V4, V4→V5, and V5→V6 stages")
     }
 
-    func testMigrationPlanIncludesV5() {
+    func testMigrationPlanIncludesV6() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 5)
-        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(4, 0, 0) }))
+        XCTAssertEqual(schemas.count, 6)
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(5, 0, 0) }))
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(6, 0, 0) }))
 
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 4)
+        XCTAssertEqual(stages.count, 5)
     }
 
-    func testSchemaV5ReferencesCurrentModels() {
+    func testSchemaV5ReferencesHistoricalModels() {
         XCTAssertEqual(SchemaV5.models.count, 3)
     }
 
-    func testSchemaVersionIsFive() async throws {
+    func testSchemaV6ReferencesCurrentModels() {
+        XCTAssertEqual(SchemaV6.models.count, 3)
+    }
+
+    func testSchemaVersionIsSix() async throws {
         let container = try makeInMemoryContainer()
         let suiteName = "test-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -722,7 +727,115 @@ final class MigrationSafetyTests: XCTestCase {
             userDefaults: defaults
         )
 
-        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 5)
+        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 6)
+    }
+
+    // MARK: - V6 New Fields
+
+    func testV6BoolFieldsDefaultToFalse() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let episode = Episode(episodeNumber: 1, title: "V6 Test", releaseYear: 2026)
+        context.insert(episode)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertFalse(fetched[0].isFavorite)
+        XCTAssertFalse(fetched[0].isBookmarked)
+        XCTAssertFalse(fetched[0].isHidden)
+    }
+
+    func testV6TimestampFieldsDefaultToNil() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let episode = Episode(episodeNumber: 1, title: "V6 Timestamp Test", releaseYear: 2026)
+        context.insert(episode)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertNil(fetched[0].ratingUpdatedAt)
+        XCTAssertNil(fetched[0].noteUpdatedAt)
+        XCTAssertNil(fetched[0].favoriteUpdatedAt)
+        XCTAssertNil(fetched[0].bookmarkedUpdatedAt)
+        XCTAssertNil(fetched[0].hiddenUpdatedAt)
+        XCTAssertNil(fetched[0].streamingURLUpdatedAt)
+        XCTAssertNil(fetched[0].listenStatusUpdatedAt)
+    }
+
+    func testV6FieldsPersistAfterSave() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let episode = Episode(episodeNumber: 1, title: "V6 Persist", releaseYear: 2026, isFavorite: true, isBookmarked: true)
+        let now = Date.now
+        episode.favoriteUpdatedAt = now
+        episode.bookmarkedUpdatedAt = now
+        context.insert(episode)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertTrue(fetched[0].isFavorite)
+        XCTAssertTrue(fetched[0].isBookmarked)
+        XCTAssertNotNil(fetched[0].favoriteUpdatedAt)
+        XCTAssertNotNil(fetched[0].bookmarkedUpdatedAt)
+    }
+
+    func testDeduplicationMergesBoolFieldsTrueWins() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let keeper = Episode(episodeNumber: 1, title: "Test", releaseYear: 2026, universe: universe)
+        let duplicate = Episode(episodeNumber: 1, title: "Test", releaseYear: 2026, isFavorite: true, isBookmarked: true, isHidden: true, universe: universe)
+
+        context.insert(universe)
+        context.insert(keeper)
+        context.insert(duplicate)
+
+        var summary = SyncPreparation.ChangeSummary()
+        EntityDeduplicator.deduplicateEpisodes([keeper, duplicate], in: context, summary: &summary)
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertTrue(episodes[0].isFavorite)
+        XCTAssertTrue(episodes[0].isBookmarked)
+        XCTAssertTrue(episodes[0].isHidden)
+    }
+
+    func testDeduplicationMergesTimestampsNewerWins() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let older = Date.now.addingTimeInterval(-3600)
+        let newer = Date.now
+
+        let keeper = Episode(episodeNumber: 1, title: "Test", releaseYear: 2026, universe: universe)
+        keeper.ratingUpdatedAt = older
+        keeper.noteUpdatedAt = nil
+
+        let duplicate = Episode(episodeNumber: 1, title: "Test", releaseYear: 2026, universe: universe)
+        duplicate.ratingUpdatedAt = newer
+        duplicate.noteUpdatedAt = newer
+
+        context.insert(universe)
+        context.insert(keeper)
+        context.insert(duplicate)
+
+        var summary = SyncPreparation.ChangeSummary()
+        EntityDeduplicator.deduplicateEpisodes([keeper, duplicate], in: context, summary: &summary)
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].ratingUpdatedAt, newer)
+        XCTAssertEqual(episodes[0].noteUpdatedAt, newer)
     }
 
     func testSchemaV1ModelsMatchV1Release() {

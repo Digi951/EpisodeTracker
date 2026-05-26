@@ -222,4 +222,56 @@ enum SchemaV5: VersionedSchema {
     static var models: [any PersistentModel.Type] {
         [Episode.self, Mood.self, Universe.self]
     }
+
+    @Model
+    final class Episode {
+        var id: UUID = UUID()
+        var syncKey: String?
+        var episodeNumber: Int = 0
+        var title: String = ""
+        var releaseYear: Int = 0
+        var personalNote: String?
+        var isListened: Bool = false
+        var rating: Int?
+        var listenCount: Int = 0
+        var lastListenedAt: Date?
+        var streamingURL: String?
+        var coverImageName: String?
+        var coverUpdatedAt: Date?
+        var moodsUpdatedAt: Date?
+        @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
+        @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
+
+        init() {}
+    }
+
+    @Model
+    final class Mood {
+        var id: UUID = UUID()
+        var name: String = ""
+        var iconName: String?
+        var syncKey: String?
+        @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
+
+        init() {}
+    }
+
+    @Model
+    final class Universe {
+        var id: UUID = UUID()
+        var name: String = ""
+        var syncKey: String?
+        var coverImageName: String?
+        @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
+
+        init() {}
+    }
+}
+
+enum SchemaV6: VersionedSchema {
+    static var versionIdentifier = Schema.Version(6, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [Episode.self, Mood.self, Universe.self]
+    }
 }
