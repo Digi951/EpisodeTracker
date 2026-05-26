@@ -152,6 +152,9 @@
         }
       }
     },
+    "Auf Merkliste setzen" : {
+
+    },
     "Aus Zwischenablage einfügen" : {
       "localizations" : {
         "de" : {
@@ -1891,6 +1894,39 @@
         }
       }
     },
+    "SmartList.LaterListen.Empty" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keine Folgen auf der Merkliste"
+          }
+        }
+      }
+    },
+    "SmartList.LaterListen.Info" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folgen, die du mit dem Lesezeichen markiert hast und noch nicht gehört wurden. Sobald du eine Folge als gehört markierst, wird das Lesezeichen automatisch entfernt."
+          }
+        }
+      }
+    },
+    "SmartList.LaterListen.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Später hören"
+          }
+        }
+      }
+    },
     "SmartList.LongPaused.Empty" : {
       "localizations" : {
         "de" : {
@@ -2693,6 +2729,9 @@
           }
         }
       }
+    },
+    "Von Merkliste entfernen" : {
+
     },
     "Vorhandene Stimmungen" : {
       "localizations" : {

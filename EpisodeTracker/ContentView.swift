@@ -478,7 +478,12 @@ private struct IPadEpisodeListView: View {
                         if episode.isListened {
                             episode.listenCount += 1
                             episode.lastListenedAt = .now
+                            if episode.isBookmarked {
+                                episode.isBookmarked = false
+                                episode.bookmarkedUpdatedAt = .now
+                            }
                         }
+                        episode.listenStatusUpdatedAt = .now
                     }
                 } label: {
                     Label(
@@ -495,6 +500,11 @@ private struct IPadEpisodeListView: View {
                         episode.isListened = true
                         episode.listenCount += 1
                         episode.lastListenedAt = .now
+                        episode.listenStatusUpdatedAt = .now
+                        if episode.isBookmarked {
+                            episode.isBookmarked = false
+                            episode.bookmarkedUpdatedAt = .now
+                        }
                     }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")

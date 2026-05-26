@@ -429,6 +429,10 @@ struct EpisodeEditView: View {
             if isListened && !wasListened {
                 episode.listenCount += 1
                 episode.lastListenedAt = .now
+                if episode.isBookmarked {
+                    episode.isBookmarked = false
+                    episode.bookmarkedUpdatedAt = .now
+                }
             }
         } else {
             let newEpisode = Episode(

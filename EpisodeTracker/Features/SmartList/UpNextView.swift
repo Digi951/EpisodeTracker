@@ -160,6 +160,7 @@ private struct SmartListRowContent: View {
 
     private var color: Color {
         switch smartList.accentColor {
+        case "cyan": .cyan
         case "blue": .blue
         case "green": .green
         case "orange": .orange
@@ -221,6 +222,7 @@ private struct SmartListInfoSheet: View {
 
     private var color: Color {
         switch smartList.accentColor {
+        case "cyan": .cyan
         case "blue": .blue
         case "green": .green
         case "orange": .orange

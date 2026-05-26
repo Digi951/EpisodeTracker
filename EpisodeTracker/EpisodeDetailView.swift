@@ -65,8 +65,22 @@ struct EpisodeDetailView: View {
         .navigationTitle("Folge \(episode.episodeNumber)")
         .background(fullScreenCoverBackground)
         .toolbar {
-            Button("Bearbeiten") {
-                showingEdit = true
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isBookmarked.toggle()
+                        episode.bookmarkedUpdatedAt = .now
+                    }
+                } label: {
+                    Image(systemName: episode.isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(episode.isBookmarked ? .cyan : .secondary)
+                }
+                .accessibilityLabel(episode.isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen")
+
+                Button("Bearbeiten") {
+                    showingEdit = true
+                }
             }
         }
         .sheet(isPresented: $showingEdit) {
@@ -226,6 +240,10 @@ struct EpisodeDetailView: View {
             episode.listenCount += 1
             episode.lastListenedAt = .now
             episode.listenStatusUpdatedAt = .now
+            if episode.isBookmarked {
+                episode.isBookmarked = false
+                episode.bookmarkedUpdatedAt = .now
+            }
         }
     }
 

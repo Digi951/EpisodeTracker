@@ -14,12 +14,13 @@ final class SmartListTests: XCTestCase {
         title: String = "Folge",
         universe: Universe? = nil,
         isListened: Bool = false,
+        isBookmarked: Bool = false,
         rating: Int? = nil,
         listenCount: Int? = nil,
         lastListenedAt: Date? = nil,
         moods: [Mood] = []
     ) -> Episode {
-        Episode(
+        let episode = Episode(
             episodeNumber: number,
             title: title,
             releaseYear: 2020,
@@ -30,10 +31,62 @@ final class SmartListTests: XCTestCase {
             universe: universe,
             moods: moods
         )
+        episode.isBookmarked = isBookmarked
+        return episode
     }
 
     private func date(_ daysAgo: Int) -> Date {
         Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+    }
+
+    // MARK: - Später hören (Later Listen / Bookmark)
+
+    func testLaterListenReturnsBookmarkedUnlistenedOnly() {
+        let u1 = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: false, isBookmarked: true),
+            makeEpisode(number: 2, universe: u1, isListened: true, isBookmarked: true),
+            makeEpisode(number: 3, universe: u1, isListened: false, isBookmarked: false),
+            makeEpisode(number: 4, universe: u1, isListened: false, isBookmarked: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 4)
+    }
+
+    func testLaterListenSortsByUniverseNameThenNumber() {
+        let tkkg = makeUniverse("TKKG")
+        let ddf = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 5, universe: tkkg, isListened: false, isBookmarked: true),
+            makeEpisode(number: 2, universe: ddf, isListened: false, isBookmarked: true),
+            makeEpisode(number: 1, universe: ddf, isListened: false, isBookmarked: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 3)
+        XCTAssertEqual(result[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[1].episodeNumber, 2)
+        XCTAssertEqual(result[2].universe?.name, "TKKG")
+        XCTAssertEqual(result[2].episodeNumber, 5)
+    }
+
+    func testLaterListenReturnsEmptyWhenNoBookmarks() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: false),
+            makeEpisode(number: 2, universe: u1, isListened: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
     }
 
     // MARK: - Fortsetzen (Continue)

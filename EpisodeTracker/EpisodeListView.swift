@@ -302,6 +302,10 @@ struct EpisodeListView: View {
                         if episode.isListened {
                             episode.listenCount += 1
                             episode.lastListenedAt = .now
+                            if episode.isBookmarked {
+                                episode.isBookmarked = false
+                                episode.bookmarkedUpdatedAt = .now
+                            }
                         }
                         episode.listenStatusUpdatedAt = .now
                     }
@@ -321,6 +325,10 @@ struct EpisodeListView: View {
                         episode.listenCount += 1
                         episode.lastListenedAt = .now
                         episode.listenStatusUpdatedAt = .now
+                        if episode.isBookmarked {
+                            episode.isBookmarked = false
+                            episode.bookmarkedUpdatedAt = .now
+                        }
                     }
                 } label: {
                     Label("Hördurchgang zählen", systemImage: "plus")
@@ -663,6 +671,13 @@ struct EpisodeRowView: View {
             .layoutPriority(1)
 
             Spacer()
+
+            if episode.isBookmarked {
+                Image(systemName: "bookmark.fill")
+                    .foregroundStyle(.cyan)
+                    .font(.caption)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+            }
 
             if episode.isListened {
                 Image(systemName: "checkmark.circle.fill")
