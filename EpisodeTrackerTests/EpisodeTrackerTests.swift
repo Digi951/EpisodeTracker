@@ -1685,25 +1685,48 @@ final class EpisodeTrackerTests: XCTestCase {
     // MARK: - Smart List Preferences
 
     func testSmartListPreferencesVisibleListsReturnsAllWhenEmpty() {
-        let visible = SmartListPreferences.visibleLists(from: "")
+        let visible = SmartListPreferences.visibleLists(orderRaw: "", hiddenRaw: "")
         XCTAssertEqual(visible, SmartListDefinition.allCases)
     }
 
     func testSmartListPreferencesHiddenListsExcludesFromVisible() {
-        let hidden = SmartListPreferences.encode([.random, .skipped])
-        let visible = SmartListPreferences.visibleLists(from: hidden)
+        let hidden = SmartListPreferences.encodeHidden([.random, .skipped])
+        let visible = SmartListPreferences.visibleLists(orderRaw: "", hiddenRaw: hidden)
 
         XCTAssertFalse(visible.contains(.random))
         XCTAssertFalse(visible.contains(.skipped))
         XCTAssertEqual(visible.count, SmartListDefinition.allCases.count - 2)
     }
 
-    func testSmartListPreferencesRoundTrip() {
+    func testSmartListPreferencesHiddenRoundTrip() {
         let original: Set<SmartListDefinition> = [.laterListen, .favorites]
-        let encoded = SmartListPreferences.encode(original)
+        let encoded = SmartListPreferences.encodeHidden(original)
         let decoded = SmartListPreferences.hiddenLists(from: encoded)
 
         XCTAssertEqual(decoded, original)
+    }
+
+    func testSmartListPreferencesOrderReturnsAllWhenEmpty() {
+        let order = SmartListPreferences.orderedLists(from: "")
+        XCTAssertEqual(order, SmartListDefinition.allCases)
+    }
+
+    func testSmartListPreferencesOrderRespectsCustomOrderAndAppendsMissing() {
+        let order = SmartListPreferences.orderedLists(from: "random,favorites")
+
+        XCTAssertEqual(order[0], .random)
+        XCTAssertEqual(order[1], .favorites)
+        XCTAssertEqual(order.count, SmartListDefinition.allCases.count)
+    }
+
+    func testSmartListPreferencesVisibleListsRespectsOrderAndHidden() {
+        let orderRaw = SmartListPreferences.encodeOrder([.topRated, .random, .favorites, .laterListen, .continueListening, .nextFromCatalog, .longPaused, .skipped, .randomByMood])
+        let hiddenRaw = SmartListPreferences.encodeHidden([.random])
+        let visible = SmartListPreferences.visibleLists(orderRaw: orderRaw, hiddenRaw: hiddenRaw)
+
+        XCTAssertEqual(visible[0], .topRated)
+        XCTAssertEqual(visible[1], .favorites)
+        XCTAssertFalse(visible.contains(.random))
     }
 
     @MainActor

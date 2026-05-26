@@ -3,43 +3,45 @@ import SwiftUI
 struct StatisticsCustomizationView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var sectionOrder: [StatisticsSectionKind]
-    @State private var hiddenSections: Set<StatisticsSectionKind>
-    @State private var order: [StatisticsOverviewKind]
-    @State private var hiddenItems: Set<StatisticsOverviewKind>
+    @Binding var sectionOrderRaw: String
+    @Binding var hiddenSectionsRaw: String
+    @Binding var overviewOrderRaw: String
+    @Binding var hiddenOverviewItemsRaw: String
 
     let items: [StatisticsOverviewItem]
-    let onSave: ([StatisticsSectionKind], Set<StatisticsSectionKind>, [StatisticsOverviewKind], Set<StatisticsOverviewKind>) -> Void
 
-    init(
-        sectionOrder: [StatisticsSectionKind],
-        hiddenSections: Set<StatisticsSectionKind>,
-        items: [StatisticsOverviewItem],
-        order: [StatisticsOverviewKind],
-        hiddenItems: Set<StatisticsOverviewKind>,
-        onSave: @escaping ([StatisticsSectionKind], Set<StatisticsSectionKind>, [StatisticsOverviewKind], Set<StatisticsOverviewKind>) -> Void
-    ) {
-        self.items = items
-        _sectionOrder = State(initialValue: sectionOrder)
-        _hiddenSections = State(initialValue: hiddenSections)
-        _order = State(initialValue: order)
-        _hiddenItems = State(initialValue: hiddenItems)
-        self.onSave = onSave
+    @State private var sectionOrder: [StatisticsSectionKind] = []
+    @State private var order: [StatisticsOverviewKind] = []
+
+    private var hiddenSections: Set<StatisticsSectionKind> {
+        StatisticsOverviewPreferences.hiddenSections(from: hiddenSectionsRaw)
+    }
+
+    private var hiddenItems: Set<StatisticsOverviewKind> {
+        StatisticsOverviewPreferences.hiddenItems(
+            from: hiddenOverviewItemsRaw,
+            availableKinds: Set(items.map(\.kind))
+        )
     }
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Statistikbereiche") {
+                Section {
                     ForEach(sectionOrder) { section in
                         Toggle(isOn: sectionVisibilityBinding(for: section)) {
                             Label(section.title, systemImage: section.systemImage)
                         }
                     }
-                    .onMove(perform: moveSection)
+                    .onMove { source, destination in
+                        sectionOrder.move(fromOffsets: source, toOffset: destination)
+                        sectionOrderRaw = StatisticsOverviewPreferences.encodeSectionOrder(sectionOrder)
+                    }
+                } header: {
+                    Text("Statistikbereiche")
                 }
 
-                Section("Übersichtswerte") {
+                Section {
                     ForEach(order) { section in
                         StatisticsOverviewCustomizationRow(
                             section: section,
@@ -47,8 +49,13 @@ struct StatisticsCustomizationView: View {
                             isVisible: visibilityBinding(for: section)
                         )
                     }
-                    .onMove(perform: move)
+                    .onMove { source, destination in
+                        order.move(fromOffsets: source, toOffset: destination)
+                        overviewOrderRaw = StatisticsOverviewPreferences.encodeOrder(order)
+                    }
                     .moveDisabled(!isOverviewSectionVisible)
+                } header: {
+                    Text("Übersichtswerte")
                 }
                 .disabled(!isOverviewSectionVisible)
                 .opacity(isOverviewSectionVisible ? 1 : 0.45)
@@ -56,19 +63,20 @@ struct StatisticsCustomizationView: View {
             }
             .environment(\.editMode, .constant(.active))
             .navigationTitle("Statistiken")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") {
-                        onSave(sectionOrder, hiddenSections, order, hiddenItems)
-                        dismiss()
-                    }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
                 }
             }
+        }
+        .presentationDetents([.medium, .large])
+        .onAppear {
+            sectionOrder = StatisticsOverviewPreferences.orderedSections(from: sectionOrderRaw)
+            order = StatisticsOverviewPreferences.orderedItems(
+                from: overviewOrderRaw,
+                availableKinds: Set(items.map(\.kind))
+            )
         }
     }
 
@@ -76,11 +84,13 @@ struct StatisticsCustomizationView: View {
         Binding(
             get: { !hiddenItems.contains(section) },
             set: { isVisible in
+                var hidden = hiddenItems
                 if isVisible {
-                    hiddenItems.remove(section)
+                    hidden.remove(section)
                 } else if visibleCount > 1 {
-                    hiddenItems.insert(section)
+                    hidden.insert(section)
                 }
+                hiddenOverviewItemsRaw = StatisticsOverviewPreferences.encodeHidden(hidden)
             }
         )
     }
@@ -89,11 +99,13 @@ struct StatisticsCustomizationView: View {
         Binding(
             get: { !hiddenSections.contains(section) },
             set: { isVisible in
+                var hidden = hiddenSections
                 if isVisible {
-                    hiddenSections.remove(section)
+                    hidden.remove(section)
                 } else if visibleSectionCount > 1 {
-                    hiddenSections.insert(section)
+                    hidden.insert(section)
                 }
+                hiddenSectionsRaw = StatisticsOverviewPreferences.encodeHiddenSections(hidden)
             }
         )
     }
@@ -112,14 +124,6 @@ struct StatisticsCustomizationView: View {
 
     private var isOverviewSectionVisible: Bool {
         !hiddenSections.contains(.overview)
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        order.move(fromOffsets: source, toOffset: destination)
-    }
-
-    private func moveSection(from source: IndexSet, to destination: Int) {
-        sectionOrder.move(fromOffsets: source, toOffset: destination)
     }
 }
 

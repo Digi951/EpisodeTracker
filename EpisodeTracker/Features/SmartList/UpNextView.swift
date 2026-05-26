@@ -3,7 +3,8 @@ import SwiftData
 
 struct UpNextView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @AppStorage(SmartListPreferences.storageKey) private var hiddenSmartListsRaw = ""
+    @AppStorage(SmartListPreferences.hiddenStorageKey) private var hiddenSmartListsRaw = ""
+    @AppStorage(SmartListPreferences.orderStorageKey) private var smartListOrderRaw = ""
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
@@ -55,7 +56,7 @@ struct UpNextView: View {
                     .listRowSeparator(.hidden)
             }
 
-            ForEach(SmartListPreferences.visibleLists(from: hiddenSmartListsRaw)) { smartList in
+            ForEach(SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)) { smartList in
                 smartListRow(smartList)
             }
         }
@@ -71,7 +72,10 @@ struct UpNextView: View {
             }
         }
         .sheet(isPresented: $showingEditSheet) {
-            SmartListEditSheet(hiddenSmartListsRaw: $hiddenSmartListsRaw)
+            SmartListEditSheet(
+                hiddenSmartListsRaw: $hiddenSmartListsRaw,
+                smartListOrderRaw: $smartListOrderRaw
+            )
         }
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)
@@ -231,7 +235,9 @@ private struct SmartListRowContent: View {
 
 private struct SmartListEditSheet: View {
     @Binding var hiddenSmartListsRaw: String
+    @Binding var smartListOrderRaw: String
     @Environment(\.dismiss) private var dismiss
+    @State private var order: [SmartListDefinition] = []
 
     private var hiddenLists: Set<SmartListDefinition> {
         SmartListPreferences.hiddenLists(from: hiddenSmartListsRaw)
@@ -247,45 +253,34 @@ private struct SmartListEditSheet: View {
                 } else {
                     hidden.insert(list)
                 }
-                hiddenSmartListsRaw = SmartListPreferences.encode(hidden)
+                hiddenSmartListsRaw = SmartListPreferences.encodeHidden(hidden)
             }
         )
-    }
-
-    private var color: (SmartListDefinition) -> Color {
-        { smartList in
-            switch smartList.accentColor {
-            case "cyan": .cyan
-            case "red": .red
-            case "blue": .blue
-            case "green": .green
-            case "orange": .orange
-            case "yellow": .yellow
-            case "purple": .purple
-            case "pink": .pink
-            default: .accentColor
-            }
-        }
     }
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    ForEach(SmartListDefinition.allCases) { smartList in
+                    ForEach(order) { smartList in
                         Toggle(isOn: isEnabled(smartList)) {
                             Label {
                                 Text(smartList.displayName)
                             } icon: {
                                 Image(systemName: smartList.icon)
-                                    .foregroundStyle(color(smartList))
+                                    .foregroundStyle(smartListColor(smartList))
                             }
                         }
                     }
+                    .onMove { source, destination in
+                        order.move(fromOffsets: source, toOffset: destination)
+                        smartListOrderRaw = SmartListPreferences.encodeOrder(order)
+                    }
                 } footer: {
-                    Text("Deaktivierte Listen werden in der Übersicht ausgeblendet.")
+                    Text("Deaktivierte Listen werden ausgeblendet. Halte und ziehe um die Reihenfolge zu ändern.")
                 }
             }
+            .environment(\.editMode, .constant(.active))
             .navigationTitle("Smart Lists")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -295,6 +290,23 @@ private struct SmartListEditSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .onAppear {
+            order = SmartListPreferences.orderedLists(from: smartListOrderRaw)
+        }
+    }
+}
+
+private func smartListColor(_ smartList: SmartListDefinition) -> Color {
+    switch smartList.accentColor {
+    case "cyan": .cyan
+    case "red": .red
+    case "blue": .blue
+    case "green": .green
+    case "orange": .orange
+    case "yellow": .yellow
+    case "purple": .purple
+    case "pink": .pink
+    default: .accentColor
     }
 }
 

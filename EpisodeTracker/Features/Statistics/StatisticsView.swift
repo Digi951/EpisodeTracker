@@ -97,25 +97,22 @@ struct StatisticsView: View {
         .toolbar {
             if !episodes.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Bearbeiten") {
+                    Button {
                         showingCustomization = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
                     }
                 }
             }
         }
         .sheet(isPresented: $showingCustomization) {
             StatisticsCustomizationView(
-                sectionOrder: sectionOrder,
-                hiddenSections: hiddenSections,
-                items: availableOverviewItems,
-                order: overviewOrder,
-                hiddenItems: hiddenOverviewItems
-            ) { updatedSectionOrder, updatedHiddenSections, updatedOrder, updatedHiddenItems in
-                sectionOrderRaw = StatisticsOverviewPreferences.encodeSectionOrder(updatedSectionOrder)
-                hiddenSectionsRaw = StatisticsOverviewPreferences.encodeHiddenSections(updatedHiddenSections)
-                overviewOrderRaw = StatisticsOverviewPreferences.encodeOrder(updatedOrder)
-                hiddenOverviewItemsRaw = StatisticsOverviewPreferences.encodeHidden(updatedHiddenItems)
-            }
+                sectionOrderRaw: $sectionOrderRaw,
+                hiddenSectionsRaw: $hiddenSectionsRaw,
+                overviewOrderRaw: $overviewOrderRaw,
+                hiddenOverviewItemsRaw: $hiddenOverviewItemsRaw,
+                items: availableOverviewItems
+            )
         }
     }
 
