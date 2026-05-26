@@ -57,18 +57,6 @@ struct EpisodeDetailView: View {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        episode.isBookmarked.toggle()
-                        episode.bookmarkedUpdatedAt = .now
-                    }
-                } label: {
-                    Image(systemName: episode.isBookmarked ? "bookmark.fill" : "bookmark")
-                        .foregroundStyle(episode.isBookmarked ? .cyan : .secondary)
-                }
-                .accessibilityLabel(episode.isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen")
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         episode.isFavorite.toggle()
                         episode.favoriteUpdatedAt = .now
                     }
@@ -77,6 +65,18 @@ struct EpisodeDetailView: View {
                         .foregroundStyle(episode.isFavorite ? .red : .secondary)
                 }
                 .accessibilityLabel(episode.isFavorite ? "Aus Favoriten entfernen" : "Als Favorit markieren")
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isBookmarked.toggle()
+                        episode.bookmarkedUpdatedAt = .now
+                    }
+                } label: {
+                    Image(systemName: episode.isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(episode.isBookmarked ? .cyan : .secondary)
+                }
+                .accessibilityLabel(episode.isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen")
 
                 Button("Bearbeiten") {
                     showingEdit = true
