@@ -402,8 +402,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
             versionText = AppLocalization.format(
                 "CatalogUpdate.Delta.Version",
                 defaultValue: "Version %@ -> %@",
-                previousVersion,
-                currentVersion
+                String(previousVersion),
+                String(currentVersion)
             )
         } else {
             versionText = AppLocalization.format(
