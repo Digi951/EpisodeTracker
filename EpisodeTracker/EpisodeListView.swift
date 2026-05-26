@@ -672,6 +672,13 @@ struct EpisodeRowView: View {
 
             Spacer()
 
+            if episode.isFavorite {
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.red)
+                    .font(.caption)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+            }
+
             if episode.isBookmarked {
                 Image(systemName: "bookmark.fill")
                     .foregroundStyle(.cyan)

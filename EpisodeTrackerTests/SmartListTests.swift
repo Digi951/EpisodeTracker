@@ -15,6 +15,7 @@ final class SmartListTests: XCTestCase {
         universe: Universe? = nil,
         isListened: Bool = false,
         isBookmarked: Bool = false,
+        isFavorite: Bool = false,
         rating: Int? = nil,
         listenCount: Int? = nil,
         lastListenedAt: Date? = nil,
@@ -32,11 +33,57 @@ final class SmartListTests: XCTestCase {
             moods: moods
         )
         episode.isBookmarked = isBookmarked
+        episode.isFavorite = isFavorite
         return episode
     }
 
     private func date(_ daysAgo: Int) -> Date {
         Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+    }
+
+    // MARK: - Favoriten
+
+    func testFavoritesReturnsAllFavoriteEpisodes() {
+        let u1 = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, isFavorite: true),
+            makeEpisode(number: 2, universe: u1, isListened: false, isFavorite: true),
+            makeEpisode(number: 3, universe: u1, isListened: false, isFavorite: false),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 2)
+    }
+
+    func testFavoritesSortsByUniverseNameThenNumber() {
+        let tkkg = makeUniverse("TKKG")
+        let ddf = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 5, universe: tkkg, isFavorite: true),
+            makeEpisode(number: 2, universe: ddf, isFavorite: true),
+            makeEpisode(number: 1, universe: ddf, isFavorite: true),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertEqual(result[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[2].universe?.name, "TKKG")
+    }
+
+    func testFavoritesReturnsEmptyWhenNone() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1),
+            makeEpisode(number: 2, universe: u1),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
     }
 
     // MARK: - Später hören (Later Listen / Bookmark)

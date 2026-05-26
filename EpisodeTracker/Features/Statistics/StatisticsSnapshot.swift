@@ -3,6 +3,7 @@ import Foundation
 struct StatisticsSnapshot {
     let listenedCount: Int
     let unlistenedCount: Int
+    let favoriteCount: Int
     let averageRating: Double?
     let totalListens: Int
     let topRated: [Episode]
@@ -11,6 +12,7 @@ struct StatisticsSnapshot {
     init(episodes: [Episode]) {
         listenedCount = episodes.filter(\.isListened).count
         unlistenedCount = episodes.count - listenedCount
+        favoriteCount = episodes.filter(\.isFavorite).count
 
         let rated = episodes.compactMap(\.rating)
         averageRating = rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count)

@@ -1670,7 +1670,7 @@ final class EpisodeTrackerTests: XCTestCase {
             availableKinds: Set(StatisticsOverviewKind.allCases)
         )
 
-        XCTAssertEqual(sections, [.averageRating, .episodes, .listened, .open, .totalListens])
+        XCTAssertEqual(sections, [.averageRating, .episodes, .listened, .open, .totalListens, .favorites])
     }
 
     func testStatisticsOverviewPreferencesDecodeHiddenItems() {

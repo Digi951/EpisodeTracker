@@ -78,6 +78,18 @@ struct EpisodeDetailView: View {
                 }
                 .accessibilityLabel(episode.isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen")
 
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isFavorite.toggle()
+                        episode.favoriteUpdatedAt = .now
+                    }
+                } label: {
+                    Image(systemName: episode.isFavorite ? "heart.fill" : "heart")
+                        .foregroundStyle(episode.isFavorite ? .red : .secondary)
+                }
+                .accessibilityLabel(episode.isFavorite ? "Aus Favoriten entfernen" : "Als Favorit markieren")
+
                 Button("Bearbeiten") {
                     showingEdit = true
                 }

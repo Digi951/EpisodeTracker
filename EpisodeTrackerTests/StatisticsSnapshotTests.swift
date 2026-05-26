@@ -62,6 +62,31 @@ final class StatisticsSnapshotTests: XCTestCase {
         XCTAssertEqual(order, [.totalListens, .listened, .episodes])
     }
 
+    func testSnapshotCountsFavorites() {
+        let universe = Universe(name: "Test")
+        let ep1 = makeEpisode(number: 1, universe: universe, isListened: true)
+        ep1.isFavorite = true
+        let ep2 = makeEpisode(number: 2, universe: universe, isListened: false)
+        ep2.isFavorite = true
+        let ep3 = makeEpisode(number: 3, universe: universe, isListened: false)
+
+        let snapshot = StatisticsSnapshot(episodes: [ep1, ep2, ep3])
+
+        XCTAssertEqual(snapshot.favoriteCount, 2)
+    }
+
+    func testSnapshotFavoriteCountIsZeroWhenNone() {
+        let universe = Universe(name: "Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: universe),
+            makeEpisode(number: 2, universe: universe)
+        ]
+
+        let snapshot = StatisticsSnapshot(episodes: episodes)
+
+        XCTAssertEqual(snapshot.favoriteCount, 0)
+    }
+
     private func makeEpisode(
         number: Int,
         universe: Universe? = nil,

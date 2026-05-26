@@ -31,6 +31,12 @@ struct StatisticsView: View {
             )
         }
 
+        if statistics.favoriteCount > 0 {
+            items.append(
+                StatisticsOverviewItem(kind: .favorites, value: "\(statistics.favoriteCount)")
+            )
+        }
+
         return items
     }
 
