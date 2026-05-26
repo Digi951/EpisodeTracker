@@ -2,7 +2,7 @@ import SwiftUI
 
 struct EpisodeDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
+    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
     let episode: Episode
     @State private var catalog = EpisodeCatalog.shared
     @State private var showingEdit = false
@@ -10,7 +10,13 @@ struct EpisodeDetailView: View {
     @State private var heroCoverTint = Color.pink
 
     private var streamingService: StreamingService {
-        StreamingService(rawValue: preferredServiceRaw) ?? .spotify
+        let profile = StreamingMarketProfile.current
+        guard let service = StreamingService(rawValue: preferredServiceRaw),
+              profile.services.contains(service)
+        else {
+            return profile.defaultService
+        }
+        return service
     }
 
     private var resolvedStreamingLink: (url: URL, label: String)? {
@@ -20,11 +26,13 @@ struct EpisodeDetailView: View {
 
     private var statusLabel: String {
         if episode.isListened {
-            episode.listenCount > 1 ? "Gehört (\(episode.listenCount)×)" : "Gehört"
+            episode.listenCount > 1
+                ? AppLocalization.format("Episode.Status.ListenedCount", defaultValue: "Gehört (%lld×)", Int64(episode.listenCount))
+                : String(localized: "Gehört")
         } else if episode.listenCount > 0 {
-            "Nochmal"
+            String(localized: "Nochmal")
         } else {
-            "Offen"
+            String(localized: "Offen")
         }
     }
 
@@ -193,7 +201,11 @@ struct EpisodeDetailView: View {
             }
 
             if let lastListened = episode.lastListenedAt {
-                Text("Zuletzt gehört: \(lastListened.formatted(date: .abbreviated, time: .omitted))")
+                Text(AppLocalization.format(
+                    "Episode.LastListened",
+                    defaultValue: "Zuletzt gehört: %@",
+                    lastListened.formatted(date: .abbreviated, time: .omitted)
+                ))
                     .font(.caption)
                     .foregroundStyle(.primary.opacity(0.58))
             }

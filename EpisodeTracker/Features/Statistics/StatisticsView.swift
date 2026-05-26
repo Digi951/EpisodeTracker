@@ -76,7 +76,10 @@ struct StatisticsView: View {
 
     private var moodSummaryText: String {
         guard !statistics.moodDistribution.isEmpty else {
-            return "Noch keine Stimmungen in deiner Bibliothek"
+            return String(
+                localized: "Noch keine Stimmungen in deiner Bibliothek",
+                defaultValue: "Noch keine Stimmungen in deiner Bibliothek"
+            )
         }
 
         let topMoods = statistics.moodDistribution.prefix(2).map { mood, count in

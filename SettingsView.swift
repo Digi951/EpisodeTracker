@@ -449,8 +449,13 @@ private struct SettingsManagementSection: View {
                 CatalogManagementView()
             } label: {
                 SettingsNavigationRow(
-                    title: "Kataloge",
-                    subtitle: "\(activeCatalogCount) von \(managedCatalogCount) Katalogen aktiv",
+                    title: String(localized: "Kataloge"),
+                    subtitle: AppLocalization.format(
+                        "Settings.Manage.CatalogsSubtitle",
+                        defaultValue: "%lld von %lld Katalogen aktiv",
+                        Int64(activeCatalogCount),
+                        Int64(managedCatalogCount)
+                    ),
                     systemImage: "books.vertical"
                 )
             }
@@ -459,8 +464,12 @@ private struct SettingsManagementSection: View {
                 MoodManagementView()
             } label: {
                 SettingsNavigationRow(
-                    title: "Stimmungen",
-                    subtitle: "\(moodCount) Stimmungen gespeichert",
+                    title: String(localized: "Stimmungen"),
+                    subtitle: AppLocalization.format(
+                        "Settings.Manage.MoodsSubtitle",
+                        defaultValue: "%lld Stimmungen gespeichert",
+                        Int64(moodCount)
+                    ),
                     systemImage: "tag"
                 )
             }
@@ -479,16 +488,20 @@ private struct SettingsBackupSection: View {
         Section {
             Button(action: onExport) {
                 SettingsActionRow(
-                    title: "Backup exportieren",
-                    subtitle: "\(episodeCount) Folgen sichern",
+                    title: String(localized: "Backup exportieren"),
+                    subtitle: AppLocalization.format(
+                        "Settings.Backup.ExportSubtitle",
+                        defaultValue: "%lld Folgen sichern",
+                        Int64(episodeCount)
+                    ),
                     systemImage: "square.and.arrow.up"
                 )
             }
 
             Button(action: onImport) {
                 SettingsActionRow(
-                    title: "Backup importieren",
-                    subtitle: "Folgen, Kataloge und Stimmungen wiederherstellen",
+                    title: String(localized: "Backup importieren"),
+                    subtitle: String(localized: "Folgen, Kataloge und Stimmungen wiederherstellen"),
                     systemImage: "square.and.arrow.down"
                 )
             }
@@ -520,7 +533,7 @@ private struct SettingsResetSection: View {
 
 private struct SettingsStreamingSection: View {
     @Binding var appAccentColorRawValue: String
-    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
+    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
 
     private var appAccentColor: Color {
         AppAccentColor.resolved(from: appAccentColorRawValue).color
@@ -528,7 +541,15 @@ private struct SettingsStreamingSection: View {
 
     private var selectedService: Binding<StreamingService> {
         Binding(
-            get: { StreamingService(rawValue: preferredServiceRaw) ?? .spotify },
+            get: {
+                let profile = StreamingMarketProfile.current
+                guard let service = StreamingService(rawValue: preferredServiceRaw),
+                      profile.services.contains(service)
+                else {
+                    return profile.defaultService
+                }
+                return service
+            },
             set: { preferredServiceRaw = $0.rawValue }
         )
     }
@@ -536,7 +557,7 @@ private struct SettingsStreamingSection: View {
     var body: some View {
         Section {
             SettingsMenuSelectionRow(
-                title: "Streaming-Dienst",
+                title: String(localized: "Settings.Streaming.Service", defaultValue: "Streaming-Dienst"),
                 valueSystemImage: selectedService.wrappedValue.iconName,
                 value: selectedService.wrappedValue.displayName,
                 accentColor: appAccentColor

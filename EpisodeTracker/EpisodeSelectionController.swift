@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 struct EpisodeSelectionController {
@@ -29,6 +30,8 @@ struct EpisodeSelectionController {
     }
 
     func selectAllButtonTitle(visibleEpisodes: [Episode]) -> String {
-        selectedIDs == Set(visibleEpisodes.map(\.persistentModelID)) ? "Keine" : "Alle"
+        selectedIDs == Set(visibleEpisodes.map(\.persistentModelID))
+            ? String(localized: "Selection.None", defaultValue: "Keine")
+            : String(localized: "Selection.All", defaultValue: "Alle")
     }
 }

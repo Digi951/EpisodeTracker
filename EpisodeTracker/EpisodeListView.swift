@@ -340,6 +340,7 @@ struct EpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -459,7 +460,12 @@ struct LibrarySnapshotView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Dein Hörstand")
                         .font(.headline)
-                    Text("\(listenedCount) von \(episodeCount) Folgen gehört")
+                    Text(AppLocalization.format(
+                        "EpisodeList.ProgressSummary",
+                        defaultValue: "%lld von %lld Folgen gehört",
+                        Int64(listenedCount),
+                        Int64(episodeCount)
+                    ))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -717,7 +723,7 @@ private struct MoodFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                MoodChip(label: "Alle", isSelected: selection == nil) {
+                MoodChip(label: String(localized: "Selection.All", defaultValue: "Alle"), isSelected: selection == nil) {
                     selection = nil
                 }
                 ForEach(moods) { mood in

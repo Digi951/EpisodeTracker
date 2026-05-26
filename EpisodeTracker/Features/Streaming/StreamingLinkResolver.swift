@@ -6,7 +6,11 @@ struct StreamingLinkResolver {
 
     func resolve(for episode: Episode) -> (url: URL, label: String)? {
         if let directURL = service.directURL(from: episode.streamingURL) {
-            let label = "In \(service.displayName(for: episode.streamingURL)) öffnen"
+            let label = AppLocalization.format(
+                "Streaming.OpenInService",
+                defaultValue: "In %@ öffnen",
+                service.displayName(for: episode.streamingURL)
+            )
             return (directURL, label)
         }
 
@@ -16,7 +20,11 @@ struct StreamingLinkResolver {
         )
 
         if let entry = catalogEntry, let catalogURL = service.catalogURL(from: entry) {
-            let label = "In \(service.displayName(for: catalogURL.absoluteString)) öffnen"
+            let label = AppLocalization.format(
+                "Streaming.OpenInService",
+                defaultValue: "In %@ öffnen",
+                service.displayName(for: catalogURL.absoluteString)
+            )
             return (catalogURL, label)
         }
 

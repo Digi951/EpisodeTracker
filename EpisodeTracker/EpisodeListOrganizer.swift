@@ -49,20 +49,46 @@ struct EpisodeDeleteState {
     var pendingEpisodes: [Episode] = []
 
     var title: String {
-        pendingEpisodes.count == 1 ? "Folge löschen?" : "\(pendingEpisodes.count) Folgen löschen?"
+        pendingEpisodes.count == 1
+            ? String(localized: "EpisodeDelete.Title.One", defaultValue: "Folge löschen?")
+            : AppLocalization.format(
+                "EpisodeDelete.Title.Many",
+                defaultValue: "%lld Folgen löschen?",
+                Int64(pendingEpisodes.count)
+            )
     }
 
     func message(usesCloudSync: Bool) -> String {
         let syncHint = usesCloudSync
-            ? "Die Folgen werden auf allen synchronisierten Geräten entfernt."
-            : "Die Folgen werden nur auf diesem Gerät entfernt."
-        let catalogHint = "Katalogeinträge bleiben erhalten und können erneut übernommen werden."
+            ? String(
+                localized: "EpisodeDelete.Message.SyncHint.Cloud",
+                defaultValue: "Die Folgen werden auf allen synchronisierten Geräten entfernt."
+            )
+            : String(
+                localized: "EpisodeDelete.Message.SyncHint.Local",
+                defaultValue: "Die Folgen werden nur auf diesem Gerät entfernt."
+            )
+        let catalogHint = String(
+            localized: "EpisodeDelete.Message.CatalogHint",
+            defaultValue: "Katalogeinträge bleiben erhalten und können erneut übernommen werden."
+        )
 
         if pendingEpisodes.count == 1, let episode = pendingEpisodes.first {
-            return "„\(episode.title)“ wird dauerhaft gelöscht. \(syncHint) \(catalogHint)"
+            return AppLocalization.format(
+                "EpisodeDelete.Message.One",
+                defaultValue: "„%@“ wird dauerhaft gelöscht. %@ %@",
+                episode.title,
+                syncHint,
+                catalogHint
+            )
         }
 
-        return "\(syncHint) \(catalogHint)"
+        return AppLocalization.format(
+            "EpisodeDelete.Message.Many",
+            defaultValue: "%@ %@",
+            syncHint,
+            catalogHint
+        )
     }
 
     mutating func request(_ episode: Episode) {
@@ -174,7 +200,13 @@ struct EpisodeListGroup: Identifiable {
     }
 
     var summary: String {
-        "\(listenedCount) von \(progressTotal) gehört · \(openCount) offen"
+        AppLocalization.format(
+            "EpisodeList.GroupSummary",
+            defaultValue: "%lld von %lld gehört · %lld offen",
+            Int64(listenedCount),
+            Int64(progressTotal),
+            Int64(openCount)
+        )
     }
 }
 
@@ -201,13 +233,34 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         self.firstEpisodeTitle = firstEpisodeTitle
         self.iconName = "text.badge.plus"
         self.iconColorName = "green"
-        titleText = missingEpisodeCount == 1 ? "1 neue Katalogfolge" : "\(missingEpisodeCount) neue Katalogfolgen"
+        titleText = missingEpisodeCount == 1
+            ? String(localized: "CatalogUpdate.NewEpisodes.Title.One", defaultValue: "1 neue Katalogfolge")
+            : AppLocalization.format(
+                "CatalogUpdate.NewEpisodes.Title.Many",
+                defaultValue: "%lld neue Katalogfolgen",
+                Int64(missingEpisodeCount)
+            )
         if universeCount == 1 {
-            messageText = "\(firstUniverseName): \(firstEpisodeTitle) wartet auf deine Bibliothek."
+            messageText = AppLocalization.format(
+                "CatalogUpdate.NewEpisodes.Message.OneUniverse",
+                defaultValue: "%@: %@ wartet auf deine Bibliothek.",
+                firstUniverseName,
+                firstEpisodeTitle
+            )
             compactMessageText = "\(firstUniverseName): \(firstEpisodeTitle)"
         } else {
-            messageText = "Aktive Kataloge haben neue Folgen, unter anderem \(firstEpisodeTitle) in \(firstUniverseName)."
-            compactMessageText = "\(universeCount) Kataloge, u. a. \(firstUniverseName)"
+            messageText = AppLocalization.format(
+                "CatalogUpdate.NewEpisodes.Message.MultipleUniverses",
+                defaultValue: "Aktive Kataloge haben neue Folgen, unter anderem %@ in %@.",
+                firstEpisodeTitle,
+                firstUniverseName
+            )
+            compactMessageText = AppLocalization.format(
+                "CatalogUpdate.NewEpisodes.Compact.MultipleUniverses",
+                defaultValue: "%lld Kataloge, u. a. %@",
+                Int64(universeCount),
+                firstUniverseName
+            )
         }
     }
 
@@ -252,15 +305,33 @@ struct CatalogUpdateBannerRecommendation: Equatable {
     static func removedCatalogs(_ names: [String]) -> CatalogUpdateBannerRecommendation? {
         guard !names.isEmpty else { return nil }
         let title = names.count == 1
-            ? "Katalog nicht mehr verfügbar"
-            : "\(names.count) Kataloge nicht mehr verfügbar"
+            ? String(localized: "CatalogUpdate.Removed.Title.One", defaultValue: "Katalog nicht mehr verfügbar")
+            : AppLocalization.format(
+                "CatalogUpdate.Removed.Title.Many",
+                defaultValue: "%lld Kataloge nicht mehr verfügbar",
+                Int64(names.count)
+            )
         let message = names.count == 1
-            ? "\(names[0]) wird nicht mehr unterstützt und wurde aus deinen aktiven Katalogen entfernt."
-            : "\(catalogList(names)) werden nicht mehr unterstützt und wurden aus deinen aktiven Katalogen entfernt."
+            ? AppLocalization.format(
+                "CatalogUpdate.Removed.Message.One",
+                defaultValue: "%@ wird nicht mehr unterstützt und wurde aus deinen aktiven Katalogen entfernt.",
+                names[0]
+            )
+            : AppLocalization.format(
+                "CatalogUpdate.Removed.Message.Many",
+                defaultValue: "%@ werden nicht mehr unterstützt und wurden aus deinen aktiven Katalogen entfernt.",
+                catalogList(names)
+            )
         return CatalogUpdateBannerRecommendation(
             title: title,
             message: message,
-            compactMessage: names.count == 1 ? names[0] : "\(names.count) Kataloge entfernt",
+            compactMessage: names.count == 1
+                ? names[0]
+                : AppLocalization.format(
+                    "CatalogUpdate.Removed.Compact.Many",
+                    defaultValue: "%lld Kataloge entfernt",
+                    Int64(names.count)
+                ),
             missingEpisodeCount: 0,
             universeCount: names.count,
             firstUniverseName: names[0],
@@ -273,15 +344,33 @@ struct CatalogUpdateBannerRecommendation: Equatable {
     static func newCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {
         guard let firstName = availability.firstName else { return nil }
         let title = availability.count == 1
-            ? "1 neuer Katalog verfügbar"
-            : "\(availability.count) neue Kataloge verfügbar"
+            ? String(localized: "CatalogUpdate.NewCatalogs.Title.One", defaultValue: "1 neuer Katalog verfügbar")
+            : AppLocalization.format(
+                "CatalogUpdate.NewCatalogs.Title.Many",
+                defaultValue: "%lld neue Kataloge verfügbar",
+                Int64(availability.count)
+            )
         let message = availability.count == 1
-            ? "\(firstName) kann in den Katalogen aktiviert werden."
-            : "\(firstName) und weitere Kataloge können aktiviert werden."
+            ? AppLocalization.format(
+                "CatalogUpdate.NewCatalogs.Message.One",
+                defaultValue: "%@ kann in den Katalogen aktiviert werden.",
+                firstName
+            )
+            : AppLocalization.format(
+                "CatalogUpdate.NewCatalogs.Message.Many",
+                defaultValue: "%@ und weitere Kataloge können aktiviert werden.",
+                firstName
+            )
         return CatalogUpdateBannerRecommendation(
             title: title,
             message: message,
-            compactMessage: availability.count == 1 ? firstName : "\(availability.count) neue Kataloge",
+            compactMessage: availability.count == 1
+                ? firstName
+                : AppLocalization.format(
+                    "CatalogUpdate.NewCatalogs.Compact.Many",
+                    defaultValue: "%lld neue Kataloge",
+                    Int64(availability.count)
+                ),
             missingEpisodeCount: 0,
             universeCount: availability.count,
             firstUniverseName: firstName,
@@ -297,22 +386,54 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         }
 
         let title = delta.addedCount == 1
-            ? "1 neue Katalogfolge in \(delta.name)"
-            : "\(delta.addedCount) neue Katalogfolgen in \(delta.name)"
+            ? AppLocalization.format(
+                "CatalogUpdate.Delta.Title.One",
+                defaultValue: "1 neue Katalogfolge in %@",
+                delta.name
+            )
+            : AppLocalization.format(
+                "CatalogUpdate.Delta.Title.Many",
+                defaultValue: "%lld neue Katalogfolgen in %@",
+                Int64(delta.addedCount),
+                delta.name
+            )
         let versionText: String
         if let previousVersion = delta.previousVersion, let currentVersion = delta.currentVersion {
-            versionText = "Version \(previousVersion) -> \(currentVersion)"
+            versionText = AppLocalization.format(
+                "CatalogUpdate.Delta.Version",
+                defaultValue: "Version %@ -> %@",
+                previousVersion,
+                currentVersion
+            )
         } else {
-            versionText = "\(delta.previousEntryCount) -> \(delta.currentEntryCount) Folgen"
+            versionText = AppLocalization.format(
+                "CatalogUpdate.Delta.EpisodeCountChange",
+                defaultValue: "%lld -> %lld Folgen",
+                Int64(delta.previousEntryCount),
+                Int64(delta.currentEntryCount)
+            )
         }
         let message = delta.addedCount == 1
-            ? "\(firstTitle) wurde ergänzt."
-            : "\(firstTitle) und weitere neue Folgen wurden ergänzt."
+            ? AppLocalization.format(
+                "CatalogUpdate.Delta.Message.One",
+                defaultValue: "%@ wurde ergänzt.",
+                firstTitle
+            )
+            : AppLocalization.format(
+                "CatalogUpdate.Delta.Message.Many",
+                defaultValue: "%@ und weitere neue Folgen wurden ergänzt.",
+                firstTitle
+            )
 
         return CatalogUpdateBannerRecommendation(
             title: title,
             message: message,
-            compactMessage: "\(versionText) - \(delta.currentEntryCount) Folgen",
+            compactMessage: AppLocalization.format(
+                "CatalogUpdate.Delta.Compact",
+                defaultValue: "%@ - %lld Folgen",
+                versionText,
+                Int64(delta.currentEntryCount)
+            ),
             missingEpisodeCount: delta.addedCount,
             universeCount: 1,
             firstUniverseName: delta.name,
@@ -340,9 +461,23 @@ struct CatalogUpdateBannerRecommendation: Equatable {
 
         let totalAdded = relevant.reduce(0) { $0 + $1.addedCount }
         return CatalogUpdateBannerRecommendation(
-            title: "\(totalAdded) neue Katalogfolgen in \(relevant.count) Katalogen",
-            message: "Neue Folgen in \(catalogList(relevant.map(\.name))).",
-            compactMessage: "\(relevant.count) Kataloge, u. a. \(top.name)",
+            title: AppLocalization.format(
+                "CatalogUpdate.Aggregated.Title",
+                defaultValue: "%lld neue Katalogfolgen in %lld Katalogen",
+                Int64(totalAdded),
+                Int64(relevant.count)
+            ),
+            message: AppLocalization.format(
+                "CatalogUpdate.Aggregated.Message",
+                defaultValue: "Neue Folgen in %@.",
+                catalogList(relevant.map(\.name))
+            ),
+            compactMessage: AppLocalization.format(
+                "CatalogUpdate.NewEpisodes.Compact.MultipleUniverses",
+                defaultValue: "%lld Kataloge, u. a. %@",
+                Int64(relevant.count),
+                top.name
+            ),
             missingEpisodeCount: totalAdded,
             universeCount: relevant.count,
             firstUniverseName: top.name,
@@ -357,11 +492,28 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         case 1:
             return names[0]
         case 2:
-            return "\(names[0]) und \(names[1])"
+            return AppLocalization.format(
+                "CatalogUpdate.List.Two",
+                defaultValue: "%@ und %@",
+                names[0],
+                names[1]
+            )
         case 3:
-            return "\(names[0]), \(names[1]) und \(names[2])"
+            return AppLocalization.format(
+                "CatalogUpdate.List.Three",
+                defaultValue: "%@, %@ und %@",
+                names[0],
+                names[1],
+                names[2]
+            )
         default:
-            return "\(names[0]), \(names[1]) und \(names.count - 2) weiteren Katalogen"
+            return AppLocalization.format(
+                "CatalogUpdate.List.Many",
+                defaultValue: "%@, %@ und %lld weiteren Katalogen",
+                names[0],
+                names[1],
+                Int64(names.count - 2)
+            )
         }
     }
 

@@ -188,9 +188,12 @@ private struct EpisodeSplitView: View {
                     EpisodeDetailView(episode: selectedEpisode)
                 } else {
                     SplitSelectionPlaceholder(
-                        title: "Folge auswählen",
+                        title: String(localized: "SplitSelection.Episode.Title", defaultValue: "Folge auswählen"),
                         systemImage: "list.bullet.rectangle",
-                        message: "Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen."
+                        message: String(
+                            localized: "SplitSelection.Episode.Message",
+                            defaultValue: "Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen."
+                        )
                     )
                 }
             }
@@ -199,8 +202,7 @@ private struct EpisodeSplitView: View {
     }
 
     private var iPadEpisodeList: some View {
-        IPadEpisodeListView(selection: $selectedEpisode)
-            .navigationTitle(libraryTitle)
+        IPadEpisodeListView(libraryTitle: libraryTitle, selection: $selectedEpisode)
             .navigationSplitViewColumnWidth(min: 320, ideal: 340, max: 380)
     }
 }
@@ -215,6 +217,7 @@ private struct IPadEpisodeListView: View {
     @Query(sort: \Universe.name) private var universes: [Universe]
 
     @AppStorage("prefersICloudSync") private var prefersICloudSync = false
+    let libraryTitle: String
     @Binding var selection: Episode?
 
     @State private var controls = EpisodeListControlsState()
@@ -403,6 +406,8 @@ private struct IPadEpisodeListView: View {
 
     @ViewBuilder
     private var listContent: some View {
+        iPadLibraryHeader
+
         if showsLibrarySnapshot && !episodes.isEmpty {
             CompactLibrarySnapshotView(
                 episodeCount: librarySnapshot.episodeCount,
@@ -461,6 +466,19 @@ private struct IPadEpisodeListView: View {
         }
     }
 
+    private var iPadLibraryHeader: some View {
+        Text(libraryTitle)
+            .font(.title2.weight(.bold))
+            .foregroundStyle(.primary)
+            .lineLimit(2)
+            .minimumScaleFactor(0.82)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 6)
+            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 6, trailing: 12))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+
     @ViewBuilder
     private func episodeRow(_ episode: Episode) -> some View {
         if isEditing {
@@ -516,6 +534,7 @@ private struct IPadEpisodeListView: View {
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
+                .tint(.red)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -601,7 +620,7 @@ private struct UpNextSplitView: View {
     var body: some View {
         NavigationSplitView {
             UpNextView(iPadNavSelection: $selectedNavigation)
-                .navigationTitle("Als nächstes")
+                .navigationTitle(String(localized: "Als nächstes", defaultValue: "Als nächstes"))
                 .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 360)
         } detail: {
             NavigationStack {
@@ -623,9 +642,12 @@ private struct UpNextSplitView: View {
                         }
                 } else {
                     SplitSelectionPlaceholder(
-                        title: "Liste auswählen",
+                        title: String(localized: "UpNext.EmptySelection.Title", defaultValue: "Liste auswählen"),
                         systemImage: "list.bullet.rectangle",
-                        message: "Wähle links eine Liste aus, um Vorschläge und Folgen zu sehen."
+                        message: String(
+                            localized: "UpNext.EmptySelection.Message",
+                            defaultValue: "Wähle links eine Liste aus, um Vorschläge und Folgen zu sehen."
+                        )
                     )
                 }
             }

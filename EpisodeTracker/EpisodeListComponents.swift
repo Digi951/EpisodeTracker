@@ -137,7 +137,7 @@ struct EpisodeListSortFilterMenu: View {
                 controls.filterUniverse = nil
             } label: {
                 EpisodeListMenuLabel(
-                    text: "Alle",
+                    text: String(localized: "Selection.All", defaultValue: "Alle"),
                     isSelected: controls.filterUniverse == nil
                 )
             }

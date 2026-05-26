@@ -57,9 +57,14 @@ struct MoodManagementView: View {
             Section {
                 if moods.isEmpty {
                     ContentUnavailableView {
-                        Label("Noch keine Stimmungen", systemImage: "tag")
+                        Label(String(localized: "Noch keine Stimmungen", defaultValue: "Noch keine Stimmungen"), systemImage: "tag")
                     } description: {
-                        Text("Lege eigene Stimmungen an oder übernimm Standard-Vorschläge.")
+                        Text(
+                            String(
+                                localized: "Lege eigene Stimmungen an oder übernimm Standard-Vorschläge.",
+                                defaultValue: "Lege eigene Stimmungen an oder übernimm Standard-Vorschläge."
+                            )
+                        )
                     }
                 } else {
                     ForEach(moods) { mood in
@@ -76,12 +81,12 @@ struct MoodManagementView: View {
                     .onDelete(perform: deleteMoods)
                 }
             } header: {
-                Text("Vorhandene Stimmungen")
+                Text(String(localized: "Vorhandene Stimmungen", defaultValue: "Vorhandene Stimmungen"))
             } footer: {
-                Text("Nur ungenutzte Stimmungen können gelöscht werden.")
+                Text(String(localized: "Nur ungenutzte Stimmungen können gelöscht werden.", defaultValue: "Nur ungenutzte Stimmungen können gelöscht werden."))
             }
         }
-        .navigationTitle("Stimmungen")
+        .navigationTitle(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"))
     }
 
     private func addMood(name: String, icon: String) {
@@ -117,7 +122,10 @@ struct MoodManagementView: View {
             if mood.episodes.isEmpty {
                 modelContext.delete(mood)
             } else {
-                validationMessage = "Nur ungenutzte Stimmungen können gelöscht werden."
+                validationMessage = String(
+                    localized: "Nur ungenutzte Stimmungen können gelöscht werden.",
+                    defaultValue: "Nur ungenutzte Stimmungen können gelöscht werden."
+                )
             }
         }
     }
