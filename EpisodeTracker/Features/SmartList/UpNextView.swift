@@ -3,9 +3,11 @@ import SwiftData
 
 struct UpNextView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage(SmartListPreferences.storageKey) private var hiddenSmartListsRaw = ""
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
+    @State private var showingEditSheet = false
     @Binding var iPadNavSelection: SmartListNavigation?
     private let usesSelectionMode: Bool
 
@@ -53,12 +55,24 @@ struct UpNextView: View {
                     .listRowSeparator(.hidden)
             }
 
-            ForEach(SmartListDefinition.allCases) { smartList in
+            ForEach(SmartListPreferences.visibleLists(from: hiddenSmartListsRaw)) { smartList in
                 smartListRow(smartList)
             }
         }
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .modifier(AdaptiveUpNextListStyle(isRegularWidth: horizontalSizeClass == .regular))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingEditSheet = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            SmartListEditSheet(hiddenSmartListsRaw: $hiddenSmartListsRaw)
+        }
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)
         }
@@ -212,6 +226,75 @@ private struct SmartListRowContent: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct SmartListEditSheet: View {
+    @Binding var hiddenSmartListsRaw: String
+    @Environment(\.dismiss) private var dismiss
+
+    private var hiddenLists: Set<SmartListDefinition> {
+        SmartListPreferences.hiddenLists(from: hiddenSmartListsRaw)
+    }
+
+    private func isEnabled(_ list: SmartListDefinition) -> Binding<Bool> {
+        Binding(
+            get: { !hiddenLists.contains(list) },
+            set: { enabled in
+                var hidden = hiddenLists
+                if enabled {
+                    hidden.remove(list)
+                } else {
+                    hidden.insert(list)
+                }
+                hiddenSmartListsRaw = SmartListPreferences.encode(hidden)
+            }
+        )
+    }
+
+    private var color: (SmartListDefinition) -> Color {
+        { smartList in
+            switch smartList.accentColor {
+            case "cyan": .cyan
+            case "red": .red
+            case "blue": .blue
+            case "green": .green
+            case "orange": .orange
+            case "yellow": .yellow
+            case "purple": .purple
+            case "pink": .pink
+            default: .accentColor
+            }
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(SmartListDefinition.allCases) { smartList in
+                        Toggle(isOn: isEnabled(smartList)) {
+                            Label {
+                                Text(smartList.displayName)
+                            } icon: {
+                                Image(systemName: smartList.icon)
+                                    .foregroundStyle(color(smartList))
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Deaktivierte Listen werden in der Übersicht ausgeblendet.")
+                }
+            }
+            .navigationTitle("Smart Lists")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

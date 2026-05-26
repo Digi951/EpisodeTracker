@@ -1682,6 +1682,30 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(hidden, [.episodes, .averageRating])
     }
 
+    // MARK: - Smart List Preferences
+
+    func testSmartListPreferencesVisibleListsReturnsAllWhenEmpty() {
+        let visible = SmartListPreferences.visibleLists(from: "")
+        XCTAssertEqual(visible, SmartListDefinition.allCases)
+    }
+
+    func testSmartListPreferencesHiddenListsExcludesFromVisible() {
+        let hidden = SmartListPreferences.encode([.random, .skipped])
+        let visible = SmartListPreferences.visibleLists(from: hidden)
+
+        XCTAssertFalse(visible.contains(.random))
+        XCTAssertFalse(visible.contains(.skipped))
+        XCTAssertEqual(visible.count, SmartListDefinition.allCases.count - 2)
+    }
+
+    func testSmartListPreferencesRoundTrip() {
+        let original: Set<SmartListDefinition> = [.laterListen, .favorites]
+        let encoded = SmartListPreferences.encode(original)
+        let decoded = SmartListPreferences.hiddenLists(from: encoded)
+
+        XCTAssertEqual(decoded, original)
+    }
+
     @MainActor
     func testSyncPreparationDeduplicatesReferenceDataBySyncKey() throws {
         let schema = Schema([Episode.self, Mood.self, Universe.self])
