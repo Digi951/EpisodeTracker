@@ -34,13 +34,20 @@ struct CatalogUpdateBannerView: View {
         style == .sidebar
     }
 
+    private var iconColor: Color {
+        switch recommendation.iconColorName {
+        case "orange": .orange
+        default: .green
+        }
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
-            Image(systemName: "text.badge.plus")
+            Image(systemName: recommendation.iconName)
                 .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
-                .foregroundStyle(.green)
+                .foregroundStyle(iconColor)
                 .frame(width: isSidebar ? 30 : 36, height: isSidebar ? 30 : 36)
-                .background(.green.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(iconColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: isSidebar ? 3 : 5) {
                 Text(recommendation.title)

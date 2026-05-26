@@ -2384,6 +2384,137 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertGreaterThan(layout.horizontalPadding, 24)
     }
 
+    // MARK: - Manifest Language Filter
+
+    func testEffectiveLanguageDefaultsToGermanWhenNil() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let source = ManagedCatalogSource(id: "test", name: "Test", language: nil, url: url)
+
+        XCTAssertEqual(source.effectiveLanguage, "de")
+    }
+
+    func testEffectiveLanguageReturnsExplicitLanguage() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let deSource = ManagedCatalogSource(id: "test-de", name: "Test DE", language: "de", url: url)
+        let enSource = ManagedCatalogSource(id: "test-en", name: "Test EN", language: "en", url: url)
+
+        XCTAssertEqual(deSource.effectiveLanguage, "de")
+        XCTAssertEqual(enSource.effectiveLanguage, "en")
+    }
+
+    func testEffectiveLanguageNormalizesToLowercase() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let source = ManagedCatalogSource(id: "test", name: "Test", language: "EN", url: url)
+
+        XCTAssertEqual(source.effectiveLanguage, "en")
+    }
+
+    func testDeduplicatedManagedSourcesFilteredByLanguageExcludesForeignCatalogs() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let sources = [
+            ManagedCatalogSource(id: "de-catalog", name: "Die drei ???", language: "de", url: url),
+            ManagedCatalogSource(id: "en-catalog", name: "Famous Five", language: "en", url: url),
+            ManagedCatalogSource(id: "nil-catalog", name: "Fallback", language: nil, url: url),
+        ]
+
+        let deduplicated = CatalogSourceRegistry.deduplicatedManagedSources(sources)
+        let germanOnly = deduplicated.filter { $0.effectiveLanguage == "de" }
+
+        XCTAssertEqual(germanOnly.map(\.id), ["de-catalog", "nil-catalog"])
+        XCTAssertFalse(germanOnly.contains { $0.id == "en-catalog" })
+    }
+
+    func testManifestWithMixedLanguagesFiltersCorrectly() throws {
+        let json = """
+        {
+          "schemaVersion": 1,
+          "updatedAt": "2026-05-26",
+          "catalogs": [
+            {
+              "id": "die-drei-fragezeichen",
+              "name": "Die drei ???",
+              "language": "de",
+              "url": "https://example.com/de/drei.json"
+            },
+            {
+              "id": "famous-five",
+              "name": "Famous Five",
+              "language": "en",
+              "url": "https://example.com/en/famous-five.json"
+            },
+            {
+              "id": "legacy-catalog",
+              "name": "Legacy",
+              "url": "https://example.com/legacy.json"
+            }
+          ]
+        }
+        """
+
+        let manifest = try parser.parseManifest(from: Data(json.utf8))
+
+        XCTAssertEqual(manifest.catalogs.count, 3)
+
+        let germanCatalogs = manifest.catalogs.filter { $0.effectiveLanguage == "de" }
+        XCTAssertEqual(germanCatalogs.count, 2)
+        XCTAssertTrue(germanCatalogs.contains { $0.id == "die-drei-fragezeichen" })
+        XCTAssertTrue(germanCatalogs.contains { $0.id == "legacy-catalog" })
+
+        let englishCatalogs = manifest.catalogs.filter { $0.effectiveLanguage == "en" }
+        XCTAssertEqual(englishCatalogs.count, 1)
+        XCTAssertEqual(englishCatalogs[0].id, "famous-five")
+    }
+
+    func testActiveCatalogStorePrunesOrphanedIDs() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let store = ActiveCatalogStore(userDefaults: defaults)
+        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        store.activeIDs = visibleIDs.union(["removed-catalog", "another-removed"])
+
+        let orphaned = store.pruneOrphanedIDs()
+
+        XCTAssertEqual(Set(orphaned), ["another-removed", "removed-catalog"])
+        XCTAssertEqual(store.activeIDs, visibleIDs)
+    }
+
+    func testActiveCatalogStorePruneReturnsEmptyWhenNoOrphans() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let store = ActiveCatalogStore(userDefaults: defaults)
+        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        store.activeIDs = visibleIDs
+
+        let orphaned = store.pruneOrphanedIDs()
+
+        XCTAssertTrue(orphaned.isEmpty)
+    }
+
+    func testRemovedCatalogsBannerShowsCorrectTextForSingleCatalog() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG"])
+
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.title, "Katalog nicht mehr verfügbar")
+        XCTAssertEqual(banner?.iconName, "text.badge.minus")
+        XCTAssertEqual(banner?.iconColorName, "orange")
+    }
+
+    func testRemovedCatalogsBannerShowsCorrectTextForMultipleCatalogs() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG", "Bibi Blocksberg"])
+
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.title, "2 Kataloge nicht mehr verfügbar")
+        XCTAssertEqual(banner?.iconName, "text.badge.minus")
+    }
+
+    func testRemovedCatalogsBannerReturnsNilForEmptyList() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs([])
+
+        XCTAssertNil(banner)
+    }
+
     private func makeTestCoverImage() -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16))
         return renderer.image { context in

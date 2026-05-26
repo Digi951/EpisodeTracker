@@ -90,7 +90,7 @@ struct EpisodeListView: View {
             newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
             catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
             activeCatalogIDs: ActiveCatalogStore().activeIDs
-        )
+        ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
     var body: some View {

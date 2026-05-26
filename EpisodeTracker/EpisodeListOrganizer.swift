@@ -183,6 +183,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
     let universeCount: Int
     let firstUniverseName: String
     let firstEpisodeTitle: String
+    let iconName: String
+    let iconColorName: String
     private let titleText: String
     private let messageText: String
     private let compactMessageText: String
@@ -197,6 +199,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         self.universeCount = universeCount
         self.firstUniverseName = firstUniverseName
         self.firstEpisodeTitle = firstEpisodeTitle
+        self.iconName = "text.badge.plus"
+        self.iconColorName = "green"
         titleText = missingEpisodeCount == 1 ? "1 neue Katalogfolge" : "\(missingEpisodeCount) neue Katalogfolgen"
         if universeCount == 1 {
             messageText = "\(firstUniverseName): \(firstEpisodeTitle) wartet auf deine Bibliothek."
@@ -214,12 +218,16 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         missingEpisodeCount: Int,
         universeCount: Int,
         firstUniverseName: String,
-        firstEpisodeTitle: String
+        firstEpisodeTitle: String,
+        iconName: String = "text.badge.plus",
+        iconColorName: String = "green"
     ) {
         self.missingEpisodeCount = missingEpisodeCount
         self.universeCount = universeCount
         self.firstUniverseName = firstUniverseName
         self.firstEpisodeTitle = firstEpisodeTitle
+        self.iconName = iconName
+        self.iconColorName = iconColorName
         titleText = title
         messageText = message
         compactMessageText = compactMessage
@@ -239,6 +247,27 @@ struct CatalogUpdateBannerRecommendation: Equatable {
 
     var fingerprint: String {
         "\(titleText)|\(universeCount)|\(missingEpisodeCount)|\(firstUniverseName)|\(firstEpisodeTitle)"
+    }
+
+    static func removedCatalogs(_ names: [String]) -> CatalogUpdateBannerRecommendation? {
+        guard !names.isEmpty else { return nil }
+        let title = names.count == 1
+            ? "Katalog nicht mehr verfügbar"
+            : "\(names.count) Kataloge nicht mehr verfügbar"
+        let message = names.count == 1
+            ? "\(names[0]) wird nicht mehr unterstützt und wurde aus deinen aktiven Katalogen entfernt."
+            : "\(catalogList(names)) werden nicht mehr unterstützt und wurden aus deinen aktiven Katalogen entfernt."
+        return CatalogUpdateBannerRecommendation(
+            title: title,
+            message: message,
+            compactMessage: names.count == 1 ? names[0] : "\(names.count) Kataloge entfernt",
+            missingEpisodeCount: 0,
+            universeCount: names.count,
+            firstUniverseName: names[0],
+            firstEpisodeTitle: names[0],
+            iconName: "text.badge.minus",
+            iconColorName: "orange"
+        )
     }
 
     static func newCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {

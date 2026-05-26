@@ -72,6 +72,20 @@ struct ManagedCatalogSource: Codable, Equatable {
     }
 }
 
+extension ManagedCatalogSource {
+    var effectiveLanguage: String {
+        (language ?? "de").lowercased()
+    }
+
+    static var deviceLanguage: String {
+        Locale.current.language.languageCode?.identifier ?? "de"
+    }
+
+    var matchesDeviceLanguage: Bool {
+        effectiveLanguage == Self.deviceLanguage
+    }
+}
+
 struct RemoteCatalogMetadata: Codable {
     var eTag: String?
     var lastModified: String?
@@ -174,6 +188,7 @@ enum CatalogSourceRegistry {
 
     static var managedSources: [ManagedCatalogSource] {
         deduplicatedManagedSources(CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources)
+            .filter(\.matchesDeviceLanguage)
     }
 
     static func managedSource(named universeName: String) -> ManagedCatalogSource? {
