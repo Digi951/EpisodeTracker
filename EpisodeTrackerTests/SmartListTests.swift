@@ -569,6 +569,20 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result.count, 3)
     }
 
+    func testRandomWithFavoritesFilterReturnsOnlyFavorites() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isFavorite: true),
+            makeEpisode(number: 2, universe: u1),
+            makeEpisode(number: 3, universe: u1, isListened: true, isFavorite: true),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, filter: .favorites)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.allSatisfy(\.isFavorite))
+    }
+
     func testEpisodesForMoodWithListenedFilter() {
         let mood = Mood(name: "Gruselig", iconName: "😱")
         let u1 = makeUniverse("Test")

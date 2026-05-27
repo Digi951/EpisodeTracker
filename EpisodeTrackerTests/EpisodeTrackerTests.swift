@@ -1134,6 +1134,23 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(result.map(\.title), ["Offen"])
     }
 
+    func testStatusFilterKeepsOnlyFavoriteEpisodes() {
+        let favorite = Episode(episodeNumber: 1, title: "Favorit", releaseYear: 1980)
+        favorite.isFavorite = true
+        let regular = Episode(episodeNumber: 2, title: "Normal", releaseYear: 1981)
+
+        let result = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: [favorite, regular],
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: .favorites,
+            sortOrder: .number
+        )
+
+        XCTAssertEqual(result.map(\.title), ["Favorit"])
+    }
+
     func testMoodFilterMatchesEquivalentMoodByName() {
         let assignedMood = Mood(name: "Gruselig", iconName: "😱")
         let selectedMood = Mood(name: "Gruselig", iconName: "😱")

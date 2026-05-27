@@ -12,7 +12,7 @@ enum CatalogTitleAutocomplete {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard normalizedQuery.count >= 2 else { return [] }
 
-        let selectedKey = selectedCollectionName.map(normalizedKey)
+        let selectedKey = selectedCollectionName.map { normalizedKey($0) }
         if let selectedKey, !activeCollectionNames.contains(selectedKey) {
             return []
         }

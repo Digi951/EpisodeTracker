@@ -178,6 +178,7 @@ struct SmartListDetailView: View {
             switch episodeFilter {
             case .unlistened: String(localized: "SmartList.Empty.NoUnlistened", defaultValue: "Keine ungehörten Folgen")
             case .listened: String(localized: "SmartList.Empty.NoListened", defaultValue: "Keine gehörten Folgen")
+            case .favorites: String(localized: "SmartList.Favorites.Empty", defaultValue: "Noch keine Favoriten markiert")
             case .all: String(localized: "SmartList.Empty.NoEpisodes", defaultValue: "Keine Folgen vorhanden")
             }
         } else if smartList == .randomByMood {
@@ -284,7 +285,11 @@ private struct SmartListFilterSection: View {
         Section {
             Picker("Filter", selection: $episodeFilter) {
                 ForEach(EpisodeFilter.allCases) { filter in
-                    Text(filter.displayName).tag(filter)
+                    if let iconName = filter.iconName {
+                        Label(filter.displayName, systemImage: iconName).tag(filter)
+                    } else {
+                        Text(filter.displayName).tag(filter)
+                    }
                 }
             }
             .pickerStyle(.segmented)

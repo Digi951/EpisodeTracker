@@ -1775,6 +1775,22 @@
         }
       }
     },
+    "EpisodeFilter.Favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        }
+      }
+    },
     "EpisodeFilter.Listened" : {
       "localizations" : {
         "de" : {

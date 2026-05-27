@@ -33,6 +33,19 @@ struct EpisodeListView: View {
         )
     }
 
+    private var availableUniverseFilters: [Universe] {
+        let filterContextEpisodes = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: controls.searchText,
+            filterUniverse: nil,
+            filterMood: controls.filterMood,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
+        )
+        let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
+        return universes.filter { visibleUniverseIDs.contains($0.id) }
+    }
+
     private var shouldShowUniverseSections: Bool {
         !episodeGroups.isEmpty
     }
@@ -137,7 +150,7 @@ struct EpisodeListView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
-                        universes: universes
+                        universes: availableUniverseFilters
                     )
                 }
             }

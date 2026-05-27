@@ -242,6 +242,19 @@ private struct IPadEpisodeListView: View {
         )
     }
 
+    private var availableUniverseFilters: [Universe] {
+        let filterContextEpisodes = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: controls.searchText,
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
+        )
+        let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
+        return universes.filter { visibleUniverseIDs.contains($0.id) }
+    }
+
     private var episodeGroups: [EpisodeListGroup] {
         EpisodeListOrganizer.groups(
             for: filteredEpisodes,
@@ -341,7 +354,7 @@ private struct IPadEpisodeListView: View {
                 } else {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
-                        universes: universes,
+                        universes: availableUniverseFilters,
                         resetsMoodFilter: false
                     )
                     Button {

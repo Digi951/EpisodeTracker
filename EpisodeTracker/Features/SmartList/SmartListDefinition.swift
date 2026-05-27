@@ -3,6 +3,7 @@ import Foundation
 enum EpisodeFilter: String, CaseIterable, Identifiable {
     case unlistened
     case listened
+    case favorites
     case all
 
     var id: String { rawValue }
@@ -11,7 +12,15 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
         switch self {
         case .unlistened: String(localized: "EpisodeFilter.Unlistened", defaultValue: "Ungehört")
         case .listened: String(localized: "EpisodeFilter.Listened", defaultValue: "Gehört")
+        case .favorites: String(localized: "EpisodeFilter.Favorites", defaultValue: "Favoriten")
         case .all: String(localized: "EpisodeFilter.All", defaultValue: "Alle")
+        }
+    }
+
+    var iconName: String? {
+        switch self {
+        case .favorites: "heart.fill"
+        default: nil
         }
     }
 
@@ -19,6 +28,7 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
         switch self {
         case .unlistened: episodes.filter { !$0.isListened }
         case .listened: episodes.filter(\.isListened)
+        case .favorites: episodes.filter(\.isFavorite)
         case .all: episodes
         }
     }

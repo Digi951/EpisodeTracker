@@ -12,6 +12,7 @@ enum EpisodeStatusFilter: String, CaseIterable {
     case all = "Alle"
     case open = "Offen"
     case listened = "Gehört"
+    case favorites = "Favoriten"
     case rated = "Bewertet"
     case noted = "Mit Notiz"
 }
@@ -675,6 +676,8 @@ enum EpisodeListOrganizer {
             return episodes.filter { !$0.isListened }
         case .listened:
             return episodes.filter(\.isListened)
+        case .favorites:
+            return episodes.filter(\.isFavorite)
         case .rated:
             return episodes.filter { $0.rating != nil }
         case .noted:
