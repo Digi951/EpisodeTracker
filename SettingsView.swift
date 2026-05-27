@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct SettingsView: View {
     @EnvironmentObject private var containerAccess: AppContainerAccess
@@ -30,6 +33,10 @@ struct SettingsView: View {
     @State private var showingResetConfirmation = false
     @State private var syncMigrationStatusMessage: String?
     @State private var syncMigrationStatusIsError = false
+    @State private var selectedAppIconName: String?
+    @State private var appIconStatusMessage: String?
+    @State private var appIconStatusIsError = false
+    @State private var isChangingAppIcon = false
 
     private var containerMode: AppModelContainerMode {
         AppModelContainerFactory.resolveMode()
@@ -69,12 +76,19 @@ struct SettingsView: View {
                 showsLibrarySnapshot: $showsLibrarySnapshot,
                 prefersCatalogProgressTotals: $prefersCatalogProgressTotals
             )
-            SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsManagementSection(
                 activeCatalogCount: activeCatalogCount,
                 managedCatalogCount: managedCatalogCount,
                 moodCount: moods.count
             )
+            SettingsAppIconNavigationSection(
+                selectedIconName: selectedAppIconName,
+                statusMessage: appIconStatusMessage,
+                statusIsError: appIconStatusIsError,
+                isChangingIcon: isChangingAppIcon,
+                onSelect: changeAppIcon
+            )
+            SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsBackupSection(
                 episodeCount: episodes.count,
                 backupStatusMessage: backupStatusMessage,
@@ -182,7 +196,16 @@ struct SettingsView: View {
         }
         .onAppear {
             activeCatalogIDs = ActiveCatalogStore().activeIDs
+            selectedAppIconName = currentAlternateAppIconName
         }
+    }
+
+    private var currentAlternateAppIconName: String? {
+#if canImport(UIKit)
+        UIApplication.shared.alternateIconName
+#else
+        nil
+#endif
     }
 
     private var managedCatalogCount: Int {
@@ -217,6 +240,41 @@ struct SettingsView: View {
         appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
         showsLibrarySnapshot = true
         prefersCatalogProgressTotals = true
+    }
+
+    private func changeAppIcon(to icon: AppIconChoice) {
+#if canImport(UIKit)
+        guard UIApplication.shared.supportsAlternateIcons else {
+            appIconStatusIsError = true
+            appIconStatusMessage = "Dieses Gerät unterstützt keine alternativen App-Icons."
+            return
+        }
+
+        guard selectedAppIconName != icon.alternateIconName else {
+            return
+        }
+
+        isChangingAppIcon = true
+        appIconStatusMessage = nil
+
+        UIApplication.shared.setAlternateIconName(icon.alternateIconName) { error in
+            Task { @MainActor in
+                isChangingAppIcon = false
+
+                if let error {
+                    appIconStatusIsError = true
+                    appIconStatusMessage = "Icon konnte nicht geändert werden: \(error.localizedDescription)"
+                } else {
+                    selectedAppIconName = icon.alternateIconName
+                    appIconStatusIsError = false
+                    appIconStatusMessage = "\(icon.title) ist jetzt aktiv."
+                }
+            }
+        }
+#else
+        appIconStatusIsError = true
+        appIconStatusMessage = "Alternative App-Icons sind auf dieser Plattform nicht verfügbar."
+#endif
     }
 
     private func exportBackup() {
@@ -435,6 +493,193 @@ private struct AccentColorPickerRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+private enum AppIconChoice: String, CaseIterable, Identifiable {
+    case standard
+    case retro
+    case cassette
+    case headphones
+
+    var id: String { rawValue }
+
+    var alternateIconName: String? {
+        switch self {
+        case .standard:
+            nil
+        case .retro:
+            "AppIconRetro"
+        case .cassette:
+            "AppIconCassette"
+        case .headphones:
+            "AppIconHeadphones"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .standard:
+            "Standard"
+        case .retro:
+            "Retro"
+        case .cassette:
+            "Kassette"
+        case .headphones:
+            "Kopfhörer"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .standard:
+            "Audiowelle"
+        case .retro:
+            "Blaues Originalsymbol"
+        case .cassette:
+            "Retro mit Hörspielgefühl"
+        case .headphones:
+            "Direkt als Audio-App lesbar"
+        }
+    }
+
+    var previewImageName: String {
+        switch self {
+        case .standard:
+            "AppIconStandardPreview"
+        case .retro:
+            "AppIconRetroPreview"
+        case .cassette:
+            "AppIconCassettePreview"
+        case .headphones:
+            "AppIconHeadphonesPreview"
+        }
+    }
+
+    static func resolved(from alternateIconName: String?) -> AppIconChoice {
+        allCases.first { $0.alternateIconName == alternateIconName } ?? .standard
+    }
+}
+
+private struct SettingsAppIconNavigationSection: View {
+    let selectedIconName: String?
+    let statusMessage: String?
+    let statusIsError: Bool
+    let isChangingIcon: Bool
+    let onSelect: (AppIconChoice) -> Void
+
+    var body: some View {
+        Section {
+            NavigationLink {
+                SettingsAppIconSelectionView(
+                    selectedIconName: selectedIconName,
+                    statusMessage: statusMessage,
+                    statusIsError: statusIsError,
+                    isChangingIcon: isChangingIcon,
+                    onSelect: onSelect
+                )
+            } label: {
+                SettingsNavigationRow(
+                    title: "App-Icon",
+                    subtitle: AppIconChoice.resolved(from: selectedIconName).title,
+                    systemImage: "app"
+                )
+            }
+        }
+    }
+}
+
+private struct SettingsAppIconSelectionView: View {
+    let selectedIconName: String?
+    let statusMessage: String?
+    let statusIsError: Bool
+    let isChangingIcon: Bool
+    let onSelect: (AppIconChoice) -> Void
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(AppIconChoice.allCases) { icon in
+                    Button {
+                        onSelect(icon)
+                    } label: {
+                        SettingsAppIconRow(
+                            icon: icon,
+                            isSelected: selectedIconName == icon.alternateIconName
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isChangingIcon)
+                }
+            } footer: {
+                Text("iOS zeigt beim Wechsel einen kurzen Systemhinweis. Die Änderung gilt direkt für den Home-Bildschirm.")
+            }
+
+            if let statusMessage {
+                Section {
+                    SettingsAppIconStatusRow(
+                        message: statusMessage,
+                        isError: statusIsError
+                    )
+                }
+            }
+        }
+        .navigationTitle("App-Icon")
+        .listStyle(.insetGrouped)
+    }
+}
+
+private struct SettingsAppIconRow: View {
+    let icon: AppIconChoice
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(icon.previewImageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 52, height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(icon.title)
+                    .foregroundStyle(.primary)
+                Text(icon.subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.tint)
+                    .imageScale(.large)
+            }
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct SettingsAppIconStatusRow: View {
+    let message: String
+    let isError: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(isError ? .red : .green)
+                .frame(width: 18, alignment: .center)
+
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(isError ? .red : .secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 2)
     }
 }
 

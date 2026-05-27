@@ -273,6 +273,9 @@
         }
       }
     },
+    "App-Icon" : {
+
+    },
     "Auf Merkliste setzen" : {
       "localizations" : {
         "de" : {
@@ -2257,6 +2260,9 @@
           }
         }
       }
+    },
+    "iOS zeigt beim Wechsel einen kurzen Systemhinweis. Die Änderung gilt direkt für den Home-Bildschirm." : {
+
     },
     "Jahr" : {
       "localizations" : {
