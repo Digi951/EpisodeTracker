@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EpisodeDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
     let episode: Episode
     @State private var catalog = EpisodeCatalog.shared
@@ -322,22 +323,47 @@ struct EpisodeDetailView: View {
     private var fullScreenCoverBackground: some View {
         if let heroCoverImage {
             ZStack {
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+
                 Image(uiImage: heroCoverImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .scaleEffect(1.12)
-                    .blur(radius: 56)
-                    .opacity(0.72)
+                    .scaleEffect(1.10)
+                    .saturation(1.45)
+                    .contrast(1.08)
+                    .blur(radius: 42)
+                    .opacity(colorScheme == .dark ? 0.82 : 0.9)
+                    .ignoresSafeArea()
+
+                Image(uiImage: heroCoverImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .scaleEffect(1.04)
+                    .saturation(1.65)
+                    .contrast(1.12)
+                    .blur(radius: 86)
+                    .opacity(colorScheme == .dark ? 0.22 : 0.28)
                     .ignoresSafeArea()
 
                 LinearGradient(
-                    colors: [
-                        Color(.systemGroupedBackground).opacity(0.45),
-                        Color(.systemGroupedBackground).opacity(0.34),
-                        Color(.systemGroupedBackground).opacity(0.66)
+                    stops: [
+                        .init(color: detailBackgroundVeil.opacity(topVeilOpacity), location: 0),
+                        .init(color: detailBackgroundVeil.opacity(midVeilOpacity), location: 0.42),
+                        .init(color: detailBackgroundVeil.opacity(bottomVeilOpacity), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                LinearGradient(
+                    colors: [
+                        detailBackgroundVeil.opacity(colorScheme == .dark ? 0.38 : 0.36),
+                        detailBackgroundVeil.opacity(0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .center
                 )
                 .ignoresSafeArea()
             }
@@ -345,6 +371,22 @@ struct EpisodeDetailView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
         }
+    }
+
+    private var detailBackgroundVeil: Color {
+        colorScheme == .dark ? .black : Color(.systemGroupedBackground)
+    }
+
+    private var topVeilOpacity: Double {
+        colorScheme == .dark ? 0.36 : 0.20
+    }
+
+    private var midVeilOpacity: Double {
+        colorScheme == .dark ? 0.18 : 0.06
+    }
+
+    private var bottomVeilOpacity: Double {
+        colorScheme == .dark ? 0.48 : 0.24
     }
 
     // MARK: - Metrics
