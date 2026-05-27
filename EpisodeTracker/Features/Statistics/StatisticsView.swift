@@ -31,6 +31,12 @@ struct StatisticsView: View {
             )
         }
 
+        if statistics.favoriteCount > 0 {
+            items.append(
+                StatisticsOverviewItem(kind: .favorites, value: "\(statistics.favoriteCount)")
+            )
+        }
+
         return items
     }
 
@@ -70,7 +76,10 @@ struct StatisticsView: View {
 
     private var moodSummaryText: String {
         guard !statistics.moodDistribution.isEmpty else {
-            return "Noch keine Stimmungen in deiner Bibliothek"
+            return String(
+                localized: "Noch keine Stimmungen in deiner Bibliothek",
+                defaultValue: "Noch keine Stimmungen in deiner Bibliothek"
+            )
         }
 
         let topMoods = statistics.moodDistribution.prefix(2).map { mood, count in
@@ -91,25 +100,22 @@ struct StatisticsView: View {
         .toolbar {
             if !episodes.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Bearbeiten") {
+                    Button {
                         showingCustomization = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
                     }
                 }
             }
         }
         .sheet(isPresented: $showingCustomization) {
             StatisticsCustomizationView(
-                sectionOrder: sectionOrder,
-                hiddenSections: hiddenSections,
-                items: availableOverviewItems,
-                order: overviewOrder,
-                hiddenItems: hiddenOverviewItems
-            ) { updatedSectionOrder, updatedHiddenSections, updatedOrder, updatedHiddenItems in
-                sectionOrderRaw = StatisticsOverviewPreferences.encodeSectionOrder(updatedSectionOrder)
-                hiddenSectionsRaw = StatisticsOverviewPreferences.encodeHiddenSections(updatedHiddenSections)
-                overviewOrderRaw = StatisticsOverviewPreferences.encodeOrder(updatedOrder)
-                hiddenOverviewItemsRaw = StatisticsOverviewPreferences.encodeHidden(updatedHiddenItems)
-            }
+                sectionOrderRaw: $sectionOrderRaw,
+                hiddenSectionsRaw: $hiddenSectionsRaw,
+                overviewOrderRaw: $overviewOrderRaw,
+                hiddenOverviewItemsRaw: $hiddenOverviewItemsRaw,
+                items: availableOverviewItems
+            )
         }
     }
 

@@ -2,15 +2,20 @@ import Foundation
 
 struct ActiveCatalogStore {
     private static let key = "activeCatalogIDs"
+    private let defaults: UserDefaults
+
+    init(userDefaults: UserDefaults = .standard) {
+        self.defaults = userDefaults
+    }
 
     var activeIDs: Set<String> {
         get {
-            let stored = UserDefaults.standard.stringArray(forKey: Self.key)
+            let stored = defaults.stringArray(forKey: Self.key)
             guard let stored else { return defaultActiveIDs() }
             return Set(stored)
         }
         nonmutating set {
-            UserDefaults.standard.set(Array(newValue).sorted(), forKey: Self.key)
+            defaults.set(Array(newValue).sorted(), forKey: Self.key)
         }
     }
 
@@ -28,7 +33,15 @@ struct ActiveCatalogStore {
         activeIDs = ids
     }
 
-    /// First launch: activate all catalogs that have a matching Universe with episodes.
+    func pruneOrphanedIDs() -> [String] {
+        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        let currentIDs = activeIDs
+        let orphaned = currentIDs.subtracting(visibleIDs)
+        guard !orphaned.isEmpty else { return [] }
+        activeIDs = currentIDs.intersection(visibleIDs)
+        return orphaned.sorted()
+    }
+
     private func defaultActiveIDs() -> Set<String> {
         Set(CatalogSourceRegistry.managedSources.map(\.id))
     }

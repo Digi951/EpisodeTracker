@@ -261,6 +261,24 @@ enum EntityDeduplicator {
                     }
                 }
 
+                if duplicate.isFavorite && !keeper.isFavorite {
+                    keeper.isFavorite = true
+                }
+                if duplicate.isBookmarked && !keeper.isBookmarked {
+                    keeper.isBookmarked = true
+                }
+                if duplicate.isHidden && !keeper.isHidden {
+                    keeper.isHidden = true
+                }
+
+                keeper.ratingUpdatedAt = newerDate(keeper.ratingUpdatedAt, duplicate.ratingUpdatedAt)
+                keeper.noteUpdatedAt = newerDate(keeper.noteUpdatedAt, duplicate.noteUpdatedAt)
+                keeper.favoriteUpdatedAt = newerDate(keeper.favoriteUpdatedAt, duplicate.favoriteUpdatedAt)
+                keeper.bookmarkedUpdatedAt = newerDate(keeper.bookmarkedUpdatedAt, duplicate.bookmarkedUpdatedAt)
+                keeper.hiddenUpdatedAt = newerDate(keeper.hiddenUpdatedAt, duplicate.hiddenUpdatedAt)
+                keeper.streamingURLUpdatedAt = newerDate(keeper.streamingURLUpdatedAt, duplicate.streamingURLUpdatedAt)
+                keeper.listenStatusUpdatedAt = newerDate(keeper.listenStatusUpdatedAt, duplicate.listenStatusUpdatedAt)
+
                 if mergeMoods(from: duplicate, into: keeper) {
                     didChange = true
                     summary.deduplicatedEpisodeMoods += 1
@@ -299,6 +317,15 @@ enum EntityDeduplicator {
         }
 
         return didChange
+    }
+
+    private static func newerDate(_ a: Date?, _ b: Date?) -> Date? {
+        switch (a, b) {
+        case (.some(let a), .some(let b)): max(a, b)
+        case (.some, .none): a
+        case (.none, .some): b
+        case (.none, .none): nil
+        }
     }
 
     private static func hasExistingCover(_ episode: Episode, in store: CoverImageStore) -> Bool {

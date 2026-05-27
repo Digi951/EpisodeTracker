@@ -8,6 +8,12 @@
             "state" : "new",
             "value" : "%1$@ · %2$@"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@"
+          }
         }
       }
     },
@@ -16,6 +22,12 @@
         "de" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "%1$@ %2$@"
           }
         }
@@ -28,14 +40,46 @@
             "state" : "new",
             "value" : "%1$@, %2$@, %3$@"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
         }
       }
     },
     "%lld" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
     },
     "%lld ⭐" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ⭐"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ⭐"
+          }
+        }
+      }
     },
     "%lld Folge%@ löschen" : {
       "localizations" : {
@@ -44,24 +88,46 @@
             "state" : "new",
             "value" : "%1$lld Folge%2$@ löschen"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete %1$lld episode%2$@"
+          }
         }
       }
     },
     "%lld Folgen" : {
-
-    },
-    "%lld von %lld Folgen gehört" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld von %2$lld Folgen gehört"
+            "state" : "translated",
+            "value" : "%lld Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld episodes"
           }
         }
       }
     },
     "+%lld" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld"
+          }
+        }
+      }
     },
     "Abbrechen" : {
       "localizations" : {
@@ -96,7 +162,20 @@
       }
     },
     "Aktualisiere…" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualisiere…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh…"
+          }
+        }
+      }
     },
     "Akzentfarbe" : {
       "localizations" : {
@@ -115,7 +194,20 @@
       }
     },
     "Alle aktualisieren" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle aktualisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh All"
+          }
+        }
+      }
     },
     "Alle Jahre" : {
       "localizations" : {
@@ -133,8 +225,37 @@
         }
       }
     },
+    "Als Favorit markieren" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Favorit markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Favorite"
+          }
+        }
+      }
+    },
     "Als gehört markieren" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als gehört markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Listened"
+          }
+        }
+      }
     },
     "Als nächstes" : {
       "localizations" : {
@@ -148,6 +269,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Up Next"
+          }
+        }
+      }
+    },
+    "Auf Merkliste setzen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf Merkliste setzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Listen Later"
+          }
+        }
+      }
+    },
+    "Aus Favoriten entfernen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Favoriten entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Favorites"
           }
         }
       }
@@ -168,11 +321,117 @@
         }
       }
     },
+    "Ausblenden" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        }
+      }
+    },
+    "Ausgeblendet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgeblendet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden"
+          }
+        }
+      }
+    },
+    "Ausgeblendete Folgen erscheinen nicht in Smart Lists und Vorschlägen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgeblendete Folgen erscheinen nicht in Smart Lists und Vorschlägen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden episodes do not appear in Smart Lists or suggestions."
+          }
+        }
+      }
+    },
     "Auswählen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select"
+          }
+        }
+      }
+    },
+    "Backup exportieren" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup exportieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Backup"
+          }
+        }
+      }
+    },
+    "Backup importieren" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup importieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Backup"
+          }
+        }
+      }
     },
     "Backup importieren?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup importieren?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import backup?"
+          }
+        }
+      }
     },
     "Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen." : {
       "localizations" : {
@@ -206,27 +465,24 @@
         }
       }
     },
-    "Bereiche" : {
-      "extractionState" : "stale",
+    "Bereits gehört" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bereiche"
+            "value" : "Bereits gehört"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sections"
+            "value" : "Already listened"
           }
         }
       }
     },
-    "Bereits gehört" : {
-
-    },
     "Beste Bewertungen" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -500,6 +756,12 @@
             "state" : "new",
             "value" : "Die sichtbare Folge übernehmen"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import the visible episode"
+          }
         }
       }
     },
@@ -587,6 +849,462 @@
         }
       }
     },
+    "CatalogUpdate.Aggregated.Message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Folgen in %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New episodes in %@."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Aggregated.Title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Katalogfolgen in %lld Katalogen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalog episodes in %lld catalogs"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Compact" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ - %lld Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ - %lld episodes"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.EpisodeCountChange" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld -> %lld Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld -> %lld episodes"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Message.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ und weitere neue Folgen wurden ergänzt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and more new episodes were added."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Message.One" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde ergänzt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ was added."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Title.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Katalogfolgen in %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalog episodes in %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Title.One" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 neue Katalogfolge in %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 new catalog episode in %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Delta.Version" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@ -> %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@ -> %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.List.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ und %lld weiteren Katalogen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, and %lld more catalogs"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.List.Three" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ und %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, and %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.List.Two" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ und %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewCatalogs.Compact.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Kataloge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalogs"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewCatalogs.Message.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ und weitere Kataloge können aktiviert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and more catalogs can be enabled."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewCatalogs.Message.One" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kann in den Katalogen aktiviert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ can be enabled in Catalogs."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewCatalogs.Title.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Kataloge verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalogs available"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewCatalogs.Title.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 neuer Katalog verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 new catalog available"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewEpisodes.Compact.MultipleUniverses" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Kataloge, u. a. %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogs, incl. %@"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewEpisodes.Message.MultipleUniverses" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktive Kataloge haben neue Folgen, unter anderem %@ in %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active catalogs have new episodes, including %@ in %@."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewEpisodes.Message.OneUniverse" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@ wartet auf deine Bibliothek."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@ is waiting for your library."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewEpisodes.Title.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Katalogfolgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalog episodes"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewEpisodes.Title.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 neue Katalogfolge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 new catalog episode"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Removed.Compact.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Kataloge entfernt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogs removed"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Removed.Message.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ werden nicht mehr unterstützt und wurden aus deinen aktiven Katalogen entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ are no longer supported and were removed from your active catalogs."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Removed.Message.One" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird nicht mehr unterstützt und wurde aus deinen aktiven Katalogen entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is no longer supported and was removed from your active catalogs."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Removed.Title.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Kataloge nicht mehr verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogs no longer available"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.Removed.Title.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katalog nicht mehr verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalog no longer available"
+          }
+        }
+      }
+    },
     "Cloud-Sync wird erst nach dem nächsten App-Start aktiv." : {
       "localizations" : {
         "de" : {
@@ -637,10 +1355,36 @@
       }
     },
     "Cover ersetzen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover ersetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace Cover"
+          }
+        }
+      }
     },
     "Cover hinzufügen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover hinzufügen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Cover"
+          }
+        }
+      }
     },
     "Darstellung zurücksetzen" : {
       "localizations" : {
@@ -659,7 +1403,20 @@
       }
     },
     "Darstellung zurücksetzen?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung zurücksetzen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset appearance?"
+          }
+        }
+      }
     },
     "Daten" : {
       "localizations" : {
@@ -673,6 +1430,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Data"
+          }
+        }
+      }
+    },
+    "Deaktivierte Listen werden ausgeblendet. Halte und ziehe um die Reihenfolge zu ändern." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deaktivierte Listen werden ausgeblendet. Halte und ziehe um die Reihenfolge zu ändern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabled lists are hidden. Hold and drag to change the order."
           }
         }
       }
@@ -773,6 +1546,22 @@
         }
       }
     },
+    "Durchgang +1" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durchgang +1"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen +1"
+          }
+        }
+      }
+    },
     "Eigene Kataloge" : {
       "localizations" : {
         "de" : {
@@ -785,6 +1574,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Custom Catalogs"
+          }
+        }
+      }
+    },
+    "Einblenden" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
           }
         }
       }
@@ -805,6 +1610,155 @@
         }
       }
     },
+    "Episode.LastListened" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt gehört: %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last listened: %1$@"
+          }
+        }
+      }
+    },
+    "Episode.Status.ListenedCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehört (%1$lld×)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listened (%1$lld×)"
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Message.CatalogHint" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katalogeinträge bleiben erhalten und können erneut übernommen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalog entries stay available and can be added again."
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Message.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@"
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Message.One" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ wird dauerhaft gelöscht. %@ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” will be permanently deleted. %@ %@"
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Message.SyncHint.Cloud" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Folgen werden auf allen synchronisierten Geräten entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The episodes will be removed from all synced devices."
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Message.SyncHint.Local" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Folgen werden nur auf diesem Gerät entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The episodes will only be removed from this device."
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Title.Many" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Folgen löschen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete %lld episodes?"
+          }
+        }
+      }
+    },
+    "EpisodeDelete.Title.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge löschen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete episode?"
+          }
+        }
+      }
+    },
     "EpisodeFilter.All" : {
       "localizations" : {
         "de" : {
@@ -817,6 +1771,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All"
+          }
+        }
+      }
+    },
+    "EpisodeFilter.Favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
           }
         }
       }
@@ -849,6 +1819,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unlistened"
+          }
+        }
+      }
+    },
+    "EpisodeList.GroupSummary" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld gehört · %3$lld offen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld listened · %3$lld open"
+          }
+        }
+      }
+    },
+    "EpisodeList.ProgressSummary" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld Folgen gehört"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld episodes listened"
           }
         }
       }
@@ -982,7 +1986,20 @@
       }
     },
     "Folge %lld" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episode %lld"
+          }
+        }
+      }
     },
     "Folge bearbeiten" : {
       "localizations" : {
@@ -1017,10 +2034,36 @@
       }
     },
     "Folge suchen..." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge suchen..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search episode..."
+          }
+        }
+      }
     },
     "Folge wirklich löschen?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge wirklich löschen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Really delete episode?"
+          }
+        }
+      }
     },
     "Folgen" : {
       "localizations" : {
@@ -1039,10 +2082,52 @@
       }
     },
     "Folgen aus %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folgen aus %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episodes from %@"
+          }
+        }
+      }
+    },
+    "Folgen, Kataloge und Stimmungen wiederherstellen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folgen, Kataloge und Stimmungen wiederherstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore episodes, catalogs, and moods"
+          }
+        }
+      }
     },
     "Gehört" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehört"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listened"
+          }
+        }
+      }
     },
     "Hinzufügen" : {
       "localizations" : {
@@ -1056,22 +2141,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add"
-          }
-        }
-      }
-    },
-    "Hördurchgang zählen" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hördurchgang zählen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Count Listen"
           }
         }
       }
@@ -1093,13 +2162,52 @@
       }
     },
     "Hörstand anzeigen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörstand anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Listening Progress"
+          }
+        }
+      }
     },
     "https://open.spotify.com/album/…" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://open.spotify.com/album/…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://open.spotify.com/album/…"
+          }
+        }
+      }
     },
     "iCloud-Sync" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud-Sync"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Sync"
+          }
+        }
+      }
     },
     "Import starten" : {
       "localizations" : {
@@ -1151,7 +2259,20 @@
       }
     },
     "Jahr" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jahr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Year"
+          }
+        }
+      }
     },
     "Katalog" : {
       "localizations" : {
@@ -1218,7 +2339,20 @@
       }
     },
     "Katalogfortschritt verwenden" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katalogfortschritt verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Catalog Progress"
+          }
+        }
+      }
     },
     "Katalogtreffer" : {
       "localizations" : {
@@ -1269,7 +2403,20 @@
       }
     },
     "Lege deine erste Folge an." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lege deine erste Folge an."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your first episode."
+          }
+        }
+      }
     },
     "Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen." : {
       "localizations" : {
@@ -1449,7 +2596,20 @@
       }
     },
     "Name" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
     },
     "Neu würfeln" : {
       "localizations" : {
@@ -1516,7 +2676,20 @@
       }
     },
     "Neuer Katalog" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Katalog"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Catalog"
+          }
+        }
+      }
     },
     "Nichts gefunden" : {
       "localizations" : {
@@ -1552,7 +2725,20 @@
       }
     },
     "Noch keine Folgen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No episodes yet"
+          }
+        }
+      }
     },
     "Noch keine Statistik" : {
       "localizations" : {
@@ -1603,13 +2789,52 @@
       }
     },
     "Nochmal" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nochmal"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Again"
+          }
+        }
+      }
     },
     "Nochmal hören" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nochmal hören"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen Again"
+          }
+        }
+      }
     },
     "Nummer" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Number"
+          }
+        }
+      }
     },
     "Nur fuer Entwicklung und Tests: Cloud-Sync wird erst nach dem naechsten App-Start aktiv, wenn Anforderung und Schutzschalter gleichzeitig gesetzt sind." : {
       "extractionState" : "stale",
@@ -1661,7 +2886,6 @@
       }
     },
     "Offen" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1678,7 +2902,6 @@
       }
     },
     "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1727,7 +2950,119 @@
       }
     },
     "Sammlungsname" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammlungsname"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collection Name"
+          }
+        }
+      }
+    },
+    "Selection.All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        }
+      }
+    },
+    "Selection.None" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        }
+      }
+    },
+    "Settings.Backup.ExportSubtitle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld Folgen sichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back up %1$lld episodes"
+          }
+        }
+      }
+    },
+    "Settings.Manage.CatalogsSubtitle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld Katalogen aktiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld catalogs active"
+          }
+        }
+      }
+    },
+    "Settings.Manage.MoodsSubtitle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld Stimmungen gespeichert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld moods saved"
+          }
+        }
+      }
+    },
+    "Settings.Streaming.Service" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming-Dienst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming Service"
+          }
+        }
+      }
     },
     "Sichern" : {
       "localizations" : {
@@ -1741,6 +3076,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save"
+          }
+        }
+      }
+    },
+    "Smart Lists" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Lists"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Lists"
           }
         }
       }
@@ -1887,6 +3238,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@: Episode %d - %@"
+          }
+        }
+      }
+    },
+    "SmartList.Favorites.Empty" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Noch keine Favoriten markiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No favorites marked yet"
+          }
+        }
+      }
+    },
+    "SmartList.Favorites.Info" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Alle Folgen, die du als Favorit markiert hast — egal ob gehört oder nicht. Deine persönliche Bestenliste."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All episodes you have marked as favorites, whether listened or not. Your personal best-of list."
+          }
+        }
+      }
+    },
+    "SmartList.Favorites.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        }
+      }
+    },
+    "SmartList.LaterListen.Empty" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keine Folgen auf der Merkliste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No episodes on your listen-later list"
+          }
+        }
+      }
+    },
+    "SmartList.LaterListen.Info" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folgen, die du mit dem Lesezeichen markiert hast und noch nicht gehört wurden. Sobald du eine Folge als gehört markierst, wird das Lesezeichen automatisch entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episodes you have bookmarked and have not listened to yet. Once you mark an episode as listened, the bookmark is removed automatically."
+          }
+        }
+      }
+    },
+    "SmartList.LaterListen.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Später hören"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen Later"
           }
         }
       }
@@ -2260,6 +3713,38 @@
         }
       }
     },
+    "SplitSelection.Episode.Message" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle links eine Folge aus, um Details, Bewertung und Notizen zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an episode on the left to see details, rating, and notes."
+          }
+        }
+      }
+    },
+    "SplitSelection.Episode.Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an episode"
+          }
+        }
+      }
+    },
     "Standard-Vorschläge" : {
       "localizations" : {
         "de" : {
@@ -2272,6 +3757,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Default Suggestions"
+          }
+        }
+      }
+    },
+    "Statistics.Moods.Show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stimmungen ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Moods"
           }
         }
       }
@@ -2304,6 +3805,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episodes"
+          }
+        }
+      }
+    },
+    "Statistics.Overview.Favorites" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
           }
         }
       }
@@ -2404,6 +3922,38 @@
         }
       }
     },
+    "Statistics.TopRated.Empty.Detail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewerte Folgen, um deine Favoriten hier zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate episodes to see your favorites here."
+          }
+        }
+      }
+    },
+    "Statistics.TopRated.Empty.Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Bewertungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Ratings Yet"
+          }
+        }
+      }
+    },
     "Statistikbereiche" : {
       "localizations" : {
         "de" : {
@@ -2452,22 +4002,6 @@
         }
       }
     },
-    "Stimmung wählen" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmung wählen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose Mood"
-          }
-        }
-      }
-    },
     "Stimmungen" : {
       "localizations" : {
         "de" : {
@@ -2484,23 +4018,6 @@
         }
       }
     },
-    "Stimmungen ansehen" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmungen ansehen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "View Moods"
-          }
-        }
-      }
-    },
     "Streaming" : {
       "localizations" : {
         "de" : {
@@ -2513,23 +4030,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Streaming"
-          }
-        }
-      }
-    },
-    "Streaming-Link" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Streaming-Link"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Streaming Link"
           }
         }
       }
@@ -2551,7 +4051,20 @@
       }
     },
     "Symbol" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol"
+          }
+        }
+      }
     },
     "Sync" : {
       "localizations" : {
@@ -2570,7 +4083,20 @@
       }
     },
     "Titel der Folge" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel der Folge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episode Title"
+          }
+        }
+      }
     },
     "Titel übernehmen: %@ (%@)" : {
       "localizations" : {
@@ -2578,6 +4104,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Titel übernehmen: %1$@ (%2$@)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use title: %1$@ (%2$@)"
           }
         }
       }
@@ -2615,6 +4147,7 @@
       }
     },
     "Übersicht" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2662,6 +4195,38 @@
         }
       }
     },
+    "UpNext.EmptySelection.Message" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle links eine Liste aus, um Vorschläge und Folgen zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a list on the left to see suggestions and episodes."
+          }
+        }
+      }
+    },
+    "UpNext.EmptySelection.Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a list"
+          }
+        }
+      }
+    },
     "Verfügbare Kataloge" : {
       "localizations" : {
         "de" : {
@@ -2690,6 +4255,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manage"
+          }
+        }
+      }
+    },
+    "Von Merkliste entfernen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von Merkliste entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Listen Later"
           }
         }
       }
@@ -2743,7 +4324,20 @@
       }
     },
     "Was möchtest du dir merken?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was möchtest du dir merken?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you like to remember?"
+          }
+        }
+      }
     },
     "Was passt gerade?" : {
       "localizations" : {
@@ -2777,14 +4371,37 @@
         }
       }
     },
-    "Zuletzt gehört: %@" : {
-
-    },
     "Zum Aufklappen tippen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Aufklappen tippen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to expand"
+          }
+        }
+      }
     },
     "Zum Einklappen tippen" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Einklappen tippen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to collapse"
+          }
+        }
+      }
     },
     "Zurückgesetzt werden Sammlungsname, Darstellung, sichtbarer Hörstand und die Katalogfortschritts-Anzeige." : {
       "localizations" : {

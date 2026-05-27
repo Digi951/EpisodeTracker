@@ -1134,6 +1134,23 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(result.map(\.title), ["Offen"])
     }
 
+    func testStatusFilterKeepsOnlyFavoriteEpisodes() {
+        let favorite = Episode(episodeNumber: 1, title: "Favorit", releaseYear: 1980)
+        favorite.isFavorite = true
+        let regular = Episode(episodeNumber: 2, title: "Normal", releaseYear: 1981)
+
+        let result = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: [favorite, regular],
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: .favorites,
+            sortOrder: .number
+        )
+
+        XCTAssertEqual(result.map(\.title), ["Favorit"])
+    }
+
     func testMoodFilterMatchesEquivalentMoodByName() {
         let assignedMood = Mood(name: "Gruselig", iconName: "😱")
         let selectedMood = Mood(name: "Gruselig", iconName: "😱")
@@ -1670,7 +1687,7 @@ final class EpisodeTrackerTests: XCTestCase {
             availableKinds: Set(StatisticsOverviewKind.allCases)
         )
 
-        XCTAssertEqual(sections, [.averageRating, .episodes, .listened, .open, .totalListens])
+        XCTAssertEqual(sections, [.averageRating, .episodes, .listened, .open, .totalListens, .favorites])
     }
 
     func testStatisticsOverviewPreferencesDecodeHiddenItems() {
@@ -1680,6 +1697,53 @@ final class EpisodeTrackerTests: XCTestCase {
         )
 
         XCTAssertEqual(hidden, [.episodes, .averageRating])
+    }
+
+    // MARK: - Smart List Preferences
+
+    func testSmartListPreferencesVisibleListsReturnsAllWhenEmpty() {
+        let visible = SmartListPreferences.visibleLists(orderRaw: "", hiddenRaw: "")
+        XCTAssertEqual(visible, SmartListDefinition.allCases)
+    }
+
+    func testSmartListPreferencesHiddenListsExcludesFromVisible() {
+        let hidden = SmartListPreferences.encodeHidden([.random, .skipped])
+        let visible = SmartListPreferences.visibleLists(orderRaw: "", hiddenRaw: hidden)
+
+        XCTAssertFalse(visible.contains(.random))
+        XCTAssertFalse(visible.contains(.skipped))
+        XCTAssertEqual(visible.count, SmartListDefinition.allCases.count - 2)
+    }
+
+    func testSmartListPreferencesHiddenRoundTrip() {
+        let original: Set<SmartListDefinition> = [.laterListen, .favorites]
+        let encoded = SmartListPreferences.encodeHidden(original)
+        let decoded = SmartListPreferences.hiddenLists(from: encoded)
+
+        XCTAssertEqual(decoded, original)
+    }
+
+    func testSmartListPreferencesOrderReturnsAllWhenEmpty() {
+        let order = SmartListPreferences.orderedLists(from: "")
+        XCTAssertEqual(order, SmartListDefinition.allCases)
+    }
+
+    func testSmartListPreferencesOrderRespectsCustomOrderAndAppendsMissing() {
+        let order = SmartListPreferences.orderedLists(from: "random,favorites")
+
+        XCTAssertEqual(order[0], .random)
+        XCTAssertEqual(order[1], .favorites)
+        XCTAssertEqual(order.count, SmartListDefinition.allCases.count)
+    }
+
+    func testSmartListPreferencesVisibleListsRespectsOrderAndHidden() {
+        let orderRaw = SmartListPreferences.encodeOrder([.topRated, .random, .favorites, .laterListen, .continueListening, .nextFromCatalog, .longPaused, .skipped, .randomByMood])
+        let hiddenRaw = SmartListPreferences.encodeHidden([.random])
+        let visible = SmartListPreferences.visibleLists(orderRaw: orderRaw, hiddenRaw: hiddenRaw)
+
+        XCTAssertEqual(visible[0], .topRated)
+        XCTAssertEqual(visible[1], .favorites)
+        XCTAssertFalse(visible.contains(.random))
     }
 
     @MainActor
@@ -2382,6 +2446,137 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(layout.detailColumns.count, 2)
         XCTAssertLessThanOrEqual(layout.contentWidth, 1100)
         XCTAssertGreaterThan(layout.horizontalPadding, 24)
+    }
+
+    // MARK: - Manifest Language Filter
+
+    func testEffectiveLanguageDefaultsToGermanWhenNil() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let source = ManagedCatalogSource(id: "test", name: "Test", language: nil, url: url)
+
+        XCTAssertEqual(source.effectiveLanguage, "de")
+    }
+
+    func testEffectiveLanguageReturnsExplicitLanguage() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let deSource = ManagedCatalogSource(id: "test-de", name: "Test DE", language: "de", url: url)
+        let enSource = ManagedCatalogSource(id: "test-en", name: "Test EN", language: "en", url: url)
+
+        XCTAssertEqual(deSource.effectiveLanguage, "de")
+        XCTAssertEqual(enSource.effectiveLanguage, "en")
+    }
+
+    func testEffectiveLanguageNormalizesToLowercase() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let source = ManagedCatalogSource(id: "test", name: "Test", language: "EN", url: url)
+
+        XCTAssertEqual(source.effectiveLanguage, "en")
+    }
+
+    func testDeduplicatedManagedSourcesFilteredByLanguageExcludesForeignCatalogs() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let sources = [
+            ManagedCatalogSource(id: "de-catalog", name: "Die drei ???", language: "de", url: url),
+            ManagedCatalogSource(id: "en-catalog", name: "Famous Five", language: "en", url: url),
+            ManagedCatalogSource(id: "nil-catalog", name: "Fallback", language: nil, url: url),
+        ]
+
+        let deduplicated = CatalogSourceRegistry.deduplicatedManagedSources(sources)
+        let germanOnly = deduplicated.filter { $0.effectiveLanguage == "de" }
+
+        XCTAssertEqual(germanOnly.map(\.id), ["de-catalog", "nil-catalog"])
+        XCTAssertFalse(germanOnly.contains { $0.id == "en-catalog" })
+    }
+
+    func testManifestWithMixedLanguagesFiltersCorrectly() throws {
+        let json = """
+        {
+          "schemaVersion": 1,
+          "updatedAt": "2026-05-26",
+          "catalogs": [
+            {
+              "id": "die-drei-fragezeichen",
+              "name": "Die drei ???",
+              "language": "de",
+              "url": "https://example.com/de/drei.json"
+            },
+            {
+              "id": "famous-five",
+              "name": "Famous Five",
+              "language": "en",
+              "url": "https://example.com/en/famous-five.json"
+            },
+            {
+              "id": "legacy-catalog",
+              "name": "Legacy",
+              "url": "https://example.com/legacy.json"
+            }
+          ]
+        }
+        """
+
+        let manifest = try parser.parseManifest(from: Data(json.utf8))
+
+        XCTAssertEqual(manifest.catalogs.count, 3)
+
+        let germanCatalogs = manifest.catalogs.filter { $0.effectiveLanguage == "de" }
+        XCTAssertEqual(germanCatalogs.count, 2)
+        XCTAssertTrue(germanCatalogs.contains { $0.id == "die-drei-fragezeichen" })
+        XCTAssertTrue(germanCatalogs.contains { $0.id == "legacy-catalog" })
+
+        let englishCatalogs = manifest.catalogs.filter { $0.effectiveLanguage == "en" }
+        XCTAssertEqual(englishCatalogs.count, 1)
+        XCTAssertEqual(englishCatalogs[0].id, "famous-five")
+    }
+
+    func testActiveCatalogStorePrunesOrphanedIDs() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let store = ActiveCatalogStore(userDefaults: defaults)
+        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        store.activeIDs = visibleIDs.union(["removed-catalog", "another-removed"])
+
+        let orphaned = store.pruneOrphanedIDs()
+
+        XCTAssertEqual(Set(orphaned), ["another-removed", "removed-catalog"])
+        XCTAssertEqual(store.activeIDs, visibleIDs)
+    }
+
+    func testActiveCatalogStorePruneReturnsEmptyWhenNoOrphans() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        let store = ActiveCatalogStore(userDefaults: defaults)
+        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        store.activeIDs = visibleIDs
+
+        let orphaned = store.pruneOrphanedIDs()
+
+        XCTAssertTrue(orphaned.isEmpty)
+    }
+
+    func testRemovedCatalogsBannerShowsCorrectTextForSingleCatalog() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG"])
+
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.title, "Katalog nicht mehr verfügbar")
+        XCTAssertEqual(banner?.iconName, "text.badge.minus")
+        XCTAssertEqual(banner?.iconColorName, "orange")
+    }
+
+    func testRemovedCatalogsBannerShowsCorrectTextForMultipleCatalogs() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG", "Bibi Blocksberg"])
+
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.title, "2 Kataloge nicht mehr verfügbar")
+        XCTAssertEqual(banner?.iconName, "text.badge.minus")
+    }
+
+    func testRemovedCatalogsBannerReturnsNilForEmptyList() {
+        let banner = CatalogUpdateBannerRecommendation.removedCatalogs([])
+
+        XCTAssertNil(banner)
     }
 
     private func makeTestCoverImage() -> UIImage {

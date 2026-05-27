@@ -33,6 +33,19 @@ struct EpisodeListView: View {
         )
     }
 
+    private var availableUniverseFilters: [Universe] {
+        let filterContextEpisodes = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: controls.searchText,
+            filterUniverse: nil,
+            filterMood: controls.filterMood,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
+        )
+        let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
+        return universes.filter { visibleUniverseIDs.contains($0.id) }
+    }
+
     private var shouldShowUniverseSections: Bool {
         !episodeGroups.isEmpty
     }
@@ -90,7 +103,7 @@ struct EpisodeListView: View {
             newCatalogAvailability: EpisodeCatalog.shared.newCatalogAvailability,
             catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
             activeCatalogIDs: ActiveCatalogStore().activeIDs
-        )
+        ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
     var body: some View {
@@ -137,7 +150,7 @@ struct EpisodeListView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
-                        universes: universes
+                        universes: availableUniverseFilters
                     )
                 }
             }
@@ -298,11 +311,33 @@ struct EpisodeListView: View {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isListened = true
+                        episode.listenCount += 1
+                        episode.lastListenedAt = .now
+                        episode.listenStatusUpdatedAt = .now
+                        if episode.isBookmarked {
+                            episode.isBookmarked = false
+                            episode.bookmarkedUpdatedAt = .now
+                        }
+                    }
+                } label: {
+                    Label("Durchgang +1", systemImage: "plus")
+                }
+                .tint(.green)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         episode.isListened.toggle()
                         if episode.isListened {
                             episode.listenCount += 1
                             episode.lastListenedAt = .now
+                            if episode.isBookmarked {
+                                episode.isBookmarked = false
+                                episode.bookmarkedUpdatedAt = .now
+                            }
                         }
+                        episode.listenStatusUpdatedAt = .now
                     }
                 } label: {
                     Label(
@@ -310,27 +345,29 @@ struct EpisodeListView: View {
                         systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
                     )
                 }
-                .tint(episode.isListened ? .gray : .green)
+                .tint(.blue)
             }
             .swipeActions(edge: .trailing) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        episode.isListened = true
-                        episode.listenCount += 1
-                        episode.lastListenedAt = .now
-                    }
-                } label: {
-                    Label("Hördurchgang zählen", systemImage: "plus")
-                }
-                .tint(.blue)
-
                 Button(role: .destructive) {
                     requestDeleteEpisode(episode)
                 } label: {
                     Label("Löschen", systemImage: "trash")
                 }
                 .tint(.red)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isHidden.toggle()
+                        episode.hiddenUpdatedAt = .now
+                    }
+                } label: {
+                    Label(
+                        episode.isHidden ? "Einblenden" : "Ausblenden",
+                        systemImage: episode.isHidden ? "eye" : "eye.slash"
+                    )
+                }
+                .tint(.orange)
             }
         }
     }
@@ -436,7 +473,12 @@ struct LibrarySnapshotView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Dein Hörstand")
                         .font(.headline)
-                    Text("\(listenedCount) von \(episodeCount) Folgen gehört")
+                    Text(AppLocalization.format(
+                        "EpisodeList.ProgressSummary",
+                        defaultValue: "%lld von %lld Folgen gehört",
+                        Int64(listenedCount),
+                        Int64(episodeCount)
+                    ))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -662,6 +704,20 @@ struct EpisodeRowView: View {
 
             Spacer()
 
+            if episode.isFavorite {
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.red)
+                    .font(.caption)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+            }
+
+            if episode.isBookmarked {
+                Image(systemName: "bookmark.fill")
+                    .foregroundStyle(.cyan)
+                    .font(.caption)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+            }
+
             if episode.isListened {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
@@ -680,7 +736,7 @@ private struct MoodFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                MoodChip(label: "Alle", isSelected: selection == nil) {
+                MoodChip(label: String(localized: "Selection.All", defaultValue: "Alle"), isSelected: selection == nil) {
                     selection = nil
                 }
                 ForEach(moods) { mood in

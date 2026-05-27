@@ -3,9 +3,12 @@ import SwiftData
 
 struct UpNextView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage(SmartListPreferences.hiddenStorageKey) private var hiddenSmartListsRaw = ""
+    @AppStorage(SmartListPreferences.orderStorageKey) private var smartListOrderRaw = ""
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
+    @State private var showingEditSheet = false
     @Binding var iPadNavSelection: SmartListNavigation?
     private let usesSelectionMode: Bool
 
@@ -53,12 +56,27 @@ struct UpNextView: View {
                     .listRowSeparator(.hidden)
             }
 
-            ForEach(SmartListDefinition.allCases) { smartList in
+            ForEach(SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)) { smartList in
                 smartListRow(smartList)
             }
         }
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .modifier(AdaptiveUpNextListStyle(isRegularWidth: horizontalSizeClass == .regular))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingEditSheet = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            SmartListEditSheet(
+                hiddenSmartListsRaw: $hiddenSmartListsRaw,
+                smartListOrderRaw: $smartListOrderRaw
+            )
+        }
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)
         }
@@ -160,10 +178,11 @@ private struct SmartListRowContent: View {
 
     private var color: Color {
         switch smartList.accentColor {
+        case "cyan": .cyan
+        case "red": .red
         case "blue": .blue
         case "green": .green
         case "orange": .orange
-        case "red": .red
         case "yellow": .yellow
         case "purple": .purple
         case "pink": .pink
@@ -214,6 +233,83 @@ private struct SmartListRowContent: View {
     }
 }
 
+private struct SmartListEditSheet: View {
+    @Binding var hiddenSmartListsRaw: String
+    @Binding var smartListOrderRaw: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var order: [SmartListDefinition] = []
+
+    private var hiddenLists: Set<SmartListDefinition> {
+        SmartListPreferences.hiddenLists(from: hiddenSmartListsRaw)
+    }
+
+    private func isEnabled(_ list: SmartListDefinition) -> Binding<Bool> {
+        Binding(
+            get: { !hiddenLists.contains(list) },
+            set: { enabled in
+                var hidden = hiddenLists
+                if enabled {
+                    hidden.remove(list)
+                } else {
+                    hidden.insert(list)
+                }
+                hiddenSmartListsRaw = SmartListPreferences.encodeHidden(hidden)
+            }
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(order) { smartList in
+                        Toggle(isOn: isEnabled(smartList)) {
+                            Label {
+                                Text(smartList.displayName)
+                            } icon: {
+                                Image(systemName: smartList.icon)
+                                    .foregroundStyle(smartListColor(smartList))
+                            }
+                        }
+                    }
+                    .onMove { source, destination in
+                        order.move(fromOffsets: source, toOffset: destination)
+                        smartListOrderRaw = SmartListPreferences.encodeOrder(order)
+                    }
+                } footer: {
+                    Text("Deaktivierte Listen werden ausgeblendet. Halte und ziehe um die Reihenfolge zu ändern.")
+                }
+            }
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle("Smart Lists")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .onAppear {
+            order = SmartListPreferences.orderedLists(from: smartListOrderRaw)
+        }
+    }
+}
+
+private func smartListColor(_ smartList: SmartListDefinition) -> Color {
+    switch smartList.accentColor {
+    case "cyan": .cyan
+    case "red": .red
+    case "blue": .blue
+    case "green": .green
+    case "orange": .orange
+    case "yellow": .yellow
+    case "purple": .purple
+    case "pink": .pink
+    default: .accentColor
+    }
+}
+
 private struct SmartListInfoSheet: View {
     let smartList: SmartListDefinition
 
@@ -221,10 +317,11 @@ private struct SmartListInfoSheet: View {
 
     private var color: Color {
         switch smartList.accentColor {
+        case "cyan": .cyan
+        case "red": .red
         case "blue": .blue
         case "green": .green
         case "orange": .orange
-        case "red": .red
         case "yellow": .yellow
         case "purple": .purple
         case "pink": .pink

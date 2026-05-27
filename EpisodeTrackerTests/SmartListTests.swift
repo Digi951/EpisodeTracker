@@ -14,12 +14,15 @@ final class SmartListTests: XCTestCase {
         title: String = "Folge",
         universe: Universe? = nil,
         isListened: Bool = false,
+        isBookmarked: Bool = false,
+        isFavorite: Bool = false,
+        isHidden: Bool = false,
         rating: Int? = nil,
         listenCount: Int? = nil,
         lastListenedAt: Date? = nil,
         moods: [Mood] = []
     ) -> Episode {
-        Episode(
+        let episode = Episode(
             episodeNumber: number,
             title: title,
             releaseYear: 2020,
@@ -30,10 +33,109 @@ final class SmartListTests: XCTestCase {
             universe: universe,
             moods: moods
         )
+        episode.isBookmarked = isBookmarked
+        episode.isFavorite = isFavorite
+        episode.isHidden = isHidden
+        return episode
     }
 
     private func date(_ daysAgo: Int) -> Date {
         Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+    }
+
+    // MARK: - Favoriten
+
+    func testFavoritesReturnsAllFavoriteEpisodes() {
+        let u1 = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, isFavorite: true),
+            makeEpisode(number: 2, universe: u1, isListened: false, isFavorite: true),
+            makeEpisode(number: 3, universe: u1, isListened: false, isFavorite: false),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 2)
+    }
+
+    func testFavoritesSortsByUniverseNameThenNumber() {
+        let tkkg = makeUniverse("TKKG")
+        let ddf = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 5, universe: tkkg, isFavorite: true),
+            makeEpisode(number: 2, universe: ddf, isFavorite: true),
+            makeEpisode(number: 1, universe: ddf, isFavorite: true),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertEqual(result[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[2].universe?.name, "TKKG")
+    }
+
+    func testFavoritesReturnsEmptyWhenNone() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1),
+            makeEpisode(number: 2, universe: u1),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    // MARK: - Später hören (Later Listen / Bookmark)
+
+    func testLaterListenReturnsBookmarkedUnlistenedOnly() {
+        let u1 = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: false, isBookmarked: true),
+            makeEpisode(number: 2, universe: u1, isListened: true, isBookmarked: true),
+            makeEpisode(number: 3, universe: u1, isListened: false, isBookmarked: false),
+            makeEpisode(number: 4, universe: u1, isListened: false, isBookmarked: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 4)
+    }
+
+    func testLaterListenSortsByUniverseNameThenNumber() {
+        let tkkg = makeUniverse("TKKG")
+        let ddf = makeUniverse("Die drei ???")
+        let episodes = [
+            makeEpisode(number: 5, universe: tkkg, isListened: false, isBookmarked: true),
+            makeEpisode(number: 2, universe: ddf, isListened: false, isBookmarked: true),
+            makeEpisode(number: 1, universe: ddf, isListened: false, isBookmarked: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 3)
+        XCTAssertEqual(result[0].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].universe?.name, "Die drei ???")
+        XCTAssertEqual(result[1].episodeNumber, 2)
+        XCTAssertEqual(result[2].universe?.name, "TKKG")
+        XCTAssertEqual(result[2].episodeNumber, 5)
+    }
+
+    func testLaterListenReturnsEmptyWhenNoBookmarks() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: false),
+            makeEpisode(number: 2, universe: u1, isListened: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
     }
 
     // MARK: - Fortsetzen (Continue)
@@ -467,6 +569,20 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result.count, 3)
     }
 
+    func testRandomWithFavoritesFilterReturnsOnlyFavorites() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isFavorite: true),
+            makeEpisode(number: 2, universe: u1),
+            makeEpisode(number: 3, universe: u1, isListened: true, isFavorite: true),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, filter: .favorites)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.allSatisfy(\.isFavorite))
+    }
+
     func testEpisodesForMoodWithListenedFilter() {
         let mood = Mood(name: "Gruselig", iconName: "😱")
         let u1 = makeUniverse("Test")
@@ -619,6 +735,132 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result.count, 7)
         XCTAssertEqual(result.first?.entry.number, 2)
         XCTAssertEqual(result.last?.entry.number, 8)
+    }
+
+    // MARK: - Ausblenden (Hidden Episodes)
+
+    func testHiddenEpisodesExcludedFromFavorites() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isFavorite: true),
+            makeEpisode(number: 2, universe: u1, isFavorite: true, isHidden: true),
+            makeEpisode(number: 3, universe: u1, isFavorite: true),
+        ]
+
+        let result = SmartListDefinition.favoriteEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+        XCTAssertEqual(result[1].episodeNumber, 3)
+    }
+
+    func testHiddenEpisodesExcludedFromLaterListen() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isBookmarked: true),
+            makeEpisode(number: 2, universe: u1, isBookmarked: true, isHidden: true),
+        ]
+
+        let result = SmartListDefinition.laterListenEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+    }
+
+    func testHiddenEpisodesExcludedFromContinuation() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(1)),
+            makeEpisode(number: 2, universe: u1, isHidden: true),
+            makeEpisode(number: 3, universe: u1),
+        ]
+
+        let result = SmartListDefinition.continuationEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].episodeNumber, 3)
+    }
+
+    func testHiddenEpisodesExcludedFromSkipped() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true),
+            makeEpisode(number: 2, universe: u1, isHidden: true),
+            makeEpisode(number: 3, universe: u1, isListened: true),
+        ]
+
+        let result = SmartListDefinition.skippedEpisodes(from: episodes)
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testHiddenEpisodesExcludedFromLongPause() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, isListened: true, lastListenedAt: date(60)),
+            makeEpisode(number: 2, universe: u1, isHidden: true),
+        ]
+
+        let result = SmartListDefinition.longPauseEpisodes(from: episodes, referenceDate: Date())
+
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testHiddenEpisodesExcludedFromTopRated() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, rating: 5),
+            makeEpisode(number: 2, universe: u1, isHidden: true, rating: 5),
+        ]
+
+        let result = SmartListDefinition.topRatedEpisodes(from: episodes)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+    }
+
+    func testHiddenEpisodesExcludedFromRandom() {
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1),
+            makeEpisode(number: 2, universe: u1, isHidden: true),
+            makeEpisode(number: 3, universe: u1),
+        ]
+
+        let result = SmartListDefinition.randomEpisodes(from: episodes, count: 10)
+
+        XCTAssertEqual(result.count, 2)
+        for episode in result {
+            XCTAssertFalse(episode.isHidden)
+        }
+    }
+
+    func testHiddenEpisodesExcludedFromMoodSearch() {
+        let mood = Mood(name: "Gruselig", iconName: "😱")
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, moods: [mood]),
+            makeEpisode(number: 2, universe: u1, isHidden: true, moods: [mood]),
+        ]
+
+        let result = SmartListDefinition.episodesForMood(mood, from: episodes)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].episodeNumber, 1)
+    }
+
+    func testHiddenEpisodesExcludedFromAvailableMoods() {
+        let mood = Mood(name: "Gruselig", iconName: "😱")
+        let u1 = makeUniverse("Test")
+        let episodes = [
+            makeEpisode(number: 1, universe: u1, moods: [mood]),
+            makeEpisode(number: 2, universe: u1, isHidden: true, moods: [mood]),
+        ]
+
+        let result = SmartListDefinition.availableMoods(from: episodes, allMoods: [mood])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].count, 1)
     }
 
     func testNextFromCatalogMultipleUniversesSortedByName() {

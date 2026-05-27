@@ -34,6 +34,7 @@ struct EpisodeEditView: View {
     @State private var formValidationMessage: String?
     @State private var moodValidationMessage: String?
     @State private var streamingURL: String = ""
+    @State private var isHidden: Bool = false
     @State private var showingDeleteConfirmation = false
     @State private var pendingCatalogRefreshKey: String?
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -262,6 +263,14 @@ struct EpisodeEditView: View {
                 isCollapsed: $isStreamingSectionCollapsed,
                 streamingURL: $streamingURL
             )
+
+            if !isNew {
+                Section {
+                    Toggle("Ausgeblendet", isOn: $isHidden)
+                } footer: {
+                    Text("Ausgeblendete Folgen erscheinen nicht in Smart Lists und Vorschlägen.")
+                }
+            }
         }
         .navigationTitle(isNew ? "Neue Folge" : "Folge bearbeiten")
         .navigationBarTitleDisplayMode(.inline)
@@ -364,6 +373,7 @@ struct EpisodeEditView: View {
             isListened = episode.isListened
             rating = episode.rating
             streamingURL = episode.streamingURL ?? ""
+            isHidden = episode.isHidden
             selectedMoods = Set(episode.moods)
             selectedUniverse = episode.universe ?? universes.first
         } else if let prefillEntry {
@@ -403,6 +413,10 @@ struct EpisodeEditView: View {
             let wasListened = episode.isListened
             let previousMoodKeys = Set(episode.moods.map(\.resolvedSyncKey))
             let newMoodKeys = Set(selectedMoods.map(\.resolvedSyncKey))
+            let previousNote = episode.personalNote
+            let previousRating = episode.rating
+            let previousStreamingURL = episode.streamingURL
+            let previousListenStatus = episode.isListened
             episode.episodeNumber = episodeNumber
             episode.title = title
             episode.releaseYear = releaseYear
@@ -415,12 +429,24 @@ struct EpisodeEditView: View {
                 episode.moodsUpdatedAt = .now
             }
             episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
+            if episode.personalNote != previousNote { episode.noteUpdatedAt = .now }
+            if episode.rating != previousRating { episode.ratingUpdatedAt = .now }
+            if episode.streamingURL != previousStreamingURL { episode.streamingURLUpdatedAt = .now }
+            if episode.isListened != previousListenStatus { episode.listenStatusUpdatedAt = .now }
+            if episode.isHidden != isHidden {
+                episode.isHidden = isHidden
+                episode.hiddenUpdatedAt = .now
+            }
             episode.refreshSyncKeyIfPossible()
             applyCoverChange(to: episode)
 
             if isListened && !wasListened {
                 episode.listenCount += 1
                 episode.lastListenedAt = .now
+                if episode.isBookmarked {
+                    episode.isBookmarked = false
+                    episode.bookmarkedUpdatedAt = .now
+                }
             }
         } else {
             let newEpisode = Episode(

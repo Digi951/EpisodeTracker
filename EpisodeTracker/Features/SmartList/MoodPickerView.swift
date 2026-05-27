@@ -13,9 +13,14 @@ struct MoodPickerView: View {
         List {
             if moodsWithCounts.isEmpty {
                 ContentUnavailableView {
-                    Label("Keine Stimmungen", systemImage: "tray")
+                    Label(String(localized: "Keine Stimmungen", defaultValue: "Keine Stimmungen"), systemImage: "tray")
                 } description: {
-                    Text("Noch keine Stimmungen in deiner Bibliothek")
+                    Text(
+                        String(
+                            localized: "Noch keine Stimmungen in deiner Bibliothek",
+                            defaultValue: "Noch keine Stimmungen in deiner Bibliothek"
+                        )
+                    )
                 }
                 .listRowSeparator(.hidden)
             } else {
@@ -40,6 +45,6 @@ struct MoodPickerView: View {
                 }
             }
         }
-        .navigationTitle("Stimmung wählen")
+        .navigationTitle(String(localized: "SmartList.RandomByMood.PickMood", defaultValue: "Stimmung wählen…"))
     }
 }

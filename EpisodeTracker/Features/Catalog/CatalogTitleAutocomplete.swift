@@ -1,7 +1,7 @@
 import Foundation
 
 enum CatalogTitleAutocomplete {
-    static func suggestions(
+    nonisolated static func suggestions(
         for query: String,
         entries: [CatalogEntry],
         activeCollectionNames: Set<String>,
@@ -12,7 +12,7 @@ enum CatalogTitleAutocomplete {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard normalizedQuery.count >= 2 else { return [] }
 
-        let selectedKey = selectedCollectionName.map(normalizedKey)
+        let selectedKey = selectedCollectionName.map { normalizedKey($0) }
         if let selectedKey, !activeCollectionNames.contains(selectedKey) {
             return []
         }
@@ -45,7 +45,7 @@ enum CatalogTitleAutocomplete {
             .map { $0 }
     }
 
-    static func normalizedKey(_ value: String) -> String {
+    nonisolated static func normalizedKey(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

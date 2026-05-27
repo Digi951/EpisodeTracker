@@ -47,6 +47,7 @@ enum WidgetSyncStore {
                     releaseYear: episode.releaseYear,
                     universeName: episode.universe?.name,
                     isListened: episode.isListened,
+                    isBookmarked: episode.isBookmarked,
                     rating: episode.rating,
                     lastListenedAt: episode.lastListenedAt,
                     coverImageName: coverName

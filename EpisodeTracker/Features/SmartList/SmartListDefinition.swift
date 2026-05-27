@@ -3,6 +3,7 @@ import Foundation
 enum EpisodeFilter: String, CaseIterable, Identifiable {
     case unlistened
     case listened
+    case favorites
     case all
 
     var id: String { rawValue }
@@ -11,7 +12,15 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
         switch self {
         case .unlistened: String(localized: "EpisodeFilter.Unlistened", defaultValue: "Ungehört")
         case .listened: String(localized: "EpisodeFilter.Listened", defaultValue: "Gehört")
+        case .favorites: String(localized: "EpisodeFilter.Favorites", defaultValue: "Favoriten")
         case .all: String(localized: "EpisodeFilter.All", defaultValue: "Alle")
+        }
+    }
+
+    var iconName: String? {
+        switch self {
+        case .favorites: "heart.fill"
+        default: nil
         }
     }
 
@@ -19,12 +28,15 @@ enum EpisodeFilter: String, CaseIterable, Identifiable {
         switch self {
         case .unlistened: episodes.filter { !$0.isListened }
         case .listened: episodes.filter(\.isListened)
+        case .favorites: episodes.filter(\.isFavorite)
         case .all: episodes
         }
     }
 }
 
 enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
+    case laterListen
+    case favorites
     case continueListening
     case nextFromCatalog
     case longPaused
@@ -37,6 +49,8 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var icon: String {
         switch self {
+        case .laterListen: "bookmark.fill"
+        case .favorites: "heart.fill"
         case .continueListening: "play.circle.fill"
         case .nextFromCatalog: "text.badge.plus"
         case .longPaused: "clock.arrow.circlepath"
@@ -49,6 +63,8 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var accentColor: String {
         switch self {
+        case .laterListen: "cyan"
+        case .favorites: "red"
         case .continueListening: "blue"
         case .nextFromCatalog: "green"
         case .longPaused: "orange"
@@ -61,6 +77,8 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var displayName: String {
         switch self {
+        case .laterListen: String(localized: "SmartList.LaterListen.Title", defaultValue: "Später hören")
+        case .favorites: String(localized: "SmartList.Favorites.Title", defaultValue: "Favoriten")
         case .continueListening: String(localized: "SmartList.ContinueListening.Title", defaultValue: "Fortsetzen")
         case .nextFromCatalog: String(localized: "SmartList.NextFromCatalog.Title", defaultValue: "Nächste aus dem Katalog")
         case .longPaused: String(localized: "SmartList.LongPaused.Title", defaultValue: "Lange nicht gehört")
@@ -73,6 +91,8 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var emptyStateMessage: String {
         switch self {
+        case .laterListen: String(localized: "SmartList.LaterListen.Empty", defaultValue: "Keine Folgen auf der Merkliste")
+        case .favorites: String(localized: "SmartList.Favorites.Empty", defaultValue: "Noch keine Favoriten markiert")
         case .continueListening: String(localized: "SmartList.ContinueListening.Empty", defaultValue: "Du bist überall auf dem neuesten Stand")
         case .nextFromCatalog: String(localized: "SmartList.NextFromCatalog.Empty", defaultValue: "Keine weiteren Katalog-Folgen verfügbar")
         case .longPaused: String(localized: "SmartList.LongPaused.Empty", defaultValue: "Keine lang pausierten Serien")
@@ -85,6 +105,10 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     var infoText: String {
         switch self {
+        case .laterListen:
+            String(localized: "SmartList.LaterListen.Info", defaultValue: "Folgen, die du mit dem Lesezeichen markiert hast und noch nicht gehört wurden. Sobald du eine Folge als gehört markierst, wird das Lesezeichen automatisch entfernt.")
+        case .favorites:
+            String(localized: "SmartList.Favorites.Info", defaultValue: "Alle Folgen, die du als Favorit markiert hast — egal ob gehört oder nicht. Deine persönliche Bestenliste.")
         case .continueListening:
             String(localized: "SmartList.ContinueListening.Info", defaultValue: "Zeigt pro Serie die nächste ungehörte Folge nach der höchsten gehörten. Sortiert nach letzter Aktivität.")
         case .nextFromCatalog:
@@ -116,6 +140,10 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     func episodes(from allEpisodes: [Episode], referenceDate: Date = .now) -> [Episode] {
         switch self {
+        case .laterListen:
+            return Self.laterListenEpisodes(from: allEpisodes)
+        case .favorites:
+            return Self.favoriteEpisodes(from: allEpisodes)
         case .continueListening:
             return Self.continuationEpisodes(from: allEpisodes)
         case .nextFromCatalog:
@@ -135,8 +163,38 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     // MARK: - Query Logic
 
+    private static func visible(_ episodes: [Episode]) -> [Episode] {
+        episodes.filter { !$0.isHidden }
+    }
+
+    static func favoriteEpisodes(from episodes: [Episode]) -> [Episode] {
+        visible(episodes)
+            .filter(\.isFavorite)
+            .sorted {
+                let name0 = $0.universe?.name ?? ""
+                let name1 = $1.universe?.name ?? ""
+                if name0 != name1 {
+                    return name0.localizedCompare(name1) == .orderedAscending
+                }
+                return $0.episodeNumber < $1.episodeNumber
+            }
+    }
+
+    static func laterListenEpisodes(from episodes: [Episode]) -> [Episode] {
+        visible(episodes)
+            .filter { $0.isBookmarked && !$0.isListened }
+            .sorted {
+                let name0 = $0.universe?.name ?? ""
+                let name1 = $1.universe?.name ?? ""
+                if name0 != name1 {
+                    return name0.localizedCompare(name1) == .orderedAscending
+                }
+                return $0.episodeNumber < $1.episodeNumber
+            }
+    }
+
     static func continuationEpisodes(from episodes: [Episode]) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(episode: Episode, lastActivity: Date)] = []
@@ -162,7 +220,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func skippedEpisodes(from episodes: [Episode]) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(universeName: String, episode: Episode)] = []
@@ -194,7 +252,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func longPauseEpisodes(from episodes: [Episode], referenceDate: Date = .now) -> [Episode] {
-        let withUniverse = episodes.filter { $0.universe != nil }
+        let withUniverse = visible(episodes).filter { $0.universe != nil }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         guard let thresholdDate = Calendar.current.date(
@@ -230,7 +288,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func topRatedEpisodes(from episodes: [Episode]) -> [Episode] {
-        episodes
+        visible(episodes)
             .filter { !$0.isListened && $0.rating != nil }
             .sorted {
                 let r0 = $0.rating ?? 0
@@ -243,7 +301,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func randomEpisodes(from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10, maxPerUniverse: Int = 3) -> [Episode] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         let grouped = Dictionary(grouping: filtered) { $0.universe?.name ?? "" }
         var picked: [Episode] = []
         for (_, group) in grouped {
@@ -253,7 +311,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func episodesForMood(_ mood: Mood, from episodes: [Episode], filter: EpisodeFilter = .unlistened, count: Int = 10) -> [Episode] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         let matching = filtered.filter { episode in
             episode.moods.contains(where: { $0.matches(mood) })
         }
@@ -261,7 +319,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func availableMoods(from episodes: [Episode], filter: EpisodeFilter = .unlistened, allMoods: [Mood]) -> [(mood: Mood, count: Int)] {
-        let filtered = filter.apply(to: episodes)
+        let filtered = filter.apply(to: visible(episodes))
         var results: [(mood: Mood, count: Int)] = []
 
         for mood in canonicalMoods(from: allMoods) {

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct EpisodeDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingService.spotify.rawValue
+    @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
     let episode: Episode
     @State private var catalog = EpisodeCatalog.shared
     @State private var showingEdit = false
@@ -10,33 +10,29 @@ struct EpisodeDetailView: View {
     @State private var heroCoverTint = Color.pink
 
     private var streamingService: StreamingService {
-        StreamingService(rawValue: preferredServiceRaw) ?? .spotify
+        let profile = StreamingMarketProfile.current
+        guard let service = StreamingService(rawValue: preferredServiceRaw),
+              profile.services.contains(service)
+        else {
+            return profile.defaultService
+        }
+        return service
     }
 
     private var resolvedStreamingLink: (url: URL, label: String)? {
-        if let directURL = streamingService.directURL(from: episode.streamingURL) {
-            return (directURL, "In \(streamingService.displayName) öffnen")
-        }
-
-        let catalogEntry = catalog.entry(
-            for: episode.episodeNumber,
-            in: episode.universe?.name
-        )
-
-        if let entry = catalogEntry, let catalogURL = streamingService.catalogURL(from: entry) {
-            return (catalogURL, "In \(streamingService.displayName) öffnen")
-        }
-
-        return nil
+        StreamingLinkResolver(service: streamingService, catalog: catalog)
+            .resolve(for: episode)
     }
 
     private var statusLabel: String {
         if episode.isListened {
-            episode.listenCount > 1 ? "Gehört (\(episode.listenCount)×)" : "Gehört"
+            episode.listenCount > 1
+                ? AppLocalization.format("Episode.Status.ListenedCount", defaultValue: "Gehört (%lld×)", Int64(episode.listenCount))
+                : String(localized: "Gehört")
         } else if episode.listenCount > 0 {
-            "Nochmal"
+            String(localized: "Nochmal")
         } else {
-            "Offen"
+            String(localized: "Offen")
         }
     }
 
@@ -65,8 +61,34 @@ struct EpisodeDetailView: View {
         .navigationTitle("Folge \(episode.episodeNumber)")
         .background(fullScreenCoverBackground)
         .toolbar {
-            Button("Bearbeiten") {
-                showingEdit = true
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isFavorite.toggle()
+                        episode.favoriteUpdatedAt = .now
+                    }
+                } label: {
+                    Image(systemName: episode.isFavorite ? "heart.fill" : "heart")
+                        .foregroundStyle(episode.isFavorite ? .red : .secondary)
+                }
+                .accessibilityLabel(episode.isFavorite ? "Aus Favoriten entfernen" : "Als Favorit markieren")
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        episode.isBookmarked.toggle()
+                        episode.bookmarkedUpdatedAt = .now
+                    }
+                } label: {
+                    Image(systemName: episode.isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(episode.isBookmarked ? .cyan : .secondary)
+                }
+                .accessibilityLabel(episode.isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen")
+
+                Button("Bearbeiten") {
+                    showingEdit = true
+                }
             }
         }
         .sheet(isPresented: $showingEdit) {
@@ -120,6 +142,20 @@ struct EpisodeDetailView: View {
                 .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
         }
         .shadow(color: .black.opacity(0.1), radius: 16, x: 0, y: 6)
+        .contextMenu {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    episode.isHidden.toggle()
+                    episode.hiddenUpdatedAt = .now
+                }
+            } label: {
+                Label(
+                    episode.isHidden ? "Einblenden" : "Ausblenden",
+                    systemImage: episode.isHidden ? "eye" : "eye.slash"
+                )
+            }
+        }
     }
 
     private var panelDivider: some View {
@@ -165,7 +201,11 @@ struct EpisodeDetailView: View {
             }
 
             if let lastListened = episode.lastListenedAt {
-                Text("Zuletzt gehört: \(lastListened.formatted(date: .abbreviated, time: .omitted))")
+                Text(AppLocalization.format(
+                    "Episode.LastListened",
+                    defaultValue: "Zuletzt gehört: %@",
+                    lastListened.formatted(date: .abbreviated, time: .omitted)
+                ))
                     .font(.caption)
                     .foregroundStyle(.primary.opacity(0.58))
             }
@@ -225,6 +265,11 @@ struct EpisodeDetailView: View {
             episode.isListened = true
             episode.listenCount += 1
             episode.lastListenedAt = .now
+            episode.listenStatusUpdatedAt = .now
+            if episode.isBookmarked {
+                episode.isBookmarked = false
+                episode.bookmarkedUpdatedAt = .now
+            }
         }
     }
 

@@ -10,6 +10,7 @@ final class EpisodeCatalog {
     private let remoteDataSource: any CatalogFetching
     private(set) var lastRefreshError: String?
     private(set) var newCatalogAvailability: NewCatalogAvailability?
+    private(set) var removedCatalogBanner: CatalogUpdateBannerRecommendation?
 
     init() {
         parser = CatalogParser()
@@ -90,6 +91,7 @@ final class EpisodeCatalog {
     func refreshManagedCatalogsIfNeeded(force: Bool = false) async {
         lastRefreshError = nil
         await refreshManifestIfNeeded(force: force)
+        pruneOrphanedCatalogs()
 
         let activeCatalogIDs = ActiveCatalogStore().activeIDs
         for source in managedSources where activeCatalogIDs.contains(source.id) {
@@ -126,7 +128,8 @@ final class EpisodeCatalog {
             switch result {
             case .updated(let data, let eTag, let lastModified):
                 let manifest = try parser.parseManifest(from: data)
-                let newSources = newCatalogSources(in: manifest.catalogs, previousSources: previousSources)
+                let filteredCatalogs = manifest.catalogs.filter(\.matchesDeviceLanguage)
+                let newSources = newCatalogSources(in: filteredCatalogs, previousSources: previousSources)
                 updateNewCatalogAvailability(newSources.isEmpty ? nil : NewCatalogAvailability(sources: newSources))
                 try cacheStore.saveManifest(manifest)
                 metadata.eTag = eTag
@@ -232,6 +235,20 @@ final class EpisodeCatalog {
         }
 
         return Date().timeIntervalSince(lastCheckedAt) > 60 * 60 * 6
+    }
+
+    private func pruneOrphanedCatalogs() {
+        let store = ActiveCatalogStore()
+        let orphanedIDs = store.pruneOrphanedIDs()
+        guard !orphanedIDs.isEmpty else {
+            removedCatalogBanner = nil
+            return
+        }
+        let allCachedSources = cacheStore.loadManifest()?.catalogs ?? []
+        let names = orphanedIDs.compactMap { orphanedID in
+            allCachedSources.first { $0.id == orphanedID }?.name ?? orphanedID
+        }
+        removedCatalogBanner = CatalogUpdateBannerRecommendation.removedCatalogs(names)
     }
 
     private func newCatalogSources(

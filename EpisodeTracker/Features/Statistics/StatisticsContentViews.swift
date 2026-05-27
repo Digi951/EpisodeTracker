@@ -86,7 +86,7 @@ private struct StatisticsOverviewSection: View {
     let stats: [StatisticsOverviewItem]
 
     var body: some View {
-        Section("Übersicht") {
+        Section(String(localized: "Statistics.Section.Overview", defaultValue: "Übersicht")) {
             ForEach(stats) { stat in
                 StatRow(label: stat.kind.title, value: stat.value)
             }
@@ -98,7 +98,7 @@ private struct StatisticsTopRatedSection: View {
     let topRated: [Episode]
 
     var body: some View {
-        Section("Beste Bewertungen") {
+        Section(String(localized: "Statistics.Section.TopRated", defaultValue: "Beste Bewertungen")) {
             StatisticsTopRatedContent(topRated: topRated)
         }
     }
@@ -109,12 +109,12 @@ private struct StatisticsMoodSection: View {
     let moodSummaryText: String
 
     var body: some View {
-        Section("Stimmungen") {
+        Section(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen")) {
             NavigationLink {
                 MoodStatisticsDetailView(moodDistribution: moodDistribution)
             } label: {
                 StatisticNavigationRow(
-                    title: "Stimmungen ansehen",
+                    title: String(localized: "Statistics.Moods.Show", defaultValue: "Stimmungen ansehen"),
                     detail: moodSummaryText
                 )
             }
@@ -126,7 +126,10 @@ private struct StatisticsTopRatedPanel: View {
     let topRated: [Episode]
 
     var body: some View {
-        StatisticPanel(title: "Beste Bewertungen", systemImage: "star") {
+        StatisticPanel(
+            title: String(localized: "Statistics.Section.TopRated", defaultValue: "Beste Bewertungen"),
+            systemImage: "star"
+        ) {
             StatisticsTopRatedContent(topRated: topRated)
         }
     }
@@ -137,12 +140,15 @@ private struct StatisticsMoodPanel: View {
     let moodSummaryText: String
 
     var body: some View {
-        StatisticPanel(title: "Stimmungen", systemImage: "tag") {
+        StatisticPanel(
+            title: String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"),
+            systemImage: "tag"
+        ) {
             NavigationLink {
                 MoodStatisticsDetailView(moodDistribution: moodDistribution)
             } label: {
                 StatisticNavigationRow(
-                    title: "Stimmungen ansehen",
+                    title: String(localized: "Statistics.Moods.Show", defaultValue: "Stimmungen ansehen"),
                     detail: moodSummaryText
                 )
             }
@@ -158,8 +164,11 @@ private struct StatisticsTopRatedContent: View {
         if topRated.isEmpty {
             EmptyStatisticRow(
                 systemImage: "star",
-                title: "Noch keine Bewertungen",
-                detail: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+                title: String(localized: "Statistics.TopRated.Empty.Title", defaultValue: "Noch keine Bewertungen"),
+                detail: String(
+                    localized: "Statistics.TopRated.Empty.Detail",
+                    defaultValue: "Bewerte Folgen, um deine Favoriten hier zu sehen."
+                )
             )
         } else {
             VStack(spacing: 12) {
@@ -301,8 +310,11 @@ private struct MoodStatisticsDetailView: View {
             if moodDistribution.isEmpty {
                 EmptyStatisticRow(
                     systemImage: "tag",
-                    title: "Noch keine Stimmungen",
-                    detail: "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken."
+                    title: String(localized: "Noch keine Stimmungen", defaultValue: "Noch keine Stimmungen"),
+                    detail: String(
+                        localized: "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken.",
+                        defaultValue: "Ordne Folgen Stimmungen zu, um Muster in deiner Sammlung zu entdecken."
+                    )
                 )
             } else {
                 ForEach(moodDistribution, id: \.0.id) { mood, count in
@@ -315,6 +327,6 @@ private struct MoodStatisticsDetailView: View {
                 }
             }
         }
-        .navigationTitle("Stimmungen")
+        .navigationTitle(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"))
     }
 }
