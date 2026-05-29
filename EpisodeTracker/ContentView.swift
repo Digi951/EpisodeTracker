@@ -215,6 +215,7 @@ private struct IPadEpisodeListView: View {
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
     @Query(sort: \Universe.name) private var universes: [Universe]
+    @Query(sort: \Mood.name) private var moods: [Mood]
 
     @AppStorage("prefersICloudSync") private var prefersICloudSync = false
     let libraryTitle: String
@@ -236,7 +237,7 @@ private struct IPadEpisodeListView: View {
             episodes: episodes,
             searchText: controls.searchText,
             filterUniverse: controls.filterUniverse,
-            filterMood: nil,
+            filterMood: controls.filterMood,
             statusFilter: controls.statusFilter,
             sortOrder: controls.sortOrder
         )
@@ -247,12 +248,20 @@ private struct IPadEpisodeListView: View {
             episodes: episodes,
             searchText: controls.searchText,
             filterUniverse: nil,
-            filterMood: nil,
+            filterMood: controls.filterMood,
             statusFilter: controls.statusFilter,
             sortOrder: controls.sortOrder
         )
         let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
         return universes.filter { visibleUniverseIDs.contains($0.id) }
+    }
+
+    private var availableMoodFilters: [Mood] {
+        moods.filter { mood in
+            episodes.contains { episode in
+                episode.moods.contains { $0.matches(mood) }
+            }
+        }
     }
 
     private var episodeGroups: [EpisodeListGroup] {
@@ -433,6 +442,8 @@ private struct IPadEpisodeListView: View {
             .listRowBackground(Color.clear)
         }
 
+        moodFilterRow
+
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
         if !controls.hasActiveFilter && controls.searchText.isEmpty {
             AccentColorAnnouncementBannerRow(style: .sidebar)
@@ -476,6 +487,16 @@ private struct IPadEpisodeListView: View {
                 requestDeleteEpisodes(filteredEpisodes, at: offsets)
             }
             .deleteDisabled(isEditing)
+        }
+    }
+
+    @ViewBuilder
+    private var moodFilterRow: some View {
+        if !availableMoodFilters.isEmpty || controls.filterMood != nil {
+            MoodFilterBar(moods: availableMoodFilters, selection: $controls.filterMood)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
     }
 
