@@ -115,17 +115,12 @@ struct EpisodeEditView: View {
         return Set(
             EpisodeCatalog.shared.managedSources
                 .filter { activeIDs.contains($0.id) }
-                .map { CatalogTitleAutocomplete.normalizedKey($0.name) }
+                .map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) }
         )
     }
 
     private var existingEpisodeNumbersByCollection: [String: Set<Int>] {
-        Dictionary(grouping: allEpisodes) {
-            CatalogTitleAutocomplete.normalizedKey($0.universe?.name ?? "")
-        }
-        .mapValues { episodes in
-            Set(episodes.map(\.episodeNumber))
-        }
+        CatalogLibraryMatcher.existingNumbersByCollection(libraryEpisodes: allEpisodes)
     }
 
     private var preferredCatalogUniverse: Universe? {

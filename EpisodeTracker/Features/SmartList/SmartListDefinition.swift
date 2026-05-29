@@ -351,38 +351,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
     }
 
     static func missingCatalogEntries(catalogEntries: [CatalogEntry], libraryEpisodes: [Episode]) -> [(universeName: String, entry: CatalogEntry)] {
-        let libraryByUniverse = Dictionary(grouping: libraryEpisodes.filter { $0.universe != nil }) { ($0.universe?.name ?? "").lowercased() }
-
-        let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) { ($0.collectionName ?? "").lowercased() }
-
-        var results: [(universeName: String, entry: CatalogEntry)] = []
-
-        for (collectionKey, catalogEpisodes) in catalogByCollection {
-            let libraryEps = libraryByUniverse[collectionKey] ?? []
-            guard !libraryEps.isEmpty else { continue }
-
-            let libraryNumbers = Set(libraryEps.map(\.episodeNumber))
-            let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
-
-            var seenNumbers = Set<Int>()
-            let uniqueEpisodes = catalogEpisodes.filter { seenNumbers.insert($0.number).inserted }
-
-            let missing = uniqueEpisodes
-                .filter { !libraryNumbers.contains($0.number) }
-                .sorted(by: { $0.number < $1.number })
-
-            for entry in missing {
-                results.append((displayName, entry))
-            }
-        }
-
-        results.sort {
-            if $0.universeName != $1.universeName {
-                return $0.universeName.localizedCompare($1.universeName) == .orderedAscending
-            }
-            return $0.entry.number < $1.entry.number
-        }
-        return results
+        CatalogLibraryMatcher.missingEntries(catalogEntries: catalogEntries, libraryEpisodes: libraryEpisodes)
     }
 
     static func catalogTeaserText(for entry: CatalogEntry) -> String {
