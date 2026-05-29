@@ -6,6 +6,7 @@ struct EpisodeTrackerApp: App {
     private let containerSet: AppModelContainerSet
     @StateObject private var containerAccess: AppContainerAccess
     @State private var syncCoordinator: SyncCoordinator
+    @State private var widgetSnapshotCoordinator = WidgetSnapshotCoordinator()
     @Environment(\.scenePhase) private var scenePhase
 
     private var usesCloudSync: Bool {
@@ -26,7 +27,7 @@ struct EpisodeTrackerApp: App {
         WindowGroup {
             ZStack {
                 ContentView()
-                WidgetSyncObserverView()
+                WidgetSyncObserverView(coordinator: widgetSnapshotCoordinator)
             }
             .task { @MainActor in
                 await AppDataBootstrapper.bootstrap(
