@@ -112,4 +112,53 @@ final class EpisodeEditSaveHandlerTests: XCTestCase {
         XCTAssertFalse(episode.isBookmarked)
         XCTAssertNotNil(episode.bookmarkedUpdatedAt)
     }
+
+    func testSaveRejectsDuplicateNumberWhenEditingExistingEpisode() throws {
+        let context = try makeInMemoryContext()
+        let universe = Universe(name: "Die drei ???")
+        context.insert(universe)
+        let episode1 = Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: universe)
+        let episode2 = Episode(episodeNumber: 2, title: "B", releaseYear: 1980, universe: universe)
+        context.insert(episode1)
+        context.insert(episode2)
+
+        var draft = EpisodeEditDraft(episode: episode1, universes: [universe])
+        draft.episodeNumberText = "2"
+
+        let outcome = EpisodeEditSaveHandler.save(
+            draft: draft,
+            existingEpisode: episode1,
+            existingEpisodes: [episode1, episode2],
+            coverChange: .keep,
+            in: context
+        )
+
+        XCTAssertEqual(outcome, .duplicateNumber)
+    }
+
+    func testSaveSetsTimestampsWhenNoteRatingAndURLChange() throws {
+        let context = try makeInMemoryContext()
+        let universe = Universe(name: "TKKG")
+        context.insert(universe)
+        let episode = Episode(episodeNumber: 5, title: "Alt", releaseYear: 1981, universe: universe)
+        context.insert(episode)
+
+        var draft = EpisodeEditDraft(episode: episode, universes: [universe])
+        draft.personalNote = "Neue Notiz"
+        draft.rating = 5
+        draft.streamingURL = "https://open.spotify.com/album/abc"
+
+        let outcome = EpisodeEditSaveHandler.save(
+            draft: draft,
+            existingEpisode: episode,
+            existingEpisodes: [episode],
+            coverChange: .keep,
+            in: context
+        )
+
+        XCTAssertEqual(outcome, .saved)
+        XCTAssertNotNil(episode.noteUpdatedAt)
+        XCTAssertNotNil(episode.ratingUpdatedAt)
+        XCTAssertNotNil(episode.streamingURLUpdatedAt)
+    }
 }
