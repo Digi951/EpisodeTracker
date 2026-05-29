@@ -106,6 +106,7 @@ struct EpisodeWidgetView: View {
         .containerBackground(for: .widget) {
             WidgetCoverBackground(family: family, coverImage: entry.coverImage)
         }
+        .tint(WidgetAccentColor.current)
     }
 
     private var widgetTitle: String {
@@ -213,7 +214,6 @@ private struct WidgetHeaderView: View {
                         )
                 }
                 .buttonStyle(.borderless)
-                .tint(.accentColor)
             }
         }
     }

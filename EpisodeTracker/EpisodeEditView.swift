@@ -19,42 +19,21 @@ struct EpisodeEditView: View {
     var prefillEntry: CatalogEntry?
     var prefillUniverseName: String?
 
-    @State private var episodeNumberText: String = ""
-    @State private var title: String = ""
-    @State private var releaseYearText: String = ""
-    @State private var personalNote: String = ""
-    @State private var isListened: Bool = false
-    @State private var rating: Int?
-    @State private var selectedMoods: Set<Mood> = []
-    @State private var selectedUniverse: Universe?
+    @State private var draft = EpisodeEditDraft()
+    @State private var coverHandler = EpisodeEditCoverHandler()
     @State private var catalogMatch: CatalogEntry?
     @State private var yearSuggestions: [CatalogEntry] = []
     @State private var newMoodName: String = ""
     @State private var newMoodIcon: String = ""
     @State private var formValidationMessage: String?
     @State private var moodValidationMessage: String?
-    @State private var streamingURL: String = ""
-    @State private var isHidden: Bool = false
     @State private var showingDeleteConfirmation = false
     @State private var pendingCatalogRefreshKey: String?
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var coverImage: UIImage?
-    @State private var removeCover = false
-    @State private var clipboardHasImage = false
     @Environment(\.scenePhase) private var scenePhase
 
     private var isNew: Bool { episode == nil }
     private var hasVisibleCover: Bool {
-        if removeCover { return false }
-        if coverImage != nil { return true }
-        guard let name = episode?.coverImageName, !name.isEmpty else { return false }
-        return CoverImageStore().exists(name: name)
-    }
-    private var parsedEpisodeNumber: Int? {
-        Int(episodeNumberText.trimmingCharacters(in: .whitespacesAndNewlines))
-    }
-    private var parsedReleaseYear: Int? {
-        Int(releaseYearText.trimmingCharacters(in: .whitespacesAndNewlines))
+        coverHandler.hasVisibleCover(for: episode)
     }
     private var canCreateEpisodeUnderCurrentPlan: Bool {
         !isNew || FreemiumAccess.canCreateEpisode(
@@ -63,16 +42,12 @@ struct EpisodeEditView: View {
         )
     }
     private var canSave: Bool {
-        !title.isEmpty
-        && parsedEpisodeNumber != nil
-        && parsedReleaseYear != nil
-        && selectedUniverse != nil
-        && canCreateEpisodeUnderCurrentPlan
+        draft.isComplete && canCreateEpisodeUnderCurrentPlan
     }
     private var duplicateEpisodeWarning: String? {
         guard isNew,
-              let number = parsedEpisodeNumber,
-              let universe = selectedUniverse,
+              let number = draft.parsedEpisodeNumber,
+              let universe = draft.selectedUniverse,
               hasDuplicateEpisodeNumber(in: universe, episodeNumber: number)
         else { return nil }
         return "Folge \(number) existiert bereits in \(universe.name)."
@@ -127,10 +102,10 @@ struct EpisodeEditView: View {
         guard isNew else { return [] }
         let activeCollectionNames = activeCatalogCollectionNames
         return CatalogTitleAutocomplete.suggestions(
-            for: title,
+            for: draft.title,
             entries: EpisodeCatalog.shared.allEntries,
             activeCollectionNames: activeCollectionNames,
-            selectedCollectionName: selectedUniverse?.name,
+            selectedCollectionName: draft.selectedUniverse?.name,
             existingEpisodeNumbersByCollection: existingEpisodeNumbersByCollection
         )
     }
@@ -140,17 +115,12 @@ struct EpisodeEditView: View {
         return Set(
             EpisodeCatalog.shared.managedSources
                 .filter { activeIDs.contains($0.id) }
-                .map { CatalogTitleAutocomplete.normalizedKey($0.name) }
+                .map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) }
         )
     }
 
     private var existingEpisodeNumbersByCollection: [String: Set<Int>] {
-        Dictionary(grouping: allEpisodes) {
-            CatalogTitleAutocomplete.normalizedKey($0.universe?.name ?? "")
-        }
-        .mapValues { episodes in
-            Set(episodes.map(\.episodeNumber))
-        }
+        CatalogLibraryMatcher.existingNumbersByCollection(libraryEpisodes: allEpisodes)
     }
 
     private var preferredCatalogUniverse: Universe? {
@@ -170,10 +140,10 @@ struct EpisodeEditView: View {
         List {
             EpisodeFormSection(
                 universes: activeUniverses,
-                selectedUniverse: $selectedUniverse,
-                episodeNumberText: $episodeNumberText,
-                title: $title,
-                releaseYearText: $releaseYearText,
+                selectedUniverse: $draft.selectedUniverse,
+                episodeNumberText: $draft.episodeNumberText,
+                title: $draft.title,
+                releaseYearText: $draft.releaseYearText,
                 catalogMatch: catalogMatch,
                 isNew: isNew,
                 yearSuggestions: yearSuggestions,
@@ -186,20 +156,20 @@ struct EpisodeEditView: View {
             )
 
             CollapsibleEpisodeSection("Cover", isCollapsed: $isCoverSectionCollapsed) {
-                if let coverImage {
+                if let coverImage = coverHandler.coverImage {
                     Image(uiImage: coverImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: 200)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .frame(maxWidth: .infinity)
-                } else if !removeCover, let existingName = episode?.coverImageName, !existingName.isEmpty {
+                } else if !coverHandler.removeCover, let existingName = episode?.coverImageName, !existingName.isEmpty {
                     CoverImageView(name: existingName, maxHeight: 200)
                         .frame(maxWidth: .infinity)
                 }
 
                 PhotosPicker(
-                    selection: $selectedPhotoItem,
+                    selection: $coverHandler.selectedPhotoItem,
                     matching: .images
                 ) {
                     Label(
@@ -209,26 +179,20 @@ struct EpisodeEditView: View {
                 }
 
                 Button {
-                    if let image = UIPasteboard.general.image {
-                        coverImage = image
-                        selectedPhotoItem = nil
-                        removeCover = false
-                    }
+                    coverHandler.pasteFromClipboard()
                 } label: {
                     Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
                         .foregroundStyle(
-                            clipboardHasImage
+                            coverHandler.clipboardHasImage
                                 ? AnyShapeStyle(.tint)
                                 : AnyShapeStyle(Color(.tertiaryLabel))
                         )
                 }
-                .disabled(!clipboardHasImage)
+                .disabled(!coverHandler.clipboardHasImage)
 
                 if hasVisibleCover {
                     Button(role: .destructive) {
-                        coverImage = nil
-                        selectedPhotoItem = nil
-                        removeCover = true
+                        coverHandler.requestRemoval()
                     } label: {
                         Label("Cover entfernen", systemImage: "trash")
                     }
@@ -237,8 +201,8 @@ struct EpisodeEditView: View {
 
             EpisodeStatusSection(
                 isCollapsed: $isStatusSectionCollapsed,
-                isListened: $isListened,
-                rating: $rating
+                isListened: $draft.isListened,
+                rating: $draft.rating
             )
 
             EpisodeMoodSection(
@@ -248,7 +212,7 @@ struct EpisodeEditView: View {
                 newMoodIcon: $newMoodIcon,
                 moodValidationMessage: moodValidationMessage,
                 allMoods: visibleMoods,
-                selectedMoods: selectedMoods,
+                selectedMoods: draft.selectedMoods,
                 onAddSuggestedMood: addSuggestedMood,
                 onAddMood: addMood,
                 onToggleMood: toggleMoodSelection
@@ -256,17 +220,17 @@ struct EpisodeEditView: View {
 
             EpisodeNoteSection(
                 isCollapsed: $isNoteSectionCollapsed,
-                personalNote: $personalNote
+                personalNote: $draft.personalNote
             )
 
             EpisodeStreamingSection(
                 isCollapsed: $isStreamingSectionCollapsed,
-                streamingURL: $streamingURL
+                streamingURL: $draft.streamingURL
             )
 
             if !isNew {
                 Section {
-                    Toggle("Ausgeblendet", isOn: $isHidden)
+                    Toggle("Ausgeblendet", isOn: $draft.isHidden)
                 } footer: {
                     Text("Ausgeblendete Folgen erscheinen nicht in Smart Lists und Vorschlägen.")
                 }
@@ -282,8 +246,27 @@ struct EpisodeEditView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Sichern") {
-                    if save() {
+                    guard canCreateEpisodeUnderCurrentPlan else {
+                        formValidationMessage = FreemiumAccess.limitReachedMessage()
+                        return
+                    }
+                    formValidationMessage = nil
+                    let outcome = EpisodeEditSaveHandler.save(
+                        draft: draft,
+                        existingEpisode: episode,
+                        existingEpisodes: allEpisodes,
+                        coverChange: coverHandler.coverChange,
+                        in: modelContext
+                    )
+                    switch outcome {
+                    case .saved:
                         dismiss()
+                    case .duplicateNumber:
+                        formValidationMessage = "Diese Folgennummer ist in diesem Katalog schon vorhanden."
+                    case .saveFailed:
+                        formValidationMessage = "Speichern fehlgeschlagen. Bitte versuche es erneut."
+                    case .invalidInput:
+                        break
                     }
                 }
                 .disabled(!canSave)
@@ -319,178 +302,63 @@ struct EpisodeEditView: View {
         } message: {
             Text("Diese Aktion kann nicht rückgängig gemacht werden.")
         }
-        .onChange(of: episodeNumberText) {
-            let filtered = episodeNumberText.filter(\.isNumber)
-            if filtered != episodeNumberText {
-                episodeNumberText = filtered
+        .onChange(of: draft.episodeNumberText) {
+            let filtered = draft.episodeNumberText.filter(\.isNumber)
+            if filtered != draft.episodeNumberText {
+                draft.episodeNumberText = filtered
                 return
             }
 
             refreshCatalogMatch()
         }
-        .onChange(of: selectedUniverse?.id) {
+        .onChange(of: draft.selectedUniverse?.id) {
             refreshCatalogMatch()
         }
-        .onChange(of: releaseYearText) {
-            let filtered = releaseYearText.filter(\.isNumber)
-            if filtered != releaseYearText {
-                releaseYearText = filtered
+        .onChange(of: draft.releaseYearText) {
+            let filtered = draft.releaseYearText.filter(\.isNumber)
+            if filtered != draft.releaseYearText {
+                draft.releaseYearText = filtered
             }
             refreshYearSuggestions()
         }
-        .onChange(of: selectedUniverse?.name) {
+        .onChange(of: draft.selectedUniverse?.name) {
             refreshYearSuggestions()
         }
         .onAppear {
             SyncPreparation.prepare(context: modelContext)
             populateInitialState()
             refreshCatalogMatch()
-            clipboardHasImage = UIPasteboard.general.hasImages
+            coverHandler.refreshClipboardAvailability()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                clipboardHasImage = UIPasteboard.general.hasImages
+                coverHandler.refreshClipboardAvailability()
             }
         }
-        .onChange(of: selectedPhotoItem) { _, newItem in
+        .onChange(of: coverHandler.selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
-            Task {
-                if let data = try? await newItem.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    coverImage = uiImage
-                    removeCover = false
-                }
-            }
+            Task { await coverHandler.loadPickedItem(newItem) }
         }
     }
 
     private func populateInitialState() {
         if let episode {
-            episodeNumberText = String(episode.episodeNumber)
-            title = episode.title
-            releaseYearText = String(episode.releaseYear)
-            personalNote = episode.personalNote ?? ""
-            isListened = episode.isListened
-            rating = episode.rating
-            streamingURL = episode.streamingURL ?? ""
-            isHidden = episode.isHidden
-            selectedMoods = Set(episode.moods)
-            selectedUniverse = episode.universe ?? universes.first
+            draft = EpisodeEditDraft(episode: episode, universes: universes)
         } else if let prefillEntry {
-            episodeNumberText = String(prefillEntry.number)
-            title = prefillEntry.title
-            releaseYearText = String(prefillEntry.releaseYear)
+            draft.episodeNumberText = String(prefillEntry.number)
+            draft.title = prefillEntry.title
+            draft.releaseYearText = String(prefillEntry.releaseYear)
             if let prefillUniverseName {
-                selectedUniverse = universes.first {
+                draft.selectedUniverse = universes.first {
                     $0.name.caseInsensitiveCompare(prefillUniverseName) == .orderedSame
                 } ?? universes.first
             } else {
-                selectedUniverse = preferredCatalogUniverse ?? universes.first
+                draft.selectedUniverse = preferredCatalogUniverse ?? universes.first
             }
-        } else if releaseYearText.isEmpty {
-            releaseYearText = "1979"
-            selectedUniverse = preferredCatalogUniverse ?? universes.first
+        } else if draft.releaseYearText.isEmpty {
+            draft.releaseYearText = "1979"
+            draft.selectedUniverse = preferredCatalogUniverse ?? universes.first
         }
-    }
-
-    private func save() -> Bool {
-        guard let episodeNumber = parsedEpisodeNumber else { return false }
-        guard let releaseYear = parsedReleaseYear else { return false }
-        guard let selectedUniverse else { return false }
-
-        formValidationMessage = nil
-        guard canCreateEpisodeUnderCurrentPlan else {
-            formValidationMessage = FreemiumAccess.limitReachedMessage()
-            return false
-        }
-
-        if hasDuplicateEpisodeNumber(in: selectedUniverse, episodeNumber: episodeNumber) {
-            formValidationMessage = "Diese Folgennummer ist in diesem Katalog schon vorhanden."
-            return false
-        }
-
-        if let episode {
-            let wasListened = episode.isListened
-            let previousMoodKeys = Set(episode.moods.map(\.resolvedSyncKey))
-            let newMoodKeys = Set(selectedMoods.map(\.resolvedSyncKey))
-            let previousNote = episode.personalNote
-            let previousRating = episode.rating
-            let previousStreamingURL = episode.streamingURL
-            let previousListenStatus = episode.isListened
-            episode.episodeNumber = episodeNumber
-            episode.title = title
-            episode.releaseYear = releaseYear
-            episode.personalNote = personalNote.isEmpty ? nil : personalNote
-            episode.isListened = isListened
-            episode.rating = rating
-            episode.universe = selectedUniverse
-            episode.moods = Array(selectedMoods)
-            if previousMoodKeys != newMoodKeys {
-                episode.moodsUpdatedAt = .now
-            }
-            episode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
-            if episode.personalNote != previousNote { episode.noteUpdatedAt = .now }
-            if episode.rating != previousRating { episode.ratingUpdatedAt = .now }
-            if episode.streamingURL != previousStreamingURL { episode.streamingURLUpdatedAt = .now }
-            if episode.isListened != previousListenStatus { episode.listenStatusUpdatedAt = .now }
-            if episode.isHidden != isHidden {
-                episode.isHidden = isHidden
-                episode.hiddenUpdatedAt = .now
-            }
-            episode.refreshSyncKeyIfPossible()
-            applyCoverChange(to: episode)
-
-            if isListened && !wasListened {
-                episode.listenCount += 1
-                episode.lastListenedAt = .now
-                if episode.isBookmarked {
-                    episode.isBookmarked = false
-                    episode.bookmarkedUpdatedAt = .now
-                }
-            }
-        } else {
-            let newEpisode = Episode(
-                episodeNumber: episodeNumber,
-                title: title,
-                releaseYear: releaseYear,
-                personalNote: personalNote.isEmpty ? nil : personalNote,
-                isListened: isListened,
-                rating: rating,
-                universe: selectedUniverse,
-                moods: Array(selectedMoods)
-            )
-            newEpisode.streamingURL = streamingURL.isEmpty ? nil : streamingURL
-            if !selectedMoods.isEmpty {
-                newEpisode.moodsUpdatedAt = .now
-            }
-            if isListened {
-                newEpisode.listenCount = 1
-                newEpisode.lastListenedAt = .now
-            }
-            applyCoverChange(to: newEpisode)
-            modelContext.insert(newEpisode)
-        }
-
-        do {
-            try modelContext.save()
-            return true
-        } catch {
-            formValidationMessage = "Speichern fehlgeschlagen. Bitte versuche es erneut."
-            return false
-        }
-    }
-
-    private func applyCoverChange(to episode: Episode) {
-        let change: EpisodeCoverChange
-        if removeCover {
-            change = .remove
-        } else if let coverImage {
-            change = .replace(coverImage)
-        } else {
-            change = .keep
-        }
-
-        try? EpisodeCoverManager().apply(change, to: episode)
     }
 
     private func hasDuplicateEpisodeNumber(in universe: Universe, episodeNumber: Int) -> Bool {
@@ -505,12 +373,12 @@ struct EpisodeEditView: View {
     }
 
     private func refreshCatalogMatch() {
-        guard isNew, let number = parsedEpisodeNumber else {
+        guard isNew, let number = draft.parsedEpisodeNumber else {
             catalogMatch = nil
             return
         }
 
-        let universeName = selectedUniverse?.name
+        let universeName = draft.selectedUniverse?.name
         catalogMatch = EpisodeCatalog.shared.entry(for: number, in: universeName)
 
         if catalogMatch == nil {
@@ -535,23 +403,21 @@ struct EpisodeEditView: View {
 
     private func refreshYearSuggestions() {
         guard isNew,
-              let year = parsedReleaseYear, year > 1900,
-              let universeName = selectedUniverse?.name, !universeName.isEmpty
+              let year = draft.parsedReleaseYear, year > 1900,
+              let universeName = draft.selectedUniverse?.name, !universeName.isEmpty
         else {
             yearSuggestions = []
             return
         }
 
-        let key = universeName.lowercased()
-        let libraryNumbers = Set(allEpisodes.filter {
-            $0.universe?.name.lowercased() == key
-        }.map(\.episodeNumber))
+        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
+        let libraryNumbers = existingEpisodeNumbersByCollection[key] ?? []
 
         var seenNumbers = Set<Int>()
         yearSuggestions = EpisodeCatalog.shared.allEntries
             .filter {
                 $0.releaseYear == year
-                && $0.collectionName?.lowercased() == key
+                && CatalogLibraryMatcher.normalizedCollectionKey($0.collectionName ?? "") == key
                 && !libraryNumbers.contains($0.number)
             }
             .sorted { $0.number < $1.number }
@@ -560,13 +426,13 @@ struct EpisodeEditView: View {
 
     private func addSuggestedMood(_ suggestion: (name: String, icon: String)) {
         if let existingMood = allMoods.first(where: { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }) {
-            selectedMoods.insert(existingMood)
+            draft.selectedMoods.insert(existingMood)
             return
         }
 
         let mood = Mood(name: suggestion.name, iconName: suggestion.icon)
         modelContext.insert(mood)
-        selectedMoods.insert(mood)
+        draft.selectedMoods.insert(mood)
         try? modelContext.save()
     }
 
@@ -580,7 +446,7 @@ struct EpisodeEditView: View {
         }
 
         if let existingMood = allMoods.first(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
-            selectedMoods.insert(existingMood)
+            draft.selectedMoods.insert(existingMood)
             moodValidationMessage = "Diese Stimmung gibt es schon. Ich habe sie ausgewählt."
             return
         }
@@ -591,7 +457,7 @@ struct EpisodeEditView: View {
             iconName: trimmedIcon.isEmpty ? nil : String(trimmedIcon.prefix(2))
         )
         modelContext.insert(mood)
-        selectedMoods.insert(mood)
+        draft.selectedMoods.insert(mood)
         try? modelContext.save()
         newMoodName = ""
         newMoodIcon = ""
@@ -599,21 +465,21 @@ struct EpisodeEditView: View {
 
     private func applyCatalogMatch() {
         guard let catalogMatch else { return }
-        title = catalogMatch.title
-        releaseYearText = String(catalogMatch.releaseYear)
+        draft.title = catalogMatch.title
+        draft.releaseYearText = String(catalogMatch.releaseYear)
     }
 
     private func applySuggestedEntry(_ entry: CatalogEntry) {
-        episodeNumberText = String(entry.number)
-        title = entry.title
-        releaseYearText = String(entry.releaseYear)
+        draft.episodeNumberText = String(entry.number)
+        draft.title = entry.title
+        draft.releaseYearText = String(entry.releaseYear)
     }
 
     private func toggleMoodSelection(_ mood: Mood) {
-        if selectedMoods.contains(mood) {
-            selectedMoods.remove(mood)
+        if draft.selectedMoods.contains(mood) {
+            draft.selectedMoods.remove(mood)
         } else {
-            selectedMoods.insert(mood)
+            draft.selectedMoods.insert(mood)
         }
     }
 }

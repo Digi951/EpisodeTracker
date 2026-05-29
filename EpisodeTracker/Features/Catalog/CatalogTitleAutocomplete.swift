@@ -12,7 +12,7 @@ enum CatalogTitleAutocomplete {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard normalizedQuery.count >= 2 else { return [] }
 
-        let selectedKey = selectedCollectionName.map { normalizedKey($0) }
+        let selectedKey = selectedCollectionName.map { CatalogLibraryMatcher.normalizedCollectionKey($0) }
         if let selectedKey, !activeCollectionNames.contains(selectedKey) {
             return []
         }
@@ -21,7 +21,7 @@ enum CatalogTitleAutocomplete {
         return entries
             .filter { entry in
                 guard let collectionName = entry.collectionName else { return false }
-                let collectionKey = normalizedKey(collectionName)
+                let collectionKey = CatalogLibraryMatcher.normalizedCollectionKey(collectionName)
                 guard activeCollectionNames.contains(collectionKey) else { return false }
                 if let selectedKey, collectionKey != selectedKey { return false }
                 guard !existingEpisodeNumbersByCollection[collectionKey, default: []].contains(entry.number) else {
@@ -38,14 +38,10 @@ enum CatalogTitleAutocomplete {
                 return $0.number < $1.number
             }
             .filter { entry in
-                let key = "\(normalizedKey(entry.collectionName ?? ""))#\(entry.number)"
+                let key = "\(CatalogLibraryMatcher.normalizedCollectionKey(entry.collectionName ?? ""))#\(entry.number)"
                 return seenEntryKeys.insert(key).inserted
             }
             .prefix(limit)
             .map { $0 }
-    }
-
-    nonisolated static func normalizedKey(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }
