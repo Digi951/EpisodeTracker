@@ -54,4 +54,21 @@ final class CatalogLibraryMatcherTests: XCTestCase {
         let missing = CatalogLibraryMatcher.missingEntries(catalogEntries: catalog, libraryEpisodes: [])
         XCTAssertTrue(missing.isEmpty)
     }
+
+    func testMatchingNormalizesWhitespaceOnBothLibraryAndCatalogSides() {
+        let u = Universe(name: "  Die drei ???")
+        let library = [Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: u)]
+        let catalog = [
+            entry(1, "A", "Die drei ???   "),
+            entry(2, "B", "Die drei ???   "),
+        ]
+
+        let missing = CatalogLibraryMatcher.missingEntries(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(
+            missing.map(\.entry.number),
+            [2],
+            "Unterschiedlicher Whitespace auf beiden Seiten darf das Matching nicht brechen"
+        )
+    }
 }
