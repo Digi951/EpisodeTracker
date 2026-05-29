@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 @main
 struct EpisodeTrackerApp: App {
@@ -7,6 +8,7 @@ struct EpisodeTrackerApp: App {
     @StateObject private var containerAccess: AppContainerAccess
     @State private var syncCoordinator: SyncCoordinator
     @State private var widgetSnapshotCoordinator = WidgetSnapshotCoordinator()
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
     @Environment(\.scenePhase) private var scenePhase
 
     private var usesCloudSync: Bool {
@@ -30,6 +32,7 @@ struct EpisodeTrackerApp: App {
                 WidgetSyncObserverView(coordinator: widgetSnapshotCoordinator)
             }
             .task { @MainActor in
+                AppAccentColor.mirrorToAppGroup(rawValue: appAccentColorRawValue)
                 await AppDataBootstrapper.bootstrap(
                     containerSet: containerSet
                 )
@@ -39,6 +42,10 @@ struct EpisodeTrackerApp: App {
                 if newPhase == .active {
                     syncCoordinator.handleSceneActivation()
                 }
+            }
+            .onChange(of: appAccentColorRawValue) { _, newValue in
+                AppAccentColor.mirrorToAppGroup(rawValue: newValue)
+                WidgetCenter.shared.reloadAllTimelines()
             }
             .environmentObject(containerAccess)
         }
