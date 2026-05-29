@@ -729,7 +729,7 @@ struct EpisodeRowView: View {
 
 // MARK: - Mood Filter Bar
 
-private struct MoodFilterBar: View {
+struct MoodFilterBar: View {
     let moods: [Mood]
     @Binding var selection: Mood?
 
