@@ -46,6 +46,7 @@ final class EpisodeEditCoverHandler {
            let uiImage = UIImage(data: data) {
             coverImage = uiImage
             removeCover = false
+            selectedPhotoItem = nil
         }
     }
 

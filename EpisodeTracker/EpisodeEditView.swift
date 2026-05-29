@@ -255,6 +255,7 @@ struct EpisodeEditView: View {
                         formValidationMessage = FreemiumAccess.limitReachedMessage()
                         return
                     }
+                    formValidationMessage = nil
                     let outcome = EpisodeEditSaveHandler.save(
                         draft: draft,
                         existingEpisode: episode,
