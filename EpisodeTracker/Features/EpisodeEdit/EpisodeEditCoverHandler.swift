@@ -12,7 +12,7 @@ final class EpisodeEditCoverHandler {
 
     var hasNewImage: Bool { coverImage != nil }
 
-    /// Leitet die persistierte Cover-Änderung aus dem aktuellen State ab.
+    /// Derives the persisted cover change from the current state.
     var coverChange: EpisodeCoverChange {
         if removeCover { return .remove }
         if let coverImage { return .replace(coverImage) }

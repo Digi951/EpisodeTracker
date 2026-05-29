@@ -31,4 +31,16 @@ final class EpisodeEditCoverHandlerTests: XCTestCase {
         XCTAssertNil(handler.coverImage)
         XCTAssertFalse(handler.hasNewImage)
     }
+
+    func testHasVisibleCoverIsFalseWhenRemovalRequested() {
+        let handler = EpisodeEditCoverHandler()
+        handler.requestRemoval()
+        XCTAssertFalse(handler.hasVisibleCover(for: nil))
+    }
+
+    func testHasVisibleCoverIsTrueWithNewImage() {
+        let handler = EpisodeEditCoverHandler()
+        handler.applyPickedImage(UIImage(systemName: "star")!)
+        XCTAssertTrue(handler.hasVisibleCover(for: nil))
+    }
 }
