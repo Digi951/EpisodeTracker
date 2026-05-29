@@ -8,7 +8,9 @@ import SwiftUI
 /// app target, following the codebase's per-target duplication convention for
 /// widget-shared types.
 enum WidgetAccentColor {
+    // Must stay in sync with AppAccentColor.storageKey in the main target.
     static let storageKey = "appAccentColor"
+    // Must stay in sync with the App Group identifier used by WidgetSnapshotStore.
     static let appGroupIdentifier = "group.com.digi.episodetracker"
 
     /// The currently selected accent color, read from the shared App Group.

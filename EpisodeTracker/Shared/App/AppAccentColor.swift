@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum AppAccentColor: String, CaseIterable, Identifiable {
+    // Mirrored as WidgetAccentColor.storageKey in the widget target — keep in sync.
     static let storageKey = "appAccentColor"
     static let defaultValue = AppAccentColor.blue
 
