@@ -410,16 +410,14 @@ struct EpisodeEditView: View {
             return
         }
 
-        let key = universeName.lowercased()
-        let libraryNumbers = Set(allEpisodes.filter {
-            $0.universe?.name.lowercased() == key
-        }.map(\.episodeNumber))
+        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
+        let libraryNumbers = existingEpisodeNumbersByCollection[key] ?? []
 
         var seenNumbers = Set<Int>()
         yearSuggestions = EpisodeCatalog.shared.allEntries
             .filter {
                 $0.releaseYear == year
-                && $0.collectionName?.lowercased() == key
+                && CatalogLibraryMatcher.normalizedCollectionKey($0.collectionName ?? "") == key
                 && !libraryNumbers.contains($0.number)
             }
             .sorted { $0.number < $1.number }
