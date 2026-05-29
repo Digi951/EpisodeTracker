@@ -1,6 +1,10 @@
 // EpisodeTracker/Features/Widget/WidgetSnapshotCoordinator.swift
 import Foundation
 
+/// Computes a content signature and deduplicates widget snapshot writes.
+///
+/// The signature depends on the order of the `episodes` and `universes` arrays.
+/// Callers must provide stably-ordered arrays (e.g. via `@Query(sort:)`).
 @MainActor
 @Observable
 final class WidgetSnapshotCoordinator {
