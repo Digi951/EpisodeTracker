@@ -1,9 +1,17 @@
 import UIKit
 
-enum EpisodeCoverChange {
+enum EpisodeCoverChange: Equatable {
     case keep
     case remove
     case replace(UIImage)
+
+    static func == (lhs: EpisodeCoverChange, rhs: EpisodeCoverChange) -> Bool {
+        switch (lhs, rhs) {
+        case (.keep, .keep), (.remove, .remove): return true
+        case let (.replace(a), .replace(b)): return a === b
+        default: return false
+        }
+    }
 }
 
 struct EpisodeCoverManager {
