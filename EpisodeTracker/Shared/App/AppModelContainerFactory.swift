@@ -43,6 +43,36 @@ enum AppModelContainerFactory {
     static let appGroupIdentifier = "group.com.digi.episodetracker"
     static let runtimeModeDebugTitleKey = "syncRuntimeModeDebugTitle"
     static let cloudStartupErrorKey = "syncCloudStartupError"
+    // Store-recovery diagnostics. Recorded on-device only and never transmitted,
+    // so the developer can ask an affected user to read it out of Settings without
+    // needing access to the device's crash logs.
+    static let storeRecoveryOutcomeKey = "storeRecoveryOutcome"
+    static let storeRecoveryTimestampKey = "storeRecoveryTimestamp"
+    static let storeRecoveryDetailKey = "storeRecoveryDetail"
+
+    enum StoreRecoveryOutcome: String {
+        /// The staged migration failed but a plan-less lightweight open succeeded;
+        /// the user's data was preserved.
+        case recoveredLightweight
+        /// The store could not be opened at all; it was quarantined (kept on disk)
+        /// and the app started with a fresh store.
+        case quarantinedAndReset
+
+        var localizedTitle: String {
+            switch self {
+            case .recoveredLightweight:
+                return "Datenbank automatisch repariert (Daten erhalten)"
+            case .quarantinedAndReset:
+                return "Unlesbare Datenbank beiseitegelegt, leer gestartet"
+            }
+        }
+    }
+
+    struct StoreRecoveryRecord: Equatable {
+        let outcome: StoreRecoveryOutcome
+        let date: Date
+        let detail: String
+    }
 
     private enum CloudStartupPreflightError: LocalizedError {
         case missingICloudAccount
@@ -134,7 +164,11 @@ enum AppModelContainerFactory {
         userDefaults: UserDefaults = .standard
     ) -> AppModelContainerSet {
         let schema = schema()
-        let localPersistentContainer = makePersistentContainer(schema: schema, fileManager: fileManager)
+        let localPersistentContainer = makePersistentContainer(
+            schema: schema,
+            fileManager: fileManager,
+            userDefaults: userDefaults
+        )
 
         switch resolveMode(environment: environment, userDefaults: userDefaults) {
         case .previewInMemory:
@@ -265,7 +299,8 @@ enum AppModelContainerFactory {
 
     private static func makePersistentContainer(
         schema: Schema,
-        fileManager: FileManager
+        fileManager: FileManager,
+        userDefaults: UserDefaults = .standard
     ) -> ModelContainer {
         let storeURL = persistentStoreURL(fileManager: fileManager)
         let storeDirectoryURL = storeURL.deletingLastPathComponent()
@@ -276,6 +311,7 @@ enum AppModelContainerFactory {
         let configuration = ModelConfiguration("Default", schema: schema, url: storeURL)
 
         // 1. Primary path: staged migration through the versioned schema plan.
+        let stagedError: Error
         do {
             return try ModelContainer(
                 for: schema,
@@ -283,6 +319,7 @@ enum AppModelContainerFactory {
                 configurations: [configuration]
             )
         } catch {
+            stagedError = error
             log.error("Staged migration failed for \(storeURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
         }
 
@@ -292,6 +329,7 @@ enum AppModelContainerFactory {
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             log.notice("Recovered persistent store via plan-less lightweight migration.")
+            recordStoreRecovery(.recoveredLightweight, detail: String(describing: stagedError), userDefaults: userDefaults)
             return container
         } catch {
             log.error("Plan-less recovery failed: \(String(describing: error), privacy: .public)")
@@ -304,6 +342,7 @@ enum AppModelContainerFactory {
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             log.notice("Started with a fresh store after quarantining an unreadable store.")
+            recordStoreRecovery(.quarantinedAndReset, detail: String(describing: stagedError), userDefaults: userDefaults)
             return container
         } catch {
 #if DEBUG
@@ -339,6 +378,35 @@ enum AppModelContainerFactory {
                 try? fileManager.removeItem(at: source)
             }
         }
+    }
+
+    /// Records that the persistent store had to be recovered at launch. Stored only
+    /// in local defaults so it can be surfaced in Settings; never transmitted.
+    static func recordStoreRecovery(
+        _ outcome: StoreRecoveryOutcome,
+        detail: String,
+        date: Date = .now,
+        userDefaults: UserDefaults = .standard
+    ) {
+        userDefaults.set(outcome.rawValue, forKey: storeRecoveryOutcomeKey)
+        userDefaults.set(date.timeIntervalSince1970, forKey: storeRecoveryTimestampKey)
+        userDefaults.set(String(detail.prefix(500)), forKey: storeRecoveryDetailKey)
+    }
+
+    /// The most recent store-recovery event, or `nil` if the store has always opened
+    /// normally on this device.
+    static func lastStoreRecovery(userDefaults: UserDefaults = .standard) -> StoreRecoveryRecord? {
+        guard
+            let rawValue = userDefaults.string(forKey: storeRecoveryOutcomeKey),
+            let outcome = StoreRecoveryOutcome(rawValue: rawValue)
+        else {
+            return nil
+        }
+        return StoreRecoveryRecord(
+            outcome: outcome,
+            date: Date(timeIntervalSince1970: userDefaults.double(forKey: storeRecoveryTimestampKey)),
+            detail: userDefaults.string(forKey: storeRecoveryDetailKey) ?? ""
+        )
     }
 
     private static func makeCloudContainer(

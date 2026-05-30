@@ -117,6 +117,10 @@ struct SettingsView: View {
 #endif
 
             SettingsAboutSection()
+
+            if let storeRecovery = AppModelContainerFactory.lastStoreRecovery() {
+                SettingsStoreRecoverySection(record: storeRecovery)
+            }
         }
         .navigationTitle("Einstellungen")
         .tint(AppAccentColor.resolved(from: appAccentColorRawValue).color)
@@ -877,6 +881,35 @@ private struct SettingsAboutSection: View {
             SettingsValueRow(label: "Version", value: Bundle.main.appVersionDisplay)
         } header: {
             Text("Über")
+        }
+    }
+}
+
+/// On-device diagnostics: only rendered when the persistent store had to be
+/// recovered at launch. Lets the developer ask an affected user to read this out
+/// of Settings instead of needing the device's crash logs. Nothing is transmitted.
+private struct SettingsStoreRecoverySection: View {
+    let record: AppModelContainerFactory.StoreRecoveryRecord
+
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(record.outcome.localizedTitle)
+                    .font(.callout)
+                Text(record.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if !record.detail.isEmpty {
+                Text(record.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        } header: {
+            Text("Datenbank-Diagnose")
+        } footer: {
+            Text("Die Datenbank musste beim Start automatisch repariert werden. Diese Angabe hilft bei der Fehlersuche und verlässt das Gerät nicht.")
         }
     }
 }
