@@ -1,21 +1,22 @@
 import SwiftUI
 
-enum AccentColorAnnouncementBannerStyle {
+enum FeatureAnnouncementBannerStyle {
     case phone
     case sidebar
 }
 
-struct AccentColorAnnouncementBannerRow: View {
-    static let fingerprint = "v1.7-accent-color"
+/// In-app announcement for a newly added feature. Only shown while the current
+/// announcement is still pending (i.e. not yet dismissed and not pre-dismissed
+/// for a fresh install).
+struct FeatureAnnouncementBannerRow: View {
+    let style: FeatureAnnouncementBannerStyle
 
-    let style: AccentColorAnnouncementBannerStyle
-
-    @AppStorage("dismissedAccentColorBannerFingerprint") private var dismissedBannerFingerprint = ""
+    @AppStorage(FeatureAnnouncement.storageKey) private var dismissedFingerprint = ""
 
     var body: some View {
-        if dismissedBannerFingerprint != Self.fingerprint {
-            AccentColorAnnouncementBannerView(style: style) {
-                withAnimation { dismissedBannerFingerprint = Self.fingerprint }
+        if dismissedFingerprint != FeatureAnnouncement.currentFingerprint {
+            FeatureAnnouncementBannerView(style: style) {
+                withAnimation { dismissedFingerprint = FeatureAnnouncement.currentFingerprint }
             }
             .listRowInsets(style == .sidebar
                 ? EdgeInsets(top: 0, leading: 10, bottom: 10, trailing: 10)
@@ -26,8 +27,8 @@ struct AccentColorAnnouncementBannerRow: View {
     }
 }
 
-private struct AccentColorAnnouncementBannerView: View {
-    let style: AccentColorAnnouncementBannerStyle
+private struct FeatureAnnouncementBannerView: View {
+    let style: FeatureAnnouncementBannerStyle
     let onDismiss: () -> Void
 
     private var isSidebar: Bool {
@@ -36,20 +37,20 @@ private struct AccentColorAnnouncementBannerView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
-            Image(systemName: "paintpalette")
+            Image(systemName: "square.grid.2x2.fill")
                 .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
                 .foregroundStyle(.tint)
                 .frame(width: isSidebar ? 30 : 36, height: isSidebar ? 30 : 36)
                 .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: isSidebar ? 3 : 5) {
-                Text("Neu: Akzentfarbe")
+                Text("Neu: App-Icons")
                     .font(isSidebar ? .subheadline.weight(.semibold) : .headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
-                Text("Wähle deine Akzentfarbe in den Einstellungen.")
+                Text("Wähle dein App-Icon in den Einstellungen.")
                     .font(isSidebar ? .caption : .footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)

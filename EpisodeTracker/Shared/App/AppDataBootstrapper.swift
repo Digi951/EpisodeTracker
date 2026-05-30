@@ -21,6 +21,13 @@ enum AppDataBootstrapper {
         var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
+        let libraryIsEmpty = ((try? containerSet.primary.mainContext.fetchCount(FetchDescriptor<Episode>())) ?? 0) == 0
+        suppressFeatureAnnouncementsIfFreshInstall(
+            lastSchemaVersion: lastSchemaVersion,
+            libraryIsEmpty: libraryIsEmpty,
+            userDefaults: userDefaults
+        )
+
         // Pre-Migration: prepare local container and run sync repair before migration
         if let localContainer = containerSet.localPersistent {
             report = prepareContainer(
@@ -103,6 +110,20 @@ enum AppDataBootstrapper {
 
         bootstrapLogger.info("Bootstrap completed: \(report.logDescription, privacy: .public)")
         return report
+    }
+
+    /// Pre-dismisses feature-announcement banners on a genuine fresh install so that
+    /// "new feature" banners only reach users who actually updated from an older
+    /// version. A fresh install is recognised by the absence of a recorded schema
+    /// version combined with an empty library — this deliberately still shows the
+    /// announcement to pre-versioning upgraders, who carry data.
+    static func suppressFeatureAnnouncementsIfFreshInstall(
+        lastSchemaVersion: Int,
+        libraryIsEmpty: Bool,
+        userDefaults: UserDefaults
+    ) {
+        guard lastSchemaVersion == 0, libraryIsEmpty else { return }
+        FeatureAnnouncement.markSeen(in: userDefaults)
     }
 
     @MainActor
