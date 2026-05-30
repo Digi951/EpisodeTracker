@@ -446,7 +446,7 @@ private struct IPadEpisodeListView: View {
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
         if !controls.hasActiveFilter && controls.searchText.isEmpty {
-            AccentColorAnnouncementBannerRow(style: .sidebar)
+            FeatureAnnouncementBannerRow(style: .sidebar)
         }
 
         if filteredEpisodes.isEmpty {

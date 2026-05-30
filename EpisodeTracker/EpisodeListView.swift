@@ -121,7 +121,7 @@ struct EpisodeListView: View {
                     librarySnapshotRow
                     moodFilterRow
                     CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
-                    accentColorAnnouncementRow
+                    featureAnnouncementRow
                     contentRows
                 }
             }
@@ -234,9 +234,9 @@ struct EpisodeListView: View {
     }
 
     @ViewBuilder
-    private var accentColorAnnouncementRow: some View {
+    private var featureAnnouncementRow: some View {
         if !controls.hasActiveFilter && controls.searchText.isEmpty {
-            AccentColorAnnouncementBannerRow(style: .phone)
+            FeatureAnnouncementBannerRow(style: .phone)
         }
     }
 
