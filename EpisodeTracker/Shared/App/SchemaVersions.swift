@@ -19,7 +19,11 @@ enum SchemaV1: VersionedSchema {
         var listenCount: Int = 0
         var lastListenedAt: Date?
         var universe: Universe?
-        var moods: [Mood]? = []
+        // v1.0–v1.3 shipped without a VersionedSchema and declared this to-many
+        // relationship as non-optional `[Mood]`. SchemaV1 must reproduce that exact
+        // shape so SwiftData can identify the pre-versioned store as version 1 and
+        // start the staged migration (otherwise: "unknown model version", error 134504).
+        var moods: [Mood] = []
 
         init(
             episodeNumber: Int = 0,
@@ -50,7 +54,8 @@ enum SchemaV1: VersionedSchema {
     final class Mood {
         var name: String = ""
         var iconName: String?
-        var episodes: [Episode]? = []
+        // Non-optional to match the pre-versioned v1.0 model exactly (see Episode.moods).
+        var episodes: [Episode] = []
 
         init(name: String = "", iconName: String? = nil, episodes: [Episode] = []) {
             self.name = name
@@ -62,7 +67,8 @@ enum SchemaV1: VersionedSchema {
     @Model
     final class Universe {
         var name: String = ""
-        var episodes: [Episode]? = []
+        // Non-optional to match the pre-versioned v1.0 model exactly (see Episode.moods).
+        var episodes: [Episode] = []
 
         init(name: String = "", episodes: [Episode] = []) {
             self.name = name
