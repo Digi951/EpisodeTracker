@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 import SwiftData
 
 enum AppModelContainerMode: Equatable {
@@ -33,6 +34,8 @@ struct AppModelContainerSet {
 }
 
 enum AppModelContainerFactory {
+    private static let log = Logger(subsystem: "com.Digi.EpisodeTracker", category: "ModelContainer")
+
     static let cloudSyncPreferenceKey = "prefersICloudSync"
     static let cloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC"
     static let legacyCloudSyncGuardEnvironmentKey = "EPISODETRACKER_ENABLE_ICLOUD_SYNC_POC"
@@ -272,6 +275,7 @@ enum AppModelContainerFactory {
 
         let configuration = ModelConfiguration("Default", schema: schema, url: storeURL)
 
+        // 1. Primary path: staged migration through the versioned schema plan.
         do {
             return try ModelContainer(
                 for: schema,
@@ -279,11 +283,61 @@ enum AppModelContainerFactory {
                 configurations: [configuration]
             )
         } catch {
+            log.error("Staged migration failed for \(storeURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
+
+        // 2. Recovery: open without the migration plan so SwiftData can attempt
+        //    automatic lightweight inference. This rescues stores the staged
+        //    migration cannot identify while preserving the user's data.
+        do {
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            log.notice("Recovered persistent store via plan-less lightweight migration.")
+            return container
+        } catch {
+            log.error("Plan-less recovery failed: \(String(describing: error), privacy: .public)")
+        }
+
+        // 3. Last resort: quarantine the unreadable store (kept on disk for a later
+        //    salvage attempt, never deleted) and start fresh so the app can launch
+        //    instead of hard-crashing on a store it cannot open.
+        quarantineUnreadableStore(storeURL: storeURL, fileManager: fileManager)
+        do {
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            log.notice("Started with a fresh store after quarantining an unreadable store.")
+            return container
+        } catch {
 #if DEBUG
             return makeInMemoryContainer(schema: schema)
 #else
-            fatalError("Could not create persistent ModelContainer at \(storeURL.path): \(error)")
+            // A fresh store that still cannot be created points at a non-recoverable
+            // environment problem (e.g. no writable Application Support directory),
+            // not at the user's data.
+            fatalError("Could not create a fresh persistent ModelContainer at \(storeURL.path): \(error)")
 #endif
+        }
+    }
+
+    /// Moves a store that cannot be opened (and its sidecar files) aside so the app
+    /// can start with a fresh store. The quarantined files are preserved on disk for
+    /// a potential future salvage; they are only removed if they cannot be moved.
+    static func quarantineUnreadableStore(storeURL: URL, fileManager: FileManager) {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let quarantineBase = storeURL.deletingPathExtension()
+            .appendingPathExtension("unreadable-\(timestamp)")
+            .appendingPathExtension("store")
+
+        let sidecarSuffixes = ["", "-wal", "-shm"]
+        for suffix in sidecarSuffixes {
+            let source = URL(fileURLWithPath: storeURL.path + suffix)
+            guard fileManager.fileExists(atPath: source.path) else { continue }
+
+            let destination = URL(fileURLWithPath: quarantineBase.path + suffix)
+            do {
+                try fileManager.moveItem(at: source, to: destination)
+            } catch {
+                log.error("Could not quarantine \(source.lastPathComponent, privacy: .public), removing it: \(String(describing: error), privacy: .public)")
+                try? fileManager.removeItem(at: source)
+            }
         }
     }
 
