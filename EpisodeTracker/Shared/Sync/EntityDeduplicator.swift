@@ -190,6 +190,7 @@ enum EntityDeduplicator {
         var grouped: [EpisodeKey: [Episode]] = [:]
         for episode in episodes {
             guard let universeKey = episode.universeDeduplicationUniverseKey,
+                  episode.kind == .regular,
                   episode.episodeNumber > 0 else { continue }
 
             let key = EpisodeKey(

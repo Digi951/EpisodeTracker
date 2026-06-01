@@ -424,6 +424,44 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertEqual(episodes[0].coverImageName, "valid-cover")
     }
 
+    func testSpecialWithNumberDoesNotMergeWithRegular() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        let regular = Episode(
+            episodeNumber: 3,
+            title: "Der Karpatenhund",
+            releaseYear: 1981,
+            universe: universe
+        )
+        let special = Episode(
+            episodeNumber: 3,
+            title: "Jubiläumsbox 3",
+            releaseYear: 2024,
+            kind: .special,
+            catalogSlug: "jubilaeumsbox-3-2024",
+            universe: universe
+        )
+
+        context.insert(universe)
+        context.insert(regular)
+        context.insert(special)
+
+        var summary = SyncPreparation.ChangeSummary()
+        let didChange = EntityDeduplicator.deduplicateEpisodes(
+            [regular, special],
+            in: context,
+            summary: &summary
+        )
+        try context.save()
+
+        let episodes = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertFalse(didChange)
+        XCTAssertEqual(summary.deduplicatedEpisodes, 0)
+        XCTAssertEqual(episodes.count, 2)
+    }
+
     func testDeduplicationMergesMoodWhenCoverEpisodeHadNone() throws {
         let container = try makeInMemoryContainer()
         let context = container.mainContext
@@ -684,28 +722,30 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 6)
+        XCTAssertEqual(schemas.count, 7)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
         XCTAssertTrue(schemas[3] == SchemaV4.self)
         XCTAssertTrue(schemas[4] == SchemaV5.self)
         XCTAssertTrue(schemas[5] == SchemaV6.self)
+        XCTAssertTrue(schemas[6] == SchemaV7.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 5, "Should have V1→V2, V2→V3, V3→V4, V4→V5, and V5→V6 stages")
+        XCTAssertEqual(stages.count, 6, "Should have V1→V2, V2→V3, V3→V4, V4→V5, V5→V6, and V6→V7 stages")
     }
 
     func testMigrationPlanIncludesV6() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 6)
+        XCTAssertEqual(schemas.count, 7)
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(5, 0, 0) }))
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(6, 0, 0) }))
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(7, 0, 0) }))
 
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 5)
+        XCTAssertEqual(stages.count, 6)
     }
 
     func testSchemaV5ReferencesHistoricalModels() {
