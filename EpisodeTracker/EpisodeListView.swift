@@ -66,7 +66,7 @@ struct EpisodeListView: View {
             uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
                 AppLocalization.displayName(forUniverseName: $0.collectionName).lowercased()
             }.map { key, entries in
-                let uniqueNumbers = Set(entries.map(\.number))
+                let uniqueNumbers = Set(entries.compactMap(\.number))
                 return (key, uniqueNumbers.count)
             }
         )
@@ -656,10 +656,18 @@ struct EpisodeRowView: View {
 
     var body: some View {
         HStack(spacing: isInSidebar ? 8 : 12) {
-            Text("\(episode.episodeNumber)")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .frame(width: isInSidebar ? 26 : 40, alignment: .center)
+            if episode.isSpecial {
+                Image(systemName: "sparkles")
+                    .font(.headline)
+                    .foregroundStyle(appAccentColor.color)
+                    .frame(width: isInSidebar ? 26 : 40, alignment: .center)
+                    .accessibilityLabel(Text("Sonderfolge"))
+            } else {
+                Text("\(episode.episodeNumber)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: isInSidebar ? 26 : 40, alignment: .center)
+            }
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
                 CoverImageThumbnailView(name: coverName)
@@ -673,9 +681,22 @@ struct EpisodeRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(episode.title)
-                    .font(.body)
-                    .lineLimit(isInSidebar ? 2 : 1)
+                HStack(spacing: 6) {
+                    Text(episode.title)
+                        .font(.body)
+                        .lineLimit(isInSidebar ? 2 : 1)
+
+                    if episode.isSpecial {
+                        Text(episode.episodeNumber > 0
+                             ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
+                             : NSLocalizedString("Sonderfolge", comment: ""))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(appAccentColor.color)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                }
 
                 if let notePreview {
                     Text(notePreview)

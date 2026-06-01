@@ -619,6 +619,40 @@ enum EpisodeListOrganizer {
         catalogTotalsByUniverse: [String: Int] = [:],
         preferCatalogTotals: Bool = true
     ) -> [EpisodeListGroup] {
+        let specials = episodes.filter(\.isSpecial)
+        let regulars = episodes.filter { !$0.isSpecial }
+
+        let regularGroups = regularGroups(
+            for: regulars,
+            sortOrder: sortOrder,
+            filterUniverse: filterUniverse,
+            universeCount: universeCount,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: preferCatalogTotals
+        )
+
+        // Sonderfolgen erhalten ihre eigene Sektion ans Listenende — aber nur, wenn die
+        // reguläre Liste ohnehin gruppiert wird. Sonst zeigt die View eine flache Liste,
+        // in der die Sonderfolgen (per sort) bereits am Ende stehen.
+        guard !specials.isEmpty, !regularGroups.isEmpty else { return regularGroups }
+
+        let specialGroup = EpisodeListGroup(
+            id: "special",
+            title: String(localized: "EpisodeList.SpecialSection", defaultValue: "Sonderfolgen"),
+            episodes: specials.sorted(by: specialSort),
+            progressTotalOverride: nil
+        )
+        return regularGroups + [specialGroup]
+    }
+
+    private static func regularGroups(
+        for episodes: [Episode],
+        sortOrder: EpisodeSortOrder,
+        filterUniverse: Universe?,
+        universeCount: Int,
+        catalogTotalsByUniverse: [String: Int],
+        preferCatalogTotals: Bool
+    ) -> [EpisodeListGroup] {
         guard shouldGroup(episodes: episodes, sortOrder: sortOrder, filterUniverse: filterUniverse, universeCount: universeCount) else {
             return []
         }
@@ -648,11 +682,21 @@ enum EpisodeListOrganizer {
         }
     }
 
+    private static func specialSort(_ a: Episode, _ b: Episode) -> Bool {
+        if a.episodeNumber > 0, b.episodeNumber > 0, a.episodeNumber != b.episodeNumber {
+            return a.episodeNumber < b.episodeNumber
+        }
+        if a.releaseYear != b.releaseYear {
+            return a.releaseYear < b.releaseYear
+        }
+        return a.title.localizedCompare(b.title) == .orderedAscending
+    }
+
     private static func applySearch(_ searchText: String, to episodes: [Episode]) -> [Episode] {
         guard !searchText.isEmpty else { return episodes }
         return episodes.filter { episode in
             episode.title.localizedCaseInsensitiveContains(searchText)
-            || String(episode.episodeNumber).contains(searchText)
+            || (!episode.isSpecial && String(episode.episodeNumber).contains(searchText))
         }
     }
 
@@ -741,6 +785,13 @@ enum EpisodeListOrganizer {
                 }
                 return $0.episodeNumber < $1.episodeNumber
             }
+        }
+
+        // Sonderfolgen ans Ende verschieben, Reihenfolge innerhalb der jeweiligen
+        // Gruppe bleibt erhalten (filter ist ordnungserhaltend).
+        let specials = episodes.filter(\.isSpecial)
+        if !specials.isEmpty {
+            episodes = episodes.filter { !$0.isSpecial } + specials
         }
     }
 
