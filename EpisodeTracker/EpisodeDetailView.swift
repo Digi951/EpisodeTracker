@@ -59,7 +59,13 @@ struct EpisodeDetailView: View {
             .padding(.top, scrollTopPadding)
             .padding(.bottom, DetailMetrics.scrollBottom)
         }
-        .navigationTitle("Folge \(episode.episodeNumber)")
+        .navigationTitle(
+            episode.isSpecial
+                ? (episode.episodeNumber > 0
+                    ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
+                    : NSLocalizedString("Sonderfolge", comment: ""))
+                : String(format: NSLocalizedString("Folge %d", comment: ""), episode.episodeNumber)
+        )
         .background(fullScreenCoverBackground)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
