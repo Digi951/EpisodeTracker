@@ -325,6 +325,8 @@ struct SettingsView: View {
         let episodesData = episodes.map { episode in
             BackupEpisode(
                 episodeNumber: episode.episodeNumber,
+                kind: episode.kind,
+                catalogSlug: episode.catalogSlug,
                 title: episode.title,
                 releaseYear: episode.releaseYear,
                 personalNote: episode.personalNote,
@@ -338,7 +340,7 @@ struct SettingsView: View {
         }
         return BackupPayload(
             exportedAt: .now,
-            schemaVersion: 1,
+            schemaVersion: 2,
             collections: universesData,
             moods: moodsData,
             episodes: episodesData
@@ -371,8 +373,14 @@ struct SettingsView: View {
 
         var episodesByKey: [String: Episode] = [:]
         for episode in episodes {
-            let key = "\(episode.universe?.name.lowercased() ?? "allgemein")#\(episode.episodeNumber)"
-            episodesByKey[key] = episode
+            let universeNameKey = episode.universe?.name.lowercased() ?? "allgemein"
+            let identity: String
+            if episode.isSpecial, let slug = episode.catalogSlug, !slug.isEmpty {
+                identity = "special:\(slug)"
+            } else {
+                identity = String(episode.episodeNumber)
+            }
+            episodesByKey["\(universeNameKey)#\(identity)"] = episode
         }
 
         for episodeData in payload.episodes {
@@ -388,7 +396,13 @@ struct SettingsView: View {
                 assignedUniverse = newUniverse
             }
 
-            let episodeKey = "\(universeKey)#\(episodeData.episodeNumber)"
+            let identity: String
+            if episodeData.kind == .special, let slug = episodeData.catalogSlug, !slug.isEmpty {
+                identity = "special:\(slug)"
+            } else {
+                identity = String(episodeData.episodeNumber)
+            }
+            let episodeKey = "\(universeKey)#\(identity)"
 
             if let existingEpisode = episodesByKey[episodeKey] {
                 existingEpisode.title = episodeData.title
@@ -400,11 +414,16 @@ struct SettingsView: View {
                 existingEpisode.lastListenedAt = episodeData.lastListenedAt
                 existingEpisode.universe = assignedUniverse
                 existingEpisode.moods = assignedMoods
+                existingEpisode.kind = episodeData.kind
+                if let slug = episodeData.catalogSlug { existingEpisode.catalogSlug = slug }
+                existingEpisode.refreshSyncKeyIfPossible()
             } else {
                 let newEpisode = Episode(
                     episodeNumber: episodeData.episodeNumber,
                     title: episodeData.title,
                     releaseYear: episodeData.releaseYear,
+                    kind: episodeData.kind,
+                    catalogSlug: episodeData.catalogSlug,
                     personalNote: episodeData.personalNote,
                     isListened: episodeData.isListened,
                     rating: episodeData.rating,

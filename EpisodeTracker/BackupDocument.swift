@@ -42,6 +42,8 @@ struct BackupMood: Codable {
 
 struct BackupEpisode: Codable {
     let episodeNumber: Int
+    let kind: EpisodeKind
+    let catalogSlug: String?
     let title: String
     let releaseYear: Int
     let personalNote: String?
@@ -51,6 +53,50 @@ struct BackupEpisode: Codable {
     let lastListenedAt: Date?
     let collectionName: String?
     let moodNames: [String]
+
+    init(
+        episodeNumber: Int,
+        kind: EpisodeKind = .regular,
+        catalogSlug: String? = nil,
+        title: String,
+        releaseYear: Int,
+        personalNote: String?,
+        isListened: Bool,
+        rating: Int?,
+        listenCount: Int,
+        lastListenedAt: Date?,
+        collectionName: String?,
+        moodNames: [String]
+    ) {
+        self.episodeNumber = episodeNumber
+        self.kind = kind
+        self.catalogSlug = catalogSlug
+        self.title = title
+        self.releaseYear = releaseYear
+        self.personalNote = personalNote
+        self.isListened = isListened
+        self.rating = rating
+        self.listenCount = listenCount
+        self.lastListenedAt = lastListenedAt
+        self.collectionName = collectionName
+        self.moodNames = moodNames
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeNumber = try c.decode(Int.self, forKey: .episodeNumber)
+        kind = try c.decodeIfPresent(EpisodeKind.self, forKey: .kind) ?? .regular
+        catalogSlug = try c.decodeIfPresent(String.self, forKey: .catalogSlug)
+        title = try c.decode(String.self, forKey: .title)
+        releaseYear = try c.decode(Int.self, forKey: .releaseYear)
+        personalNote = try c.decodeIfPresent(String.self, forKey: .personalNote)
+        isListened = try c.decode(Bool.self, forKey: .isListened)
+        rating = try c.decodeIfPresent(Int.self, forKey: .rating)
+        listenCount = try c.decode(Int.self, forKey: .listenCount)
+        lastListenedAt = try c.decodeIfPresent(Date.self, forKey: .lastListenedAt)
+        collectionName = try c.decodeIfPresent(String.self, forKey: .collectionName)
+        moodNames = try c.decode([String].self, forKey: .moodNames)
+    }
 }
 
 extension JSONEncoder {
