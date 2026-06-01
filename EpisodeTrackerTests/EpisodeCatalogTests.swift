@@ -191,4 +191,24 @@ final class EpisodeCatalogTests: XCTestCase {
         XCTAssertEqual(entry.kind, .regular)
         XCTAssertEqual(entry.number, 42)
     }
+
+    func testDeltaDetectsNewSpecialBySlug() {
+        let previous = CatalogSnapshot(catalogID: "x", name: "X", version: 1, lastUpdated: nil, entryCount: 1, episodeNumbers: [1], specialSlugs: [])
+        let current = CatalogSnapshot(catalogID: "x", name: "X", version: 2, lastUpdated: nil, entryCount: 2, episodeNumbers: [1], specialSlugs: ["phantomsee-2024"])
+        let entries = [
+            CatalogEntry(number: 1, title: "A", releaseYear: 2020),
+            CatalogEntry(number: nil, kind: .special, slug: "phantomsee-2024", title: "Phantomsee", releaseYear: 2024)
+        ]
+        let delta = CatalogEpisodeDelta.make(previous: previous, current: current, entries: entries)
+        XCTAssertEqual(delta?.addedEntries.count, 1)
+        XCTAssertEqual(delta?.addedEntries.first?.slug, "phantomsee-2024")
+    }
+
+    func testOldSnapshotWithoutSpecialSlugsDecodesAsEmpty() throws {
+        let json = """
+        {"catalogID":"x","name":"X","version":1,"entryCount":1,"episodeNumbers":[1]}
+        """.data(using: .utf8)!
+        let snapshot = try JSONDecoder().decode(CatalogSnapshot.self, from: json)
+        XCTAssertEqual(snapshot.specialSlugs, [])
+    }
 }

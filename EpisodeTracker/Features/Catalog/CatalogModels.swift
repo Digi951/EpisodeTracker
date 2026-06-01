@@ -128,6 +128,7 @@ struct CatalogSnapshot: Codable, Equatable {
     let lastUpdated: String?
     let entryCount: Int
     let episodeNumbers: [Int]
+    let specialSlugs: [String]
 
     init(
         catalogID: String,
@@ -135,7 +136,8 @@ struct CatalogSnapshot: Codable, Equatable {
         version: Int?,
         lastUpdated: String?,
         entryCount: Int,
-        episodeNumbers: [Int]
+        episodeNumbers: [Int],
+        specialSlugs: [String] = []
     ) {
         self.catalogID = catalogID
         self.name = name
@@ -143,6 +145,19 @@ struct CatalogSnapshot: Codable, Equatable {
         self.lastUpdated = lastUpdated
         self.entryCount = entryCount
         self.episodeNumbers = Array(Set(episodeNumbers)).sorted()
+        self.specialSlugs = Array(Set(specialSlugs)).sorted()
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        catalogID = try container.decode(String.self, forKey: .catalogID)
+        name = try container.decode(String.self, forKey: .name)
+        version = try container.decodeIfPresent(Int.self, forKey: .version)
+        lastUpdated = try container.decodeIfPresent(String.self, forKey: .lastUpdated)
+        entryCount = try container.decode(Int.self, forKey: .entryCount)
+        episodeNumbers = Array(Set(try container.decode([Int].self, forKey: .episodeNumbers))).sorted()
+        let decodedSlugs = try container.decodeIfPresent([String].self, forKey: .specialSlugs) ?? []
+        specialSlugs = Array(Set(decodedSlugs)).sorted()
     }
 }
 
@@ -171,9 +186,28 @@ struct CatalogEpisodeDelta: Codable, Equatable {
         guard let previous else { return nil }
 
         let previousNumbers = Set(previous.episodeNumbers)
+        let previousSlugs = Set(previous.specialSlugs)
         let addedEntries = entries
-            .filter { entry in entry.number.map { !previousNumbers.contains($0) } ?? false }
-            .sorted { ($0.number ?? 0) < ($1.number ?? 0) }
+            .filter { entry in
+                switch entry.kind {
+                case .regular:
+                    return entry.number.map { !previousNumbers.contains($0) } ?? false
+                case .special:
+                    return entry.slug.map { !previousSlugs.contains($0) } ?? false
+                }
+            }
+            .sorted { lhs, rhs in
+                switch (lhs.kind, rhs.kind) {
+                case (.regular, .special):
+                    return true
+                case (.special, .regular):
+                    return false
+                case (.regular, .regular):
+                    return (lhs.number ?? 0) < (rhs.number ?? 0)
+                case (.special, .special):
+                    return lhs.title.localizedCompare(rhs.title) == .orderedAscending
+                }
+            }
 
         guard !addedEntries.isEmpty else { return nil }
 

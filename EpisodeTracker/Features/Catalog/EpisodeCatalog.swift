@@ -189,7 +189,8 @@ final class EpisodeCatalog {
                     version: document.version,
                     lastUpdated: document.lastUpdated,
                     entryCount: document.entryCount,
-                    episodeNumbers: normalizedEntries.compactMap(\.number)
+                    episodeNumbers: normalizedEntries.compactMap(\.number),
+                    specialSlugs: normalizedEntries.compactMap { $0.kind == .special ? $0.slug : nil }
                 )
                 if let delta = CatalogEpisodeDelta.make(
                     previous: previousSnapshot,
