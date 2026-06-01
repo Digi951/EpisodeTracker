@@ -10,8 +10,11 @@ struct StatisticsSnapshot {
     let moodDistribution: [(Mood, Int)]
 
     init(episodes: [Episode]) {
-        listenedCount = episodes.filter(\.isListened).count
-        unlistenedCount = episodes.count - listenedCount
+        // Reihen-Kennzahlen (gehört / offen) zählen nur reguläre, nummerierte
+        // Folgen — Sonderfolgen würden den Katalog-Fortschritt verzerren.
+        let regular = episodes.filter { !$0.isSpecial }
+        listenedCount = regular.filter(\.isListened).count
+        unlistenedCount = regular.count - listenedCount
         favoriteCount = episodes.filter(\.isFavorite).count
 
         let rated = episodes.compactMap(\.rating)

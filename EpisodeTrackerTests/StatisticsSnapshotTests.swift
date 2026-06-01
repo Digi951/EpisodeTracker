@@ -18,6 +18,19 @@ final class StatisticsSnapshotTests: XCTestCase {
         XCTAssertEqual(snapshot.totalListens, 4)
     }
 
+    func testStatisticsExcludeSpecials() {
+        let universe = Universe(name: "Die drei ???")
+        let regular1 = Episode(episodeNumber: 1, title: "A", releaseYear: 2020, isListened: true, listenCount: 1, universe: universe)
+        let regular2 = Episode(episodeNumber: 2, title: "B", releaseYear: 2020, isListened: false, universe: universe)
+        let special = Episode(episodeNumber: 0, title: "Special", releaseYear: 2024, kind: .special, catalogSlug: "s-2024", isListened: true, listenCount: 2, universe: universe)
+
+        let snapshot = StatisticsSnapshot(episodes: [regular1, regular2, special])
+
+        XCTAssertEqual(snapshot.listenedCount, 1, "Sonderfolge darf nicht in die Reihen-Hörzahl zählen")
+        XCTAssertEqual(snapshot.unlistenedCount, 1)
+        XCTAssertEqual(snapshot.totalListens, 3, "Hörzähler bleibt global über alle Folgen")
+    }
+
     func testSnapshotSortsTopRatedByRatingUniverseAndEpisodeNumber() {
         let alpha = Universe(name: "Alpha")
         let beta = Universe(name: "Beta")
