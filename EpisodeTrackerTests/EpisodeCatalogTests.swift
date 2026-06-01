@@ -172,4 +172,23 @@ final class EpisodeCatalogTests: XCTestCase {
         XCTAssertNil(fetcher.sourceMetadataRequests[0])
         XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.deezerURL, "https://www.deezer.com/album/12761822")
     }
+
+    func testCatalogEntryDecodesSpecialKindAndSlug() throws {
+        let json = """
+        {"title":"Phantomsee","releaseYear":2024,"kind":"special","slug":"phantomsee-2024"}
+        """.data(using: .utf8)!
+        let entry = try JSONDecoder().decode(CatalogEntry.self, from: json)
+        XCTAssertEqual(entry.kind, .special)
+        XCTAssertEqual(entry.slug, "phantomsee-2024")
+        XCTAssertNil(entry.number)
+    }
+
+    func testCatalogEntryDefaultsToRegularWhenKindMissing() throws {
+        let json = """
+        {"number":42,"title":"Angreifer","releaseYear":2024}
+        """.data(using: .utf8)!
+        let entry = try JSONDecoder().decode(CatalogEntry.self, from: json)
+        XCTAssertEqual(entry.kind, .regular)
+        XCTAssertEqual(entry.number, 42)
+    }
 }

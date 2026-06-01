@@ -345,7 +345,7 @@ struct EpisodeEditView: View {
         if let episode {
             draft = EpisodeEditDraft(episode: episode, universes: universes)
         } else if let prefillEntry {
-            draft.episodeNumberText = String(prefillEntry.number)
+            draft.episodeNumberText = prefillEntry.number.map(String.init) ?? ""
             draft.title = prefillEntry.title
             draft.releaseYearText = String(prefillEntry.releaseYear)
             if let prefillUniverseName {
@@ -415,13 +415,17 @@ struct EpisodeEditView: View {
 
         var seenNumbers = Set<Int>()
         yearSuggestions = EpisodeCatalog.shared.allEntries
-            .filter {
-                $0.releaseYear == year
-                && CatalogLibraryMatcher.normalizedCollectionKey($0.collectionName ?? "") == key
-                && !libraryNumbers.contains($0.number)
+            .filter { entry in
+                guard let number = entry.number else { return false }
+                return entry.releaseYear == year
+                && CatalogLibraryMatcher.normalizedCollectionKey(entry.collectionName ?? "") == key
+                && !libraryNumbers.contains(number)
             }
-            .sorted { $0.number < $1.number }
-            .filter { seenNumbers.insert($0.number).inserted }
+            .sorted { ($0.number ?? 0) < ($1.number ?? 0) }
+            .filter { entry in
+                guard let number = entry.number else { return false }
+                return seenNumbers.insert(number).inserted
+            }
     }
 
     private func addSuggestedMood(_ suggestion: (name: String, icon: String)) {
@@ -470,7 +474,7 @@ struct EpisodeEditView: View {
     }
 
     private func applySuggestedEntry(_ entry: CatalogEntry) {
-        draft.episodeNumberText = String(entry.number)
+        draft.episodeNumberText = entry.number.map(String.init) ?? ""
         draft.title = entry.title
         draft.releaseYearText = String(entry.releaseYear)
     }

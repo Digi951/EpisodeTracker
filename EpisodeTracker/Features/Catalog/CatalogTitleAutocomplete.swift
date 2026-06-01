@@ -24,7 +24,10 @@ enum CatalogTitleAutocomplete {
                 let collectionKey = CatalogLibraryMatcher.normalizedCollectionKey(collectionName)
                 guard activeCollectionNames.contains(collectionKey) else { return false }
                 if let selectedKey, collectionKey != selectedKey { return false }
-                guard !existingEpisodeNumbersByCollection[collectionKey, default: []].contains(entry.number) else {
+                let alreadyInLibraryByNumber = entry.number.map {
+                    existingEpisodeNumbersByCollection[collectionKey, default: []].contains($0)
+                } ?? false
+                guard !alreadyInLibraryByNumber else {
                     return false
                 }
                 return entry.title.localizedCaseInsensitiveContains(normalizedQuery)
@@ -35,10 +38,11 @@ enum CatalogTitleAutocomplete {
                 if leftCollection != rightCollection {
                     return leftCollection.localizedStandardCompare(rightCollection) == .orderedAscending
                 }
-                return $0.number < $1.number
+                return ($0.number ?? 0) < ($1.number ?? 0)
             }
             .filter { entry in
-                let key = "\(CatalogLibraryMatcher.normalizedCollectionKey(entry.collectionName ?? ""))#\(entry.number)"
+                let identity = entry.number.map(String.init) ?? "special:\(entry.slug ?? entry.title)"
+                let key = "\(CatalogLibraryMatcher.normalizedCollectionKey(entry.collectionName ?? ""))#\(identity)"
                 return seenEntryKeys.insert(key).inserted
             }
             .prefix(limit)

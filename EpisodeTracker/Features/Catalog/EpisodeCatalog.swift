@@ -68,6 +68,8 @@ final class EpisodeCatalog {
         let normalizedEntries = parsedEntries.map {
             CatalogEntry(
                 number: $0.number,
+                kind: $0.kind,
+                slug: $0.slug,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
                 collectionName: collectionName,
@@ -169,6 +171,8 @@ final class EpisodeCatalog {
                 let normalizedEntries = document.entries.map {
                     CatalogEntry(
                         number: $0.number,
+                        kind: $0.kind,
+                        slug: $0.slug,
                         title: $0.title,
                         releaseYear: $0.releaseYear,
                         collectionName: source.name,
@@ -185,7 +189,7 @@ final class EpisodeCatalog {
                     version: document.version,
                     lastUpdated: document.lastUpdated,
                     entryCount: document.entryCount,
-                    episodeNumbers: normalizedEntries.map(\.number)
+                    episodeNumbers: normalizedEntries.compactMap(\.number)
                 )
                 if let delta = CatalogEpisodeDelta.make(
                     previous: previousSnapshot,

@@ -22,6 +22,8 @@ struct CatalogParser {
             return array.map {
                 CatalogEntry(
                     number: $0.number,
+                    kind: $0.kind,
+                    slug: $0.slug,
                     title: $0.title,
                     releaseYear: $0.releaseYear,
                     collectionName: $0.collectionName ?? fallbackCollectionName,
@@ -38,6 +40,8 @@ struct CatalogParser {
         return document.entries.map {
             CatalogEntry(
                 number: $0.number,
+                kind: $0.kind,
+                slug: $0.slug,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
                 collectionName: $0.collectionName ?? collection,
@@ -58,6 +62,8 @@ struct CatalogParser {
             let entries = array.map {
                 CatalogEntry(
                     number: $0.number,
+                    kind: $0.kind,
+                    slug: $0.slug,
                     title: $0.title,
                     releaseYear: $0.releaseYear,
                     collectionName: $0.collectionName ?? fallbackCollectionName,
@@ -81,6 +87,8 @@ struct CatalogParser {
         let entries = document.entries.map {
             CatalogEntry(
                 number: $0.number,
+                kind: $0.kind,
+                slug: $0.slug,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
                 collectionName: $0.collectionName ?? collection,

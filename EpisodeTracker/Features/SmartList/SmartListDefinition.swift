@@ -360,7 +360,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             "SmartList.CatalogTeaser",
             defaultValue: "%@: Folge %d - %@",
             universeName,
-            entry.number,
+            entry.number ?? 0,
             entry.title
         )
     }
@@ -388,7 +388,7 @@ private extension Array where Element == (universeName: String, entry: CatalogEn
 
         for universeName in grouped.keys.sorted(by: { $0.localizedCompare($1) == .orderedAscending }) {
             let entries = (grouped[universeName] ?? [])
-                .sorted(by: { $0.entry.number < $1.entry.number })
+                .sorted(by: { ($0.entry.number ?? 0) < ($1.entry.number ?? 0) })
                 .prefix(perUniverse)
             results.append(contentsOf: entries)
         }

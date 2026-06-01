@@ -174,6 +174,8 @@ struct CatalogCacheStore {
         return decoded.map {
             CatalogEntry(
                 number: $0.number,
+                kind: $0.kind,
+                slug: $0.slug,
                 title: $0.title,
                 releaseYear: $0.releaseYear,
                 collectionName: CatalogSourceRegistry.bundledCollectionName,

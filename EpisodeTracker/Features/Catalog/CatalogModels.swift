@@ -1,7 +1,9 @@
 import Foundation
 
 struct CatalogEntry: Codable, Equatable {
-    let number: Int
+    let number: Int?
+    let kind: EpisodeKind
+    let slug: String?
     let title: String
     let releaseYear: Int
     let collectionName: String?
@@ -11,7 +13,9 @@ struct CatalogEntry: Codable, Equatable {
     let audibleURL: String?
 
     init(
-        number: Int,
+        number: Int?,
+        kind: EpisodeKind = .regular,
+        slug: String? = nil,
         title: String,
         releaseYear: Int,
         collectionName: String? = nil,
@@ -21,6 +25,8 @@ struct CatalogEntry: Codable, Equatable {
         audibleURL: String? = nil
     ) {
         self.number = number
+        self.kind = kind
+        self.slug = slug
         self.title = title
         self.releaseYear = releaseYear
         self.collectionName = collectionName
@@ -28,6 +34,20 @@ struct CatalogEntry: Codable, Equatable {
         self.appleMusicURL = appleMusicURL
         self.deezerURL = deezerURL
         self.audibleURL = audibleURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        number = try container.decodeIfPresent(Int.self, forKey: .number)
+        kind = try container.decodeIfPresent(EpisodeKind.self, forKey: .kind) ?? .regular
+        slug = try container.decodeIfPresent(String.self, forKey: .slug)
+        title = try container.decode(String.self, forKey: .title)
+        releaseYear = try container.decode(Int.self, forKey: .releaseYear)
+        collectionName = try container.decodeIfPresent(String.self, forKey: .collectionName)
+        spotifyURL = try container.decodeIfPresent(String.self, forKey: .spotifyURL)
+        appleMusicURL = try container.decodeIfPresent(String.self, forKey: .appleMusicURL)
+        deezerURL = try container.decodeIfPresent(String.self, forKey: .deezerURL)
+        audibleURL = try container.decodeIfPresent(String.self, forKey: .audibleURL)
     }
 
     var hasStreamingLink: Bool {
@@ -152,8 +172,8 @@ struct CatalogEpisodeDelta: Codable, Equatable {
 
         let previousNumbers = Set(previous.episodeNumbers)
         let addedEntries = entries
-            .filter { !previousNumbers.contains($0.number) }
-            .sorted { $0.number < $1.number }
+            .filter { entry in entry.number.map { !previousNumbers.contains($0) } ?? false }
+            .sorted { ($0.number ?? 0) < ($1.number ?? 0) }
 
         guard !addedEntries.isEmpty else { return nil }
 

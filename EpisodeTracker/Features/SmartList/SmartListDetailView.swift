@@ -193,7 +193,10 @@ struct SmartListDetailView: View {
         var insertedKeys = Set<String>()
 
         for suggestion in suggestions {
-            let key = episodeKey(universeName: suggestion.universeName, number: suggestion.entry.number)
+            // SmartList suggestions are number-based; special episodes are handled
+            // through the dedicated special catalog/reconciliation path, not here.
+            guard let number = suggestion.entry.number else { continue }
+            let key = episodeKey(universeName: suggestion.universeName, number: number)
             guard !existingKeys.contains(key),
                   insertedKeys.insert(key).inserted
             else {
@@ -204,7 +207,7 @@ struct SmartListDetailView: View {
                 $0.name.caseInsensitiveCompare(suggestion.universeName) == .orderedSame
             }
             let episode = Episode(
-                episodeNumber: suggestion.entry.number,
+                episodeNumber: number,
                 title: suggestion.entry.title,
                 releaseYear: suggestion.entry.releaseYear,
                 universe: universe
@@ -674,7 +677,7 @@ private struct CatalogEntryRow: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 8) {
-                    Text("\(entry.number)")
+                    Text(entry.number.map(String.init) ?? "✨")
                         .font(.headline.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .frame(minWidth: 28, alignment: .trailing)

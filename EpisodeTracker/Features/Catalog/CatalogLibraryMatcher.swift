@@ -37,11 +37,14 @@ enum CatalogLibraryMatcher {
             let displayName = catalogEpisodes.first?.collectionName ?? collectionKey
 
             var seenNumbers = Set<Int>()
-            let uniqueEpisodes = catalogEpisodes.filter { seenNumbers.insert($0.number).inserted }
+            let uniqueEpisodes = catalogEpisodes.filter { entry in
+                guard let number = entry.number else { return false }
+                return seenNumbers.insert(number).inserted
+            }
 
             let missing = uniqueEpisodes
-                .filter { !libraryNumbers.contains($0.number) }
-                .sorted { $0.number < $1.number }
+                .filter { entry in entry.number.map { !libraryNumbers.contains($0) } ?? false }
+                .sorted { ($0.number ?? 0) < ($1.number ?? 0) }
 
             for entry in missing {
                 results.append((displayName, entry))
@@ -52,7 +55,7 @@ enum CatalogLibraryMatcher {
             if $0.universeName != $1.universeName {
                 return $0.universeName.localizedCompare($1.universeName) == .orderedAscending
             }
-            return $0.entry.number < $1.entry.number
+            return ($0.entry.number ?? 0) < ($1.entry.number ?? 0)
         }
         return results
     }
