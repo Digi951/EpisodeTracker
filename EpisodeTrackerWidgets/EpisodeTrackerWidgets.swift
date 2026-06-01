@@ -241,13 +241,20 @@ private struct SmallEpisodeWidgetCard: View {
             Spacer(minLength: 2)
 
             HStack(alignment: .center, spacing: 6) {
-                Text("\(episode.episodeNumber)")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .background(.tint.opacity(0.12), in: Capsule())
+                Group {
+                    if episode.isSpecial {
+                        Image(systemName: "sparkles")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                    } else {
+                        Text("\(episode.episodeNumber)")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .monospacedDigit()
+                    }
+                }
+                .foregroundStyle(.tint)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(.tint.opacity(0.12), in: Capsule())
 
                 CompactFooterMetaRow(episode: episode)
 
@@ -285,13 +292,20 @@ private struct MediumEpisodeWidgetCard: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 4)
-                    Text("\(episode.episodeNumber)")
-                        .font(.system(.caption, design: .rounded, weight: .bold))
-                        .monospacedDigit()
-                        .foregroundStyle(.tint)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(.tint.opacity(0.12), in: Capsule())
+                    Group {
+                        if episode.isSpecial {
+                            Image(systemName: "sparkles")
+                                .font(.system(.caption, design: .rounded, weight: .bold))
+                        } else {
+                            Text("\(episode.episodeNumber)")
+                                .font(.system(.caption, design: .rounded, weight: .bold))
+                                .monospacedDigit()
+                        }
+                    }
+                    .foregroundStyle(.tint)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(.tint.opacity(0.12), in: Capsule())
                 }
 
                 Text(titleText)

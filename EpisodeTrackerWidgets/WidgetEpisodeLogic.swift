@@ -47,7 +47,9 @@ enum WidgetEpisodeLogic {
 
         var candidates: [(episode: WidgetEpisodeSnapshot, lastActivity: Date)] = []
 
-        for (_, universeEpisodes) in grouped {
+        for (_, allUniverseEpisodes) in grouped {
+            // „Nächste Folge in der Reihe" gilt nur für reguläre, nummerierte Folgen.
+            let universeEpisodes = allUniverseEpisodes.filter { !$0.isSpecial }
             let listened = universeEpisodes.filter(\.isListened)
             guard !listened.isEmpty else { continue }
 

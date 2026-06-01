@@ -64,4 +64,19 @@ final class WidgetSnapshotCoordinatorTests: XCTestCase {
 
         XCTAssertNotEqual(before, after, "Bookmark-Wechsel muss den Snapshot-Write auslösen")
     }
+
+    func testSignatureChangesWhenKindChanges() {
+        let universe = Universe(name: "Die drei ???")
+        let episode = Episode(episodeNumber: 0, title: "Special", releaseYear: 2024, universe: universe)
+
+        let before = WidgetSnapshotCoordinator.signature(
+            libraryTitle: "T", universes: [universe], episodes: [episode]
+        )
+        episode.kind = .special
+        let after = WidgetSnapshotCoordinator.signature(
+            libraryTitle: "T", universes: [universe], episodes: [episode]
+        )
+
+        XCTAssertNotEqual(before, after, "Kind-Wechsel muss den Snapshot-Write auslösen")
+    }
 }

@@ -15,9 +15,12 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
     var universeName: String?
     var isListened: Bool
     var isBookmarked: Bool
+    var kindRaw: String
     var rating: Int?
     var lastListenedAt: Date?
     var coverImageName: String?
+
+    var isSpecial: Bool { kindRaw == "special" }
 
     init(
         id: UUID,
@@ -27,6 +30,7 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         universeName: String? = nil,
         isListened: Bool,
         isBookmarked: Bool = false,
+        kindRaw: String = "regular",
         rating: Int? = nil,
         lastListenedAt: Date? = nil,
         coverImageName: String? = nil
@@ -38,6 +42,7 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         self.universeName = universeName
         self.isListened = isListened
         self.isBookmarked = isBookmarked
+        self.kindRaw = kindRaw
         self.rating = rating
         self.lastListenedAt = lastListenedAt
         self.coverImageName = coverImageName
@@ -52,6 +57,7 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         universeName = try container.decodeIfPresent(String.self, forKey: .universeName)
         isListened = try container.decode(Bool.self, forKey: .isListened)
         isBookmarked = try container.decodeIfPresent(Bool.self, forKey: .isBookmarked) ?? false
+        kindRaw = try container.decodeIfPresent(String.self, forKey: .kindRaw) ?? "regular"
         rating = try container.decodeIfPresent(Int.self, forKey: .rating)
         lastListenedAt = try container.decodeIfPresent(Date.self, forKey: .lastListenedAt)
         coverImageName = try container.decodeIfPresent(String.self, forKey: .coverImageName)

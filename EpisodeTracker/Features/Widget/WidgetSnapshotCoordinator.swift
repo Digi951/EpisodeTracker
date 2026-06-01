@@ -46,6 +46,7 @@ final class WidgetSnapshotCoordinator {
                 universeName,
                 episode.isListened ? "1" : "0",
                 episode.isBookmarked ? "1" : "0",
+                episode.kindRaw,
                 rating,
                 listenedAt,
             ].joined(separator: "|")
