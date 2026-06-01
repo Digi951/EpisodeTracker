@@ -55,6 +55,27 @@ final class CatalogLibraryMatcherTests: XCTestCase {
         XCTAssertTrue(missing.isEmpty)
     }
 
+    func testMissingSpecialUsesSlugNotNumber() {
+        let u = Universe(name: "Die drei ???")
+        let existing = Episode(
+            episodeNumber: 0,
+            title: "Phantomsee",
+            releaseYear: 2024,
+            kind: .special,
+            catalogSlug: "phantomsee-2024",
+            universe: u
+        )
+        let library = [existing]
+        let catalog = [
+            CatalogEntry(number: nil, kind: .special, slug: "phantomsee-2024", title: "Phantomsee", releaseYear: 2024, collectionName: "Die drei ???"),
+            CatalogEntry(number: nil, kind: .special, slug: "toteninsel-2025", title: "Toteninsel", releaseYear: 2025, collectionName: "Die drei ???"),
+        ]
+
+        let missing = CatalogLibraryMatcher.missingEntries(catalogEntries: catalog, libraryEpisodes: library)
+
+        XCTAssertEqual(missing.map(\.entry.slug), ["toteninsel-2025"])
+    }
+
     func testMatchingNormalizesWhitespaceOnBothLibraryAndCatalogSides() {
         let u = Universe(name: "  Die drei ???")
         let library = [Episode(episodeNumber: 1, title: "A", releaseYear: 1979, universe: u)]

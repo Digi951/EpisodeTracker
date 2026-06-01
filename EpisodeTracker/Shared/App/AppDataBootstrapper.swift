@@ -76,6 +76,7 @@ enum AppDataBootstrapper {
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
+        reconcileSpecialEpisodes(container: containerSet.primary)
         report.removedOrphanCovers = cleanupOrphanedCovers(container: containerSet.primary)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
@@ -104,6 +105,7 @@ enum AppDataBootstrapper {
 
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
+        reconcileSpecialEpisodes(container: container)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -325,6 +327,23 @@ enum AppDataBootstrapper {
             context.insert(Universe(name: universeName))
         }
         return true
+    }
+
+    /// Adopts curated catalog slugs for manually created special episodes when a
+    /// unique (collection, title, year) match exists, so manual and curated
+    /// variants collapse onto the same slug-based sync identity.
+    @MainActor
+    static func reconcileSpecialEpisodes(container: ModelContainer) {
+        let context = container.mainContext
+        guard let episodes = try? context.fetch(FetchDescriptor<Episode>()) else { return }
+        let specials = episodes.filter { $0.isSpecial }
+        guard !specials.isEmpty else { return }
+
+        SpecialEpisodeReconciler.reconcile(
+            libraryEpisodes: specials,
+            catalogEntries: EpisodeCatalog.shared.allEntries
+        )
+        try? context.save()
     }
 
     @MainActor
