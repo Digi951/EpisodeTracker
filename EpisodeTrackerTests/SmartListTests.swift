@@ -883,4 +883,41 @@ final class SmartListTests: XCTestCase {
         XCTAssertEqual(result[0].universeName, "Die drei ???")
         XCTAssertEqual(result[1].universeName, "TKKG")
     }
+
+    // MARK: - Sonderfolgen excluded from number-based SmartLists
+
+    func testSkippedExcludesSpecialEpisodes() {
+        let u = Universe(name: "Die drei ???")
+        let listened = Episode(episodeNumber: 5, title: "Listened", releaseYear: 2020, isListened: true, universe: u)
+        let skipped = Episode(episodeNumber: 2, title: "Skipped", releaseYear: 2020, universe: u)
+        let special = Episode(episodeNumber: 0, title: "Special", releaseYear: 2024, kind: .special, catalogSlug: "s-2024", universe: u)
+
+        let result = SmartListDefinition.skippedEpisodes(from: [listened, skipped, special])
+
+        XCTAssertEqual(result.map(\.title), ["Skipped"], "Sonderfolge darf nicht als übersprungen gelten")
+    }
+
+    func testContinuationExcludesSpecialEpisodes() {
+        let u = Universe(name: "Die drei ???")
+        let listened = Episode(episodeNumber: 3, title: "Listened", releaseYear: 2020, isListened: true, universe: u)
+        listened.lastListenedAt = .now
+        let next = Episode(episodeNumber: 4, title: "Next", releaseYear: 2020, universe: u)
+        let special = Episode(episodeNumber: 0, title: "Special", releaseYear: 2024, kind: .special, catalogSlug: "s-2024", universe: u)
+
+        let result = SmartListDefinition.continuationEpisodes(from: [listened, next, special])
+
+        XCTAssertEqual(result.map(\.title), ["Next"], "Sonderfolge darf nicht in Fortsetzen erscheinen")
+    }
+
+    func testLongPauseExcludesSpecialEpisodes() {
+        let u = Universe(name: "Die drei ???")
+        let listened = Episode(episodeNumber: 1, title: "Listened", releaseYear: 2020, isListened: true, universe: u)
+        listened.lastListenedAt = Calendar.current.date(byAdding: .day, value: -60, to: .now)
+        let next = Episode(episodeNumber: 2, title: "Next", releaseYear: 2020, universe: u)
+        let special = Episode(episodeNumber: 0, title: "Special", releaseYear: 2024, kind: .special, catalogSlug: "s-2024", universe: u)
+
+        let result = SmartListDefinition.longPauseEpisodes(from: [listened, next, special])
+
+        XCTAssertEqual(result.map(\.title), ["Next"], "Sonderfolge darf nicht in Lange nicht gehört erscheinen")
+    }
 }
