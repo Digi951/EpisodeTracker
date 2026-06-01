@@ -27,6 +27,9 @@ final class Episode {
     var hiddenUpdatedAt: Date?
     var streamingURLUpdatedAt: Date?
     var listenStatusUpdatedAt: Date?
+    var kindRaw: String = EpisodeKind.regular.rawValue
+    var catalogSlug: String?
+    var specialUpdatedAt: Date?
     @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
     @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
 
@@ -73,6 +76,13 @@ extension Episode {
         get { moodRelationships ?? [] }
         set { moodRelationships = newValue }
     }
+
+    var kind: EpisodeKind {
+        get { EpisodeKind(rawValue: kindRaw) ?? .regular }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var isSpecial: Bool { kind == .special }
 
     static func makeSyncKey(
         universeSyncKey: String?,
