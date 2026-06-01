@@ -12,12 +12,16 @@ struct EpisodeEditDraft {
     var selectedUniverse: Universe?
     var streamingURL: String = ""
     var isHidden: Bool = false
+    var isSpecial: Bool = false
 
     init() {}
 
     /// Bestehende Folge in den Formularzustand laden.
     init(episode: Episode, universes: [Universe]) {
-        episodeNumberText = String(episode.episodeNumber)
+        episodeNumberText = episode.isSpecial && episode.episodeNumber == 0
+            ? ""
+            : String(episode.episodeNumber)
+        isSpecial = episode.isSpecial
         title = episode.title
         releaseYearText = String(episode.releaseYear)
         personalNote = episode.personalNote ?? ""
@@ -38,9 +42,8 @@ struct EpisodeEditDraft {
     }
 
     var isComplete: Bool {
-        !title.isEmpty
-        && parsedEpisodeNumber != nil
-        && parsedReleaseYear != nil
-        && selectedUniverse != nil
+        guard !title.isEmpty, parsedReleaseYear != nil, selectedUniverse != nil else { return false }
+        if isSpecial { return true }
+        return parsedEpisodeNumber != nil
     }
 }

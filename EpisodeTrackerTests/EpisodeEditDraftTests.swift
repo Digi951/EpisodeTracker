@@ -35,6 +35,27 @@ final class EpisodeEditDraftTests: XCTestCase {
         XCTAssertTrue(draft.isComplete)
     }
 
+    func testSpecialDraftIsCompleteWithoutNumber() {
+        let universe = Universe(name: "Die drei ???")
+        var draft = EpisodeEditDraft()
+        draft.isSpecial = true
+        draft.title = "Phantomsee"
+        draft.releaseYearText = "2024"
+        draft.selectedUniverse = universe
+        draft.episodeNumberText = ""
+        XCTAssertTrue(draft.isComplete)
+    }
+
+    func testRegularDraftStillNeedsNumber() {
+        let universe = Universe(name: "Die drei ???")
+        var draft = EpisodeEditDraft()
+        draft.title = "Angreifer"
+        draft.releaseYearText = "2024"
+        draft.selectedUniverse = universe
+        draft.episodeNumberText = ""
+        XCTAssertFalse(draft.isComplete)
+    }
+
     func testInitFromEpisodeCopiesAllFields() {
         let universe = Universe(name: "TKKG")
         let mood = Mood(name: "spannend")

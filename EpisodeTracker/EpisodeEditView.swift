@@ -46,6 +46,7 @@ struct EpisodeEditView: View {
     }
     private var duplicateEpisodeWarning: String? {
         guard isNew,
+              !draft.isSpecial,
               let number = draft.parsedEpisodeNumber,
               let universe = draft.selectedUniverse,
               hasDuplicateEpisodeNumber(in: universe, episodeNumber: number)
@@ -141,6 +142,7 @@ struct EpisodeEditView: View {
             EpisodeFormSection(
                 universes: activeUniverses,
                 selectedUniverse: $draft.selectedUniverse,
+                isSpecial: $draft.isSpecial,
                 episodeNumberText: $draft.episodeNumberText,
                 title: $draft.title,
                 releaseYearText: $draft.releaseYearText,
@@ -560,6 +562,7 @@ private struct AnimatedDisclosureChevron: View {
 private struct EpisodeFormSection: View {
     let universes: [Universe]
     @Binding var selectedUniverse: Universe?
+    @Binding var isSpecial: Bool
     @Binding var episodeNumberText: String
     @Binding var title: String
     @Binding var releaseYearText: String
@@ -584,8 +587,10 @@ private struct EpisodeFormSection: View {
                 }
             }
 
-            LabeledContent("Nummer") {
-                TextField("Nummer", text: $episodeNumberText)
+            Toggle("Sonderfolge", isOn: $isSpecial)
+
+            LabeledContent(isSpecial ? "Nummer (optional)" : "Nummer") {
+                TextField(isSpecial ? "Nummer (optional)" : "Nummer", text: $episodeNumberText)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
             }
@@ -607,7 +612,7 @@ private struct EpisodeFormSection: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("\(entry.number)")
+                                    Text(entry.number.map(String.init) ?? "✨")
                                         .font(.subheadline.monospacedDigit())
                                         .foregroundStyle(.secondary)
                                         .frame(width: 28, alignment: .trailing)

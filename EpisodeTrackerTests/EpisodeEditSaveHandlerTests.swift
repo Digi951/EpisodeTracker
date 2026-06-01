@@ -37,6 +37,66 @@ final class EpisodeEditSaveHandlerTests: XCTestCase {
         XCTAssertEqual(stored.first?.episodeNumber, 1)
     }
 
+    func testSaveSpecialCreatesSlugAndKind() throws {
+        let context = try makeInMemoryContext()
+        let universe = Universe(name: "Die drei ???")
+        context.insert(universe)
+
+        var draft = EpisodeEditDraft()
+        draft.isSpecial = true
+        draft.title = "Phantomsee"
+        draft.releaseYearText = "2024"
+        draft.selectedUniverse = universe
+        draft.episodeNumberText = ""
+
+        let outcome = EpisodeEditSaveHandler.save(
+            draft: draft,
+            existingEpisode: nil,
+            existingEpisodes: [],
+            coverChange: .keep,
+            in: context
+        )
+
+        XCTAssertEqual(outcome, .saved)
+        let stored = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(stored.count, 1)
+        let episode = try XCTUnwrap(stored.first)
+        XCTAssertTrue(episode.isSpecial)
+        XCTAssertEqual(episode.episodeNumber, 0)
+        XCTAssertEqual(
+            episode.catalogSlug,
+            SpecialEpisodeSlug.make(title: "Phantomsee", releaseYear: 2024, universeKey: universe.resolvedSyncKey)
+        )
+        XCTAssertNotNil(episode.specialUpdatedAt)
+    }
+
+    func testSaveAllowsSpecialSharingNumberWithRegular() throws {
+        let context = try makeInMemoryContext()
+        let universe = Universe(name: "Die drei ???")
+        context.insert(universe)
+        let regular = Episode(episodeNumber: 3, title: "Karpatenhund", releaseYear: 1981, universe: universe)
+        context.insert(regular)
+
+        var draft = EpisodeEditDraft()
+        draft.isSpecial = true
+        draft.title = "Jubiläum"
+        draft.releaseYearText = "2024"
+        draft.episodeNumberText = "3"
+        draft.selectedUniverse = universe
+
+        let outcome = EpisodeEditSaveHandler.save(
+            draft: draft,
+            existingEpisode: nil,
+            existingEpisodes: [regular],
+            coverChange: .keep,
+            in: context
+        )
+
+        XCTAssertEqual(outcome, .saved)
+        let stored = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(stored.count, 2)
+    }
+
     func testSaveRejectsDuplicateNumberInSameUniverse() throws {
         let context = try makeInMemoryContext()
         let universe = Universe(name: "Die drei ???")

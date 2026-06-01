@@ -20,18 +20,30 @@ enum EpisodeEditSaveHandler {
         coverChange: EpisodeCoverChange,
         in context: ModelContext
     ) -> EpisodeSaveOutcome {
-        guard let episodeNumber = draft.parsedEpisodeNumber,
-              let releaseYear = draft.parsedReleaseYear,
+        guard let releaseYear = draft.parsedReleaseYear,
               let selectedUniverse = draft.selectedUniverse else {
             return .invalidInput
         }
 
-        if hasDuplicateEpisodeNumber(
-            in: selectedUniverse,
-            episodeNumber: episodeNumber,
-            existingEpisodes: existingEpisodes,
-            editingEpisode: existingEpisode
-        ) {
+        let kind: EpisodeKind = draft.isSpecial ? .special : .regular
+        let episodeNumber: Int
+        if draft.isSpecial {
+            // Sonderfolgen: Nummer optional, dient nur Anzeige/Sortierung.
+            episodeNumber = draft.parsedEpisodeNumber ?? 0
+        } else {
+            guard let number = draft.parsedEpisodeNumber else { return .invalidInput }
+            episodeNumber = number
+        }
+
+        // Nummern-Dublettenprüfung gilt nur für reguläre Folgen; Sonderfolgen
+        // werden über den Slug identifiziert.
+        if kind == .regular,
+           hasDuplicateEpisodeNumber(
+               in: selectedUniverse,
+               episodeNumber: episodeNumber,
+               existingEpisodes: existingEpisodes,
+               editingEpisode: existingEpisode
+           ) {
             return .duplicateNumber
         }
 
@@ -63,6 +75,20 @@ enum EpisodeEditSaveHandler {
                 episode.isHidden = draft.isHidden
                 episode.hiddenUpdatedAt = .now
             }
+            let wasSpecial = episode.isSpecial
+            episode.kind = kind
+            if kind == .special {
+                // Slug einfrieren: bestehenden Slug NIE überschreiben; nur bei
+                // erstmaligem Wechsel regular -> special einen erzeugen.
+                if episode.catalogSlug?.isEmpty != false {
+                    episode.catalogSlug = SpecialEpisodeSlug.make(
+                        title: draft.title,
+                        releaseYear: releaseYear,
+                        universeKey: selectedUniverse.resolvedSyncKey
+                    )
+                }
+                if !wasSpecial { episode.specialUpdatedAt = .now }
+            }
             episode.refreshSyncKeyIfPossible()
             applyCover(coverChange, to: episode)
 
@@ -75,16 +101,26 @@ enum EpisodeEditSaveHandler {
                 }
             }
         } else {
+            let slug: String? = draft.isSpecial
+                ? SpecialEpisodeSlug.make(
+                    title: draft.title,
+                    releaseYear: releaseYear,
+                    universeKey: selectedUniverse.resolvedSyncKey
+                )
+                : nil
             let newEpisode = Episode(
                 episodeNumber: episodeNumber,
                 title: draft.title,
                 releaseYear: releaseYear,
+                kind: kind,
+                catalogSlug: slug,
                 personalNote: draft.personalNote.isEmpty ? nil : draft.personalNote,
                 isListened: draft.isListened,
                 rating: draft.rating,
                 universe: selectedUniverse,
                 moods: Array(draft.selectedMoods)
             )
+            if draft.isSpecial { newEpisode.specialUpdatedAt = .now }
             newEpisode.streamingURL = draft.streamingURL.isEmpty ? nil : draft.streamingURL
             if !draft.selectedMoods.isEmpty {
                 newEpisode.moodsUpdatedAt = .now
