@@ -15,6 +15,7 @@ enum EpisodeStatusFilter: String, CaseIterable {
     case favorites = "Favoriten"
     case rated = "Bewertet"
     case noted = "Mit Notiz"
+    case specials = "Sonderfolgen"
 }
 
 struct EpisodeListControlsState {
@@ -701,6 +702,8 @@ enum EpisodeListOrganizer {
                 }
                 return !note.isEmpty
             }
+        case .specials:
+            return episodes.filter(\.isSpecial)
         }
     }
 
