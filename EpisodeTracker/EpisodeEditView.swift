@@ -152,8 +152,7 @@ struct EpisodeEditView: View {
                 titleSuggestions: titleSuggestions,
                 formValidationMessage: formValidationMessage,
                 duplicateEpisodeWarning: duplicateEpisodeWarning,
-                canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan,
-                onApplyCatalogMatch: applyCatalogMatch,
+                canCreateEpisodeUnderCurrentPlan: canCreateEpisodeUnderCurrentPlan, onApplyCatalogMatch: applyCatalogMatch,
                 onSelectSuggestedEntry: applySuggestedEntry
             )
 
@@ -573,6 +572,8 @@ private struct EpisodeFormSection: View {
     let formValidationMessage: String?
     let duplicateEpisodeWarning: String?
     let canCreateEpisodeUnderCurrentPlan: Bool
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    private var appAccentColor: AppAccentColor { AppAccentColor.resolved(from: appAccentColorRawValue) }
     let onApplyCatalogMatch: () -> Void
     let onSelectSuggestedEntry: (CatalogEntry) -> Void
 
@@ -587,12 +588,48 @@ private struct EpisodeFormSection: View {
                 }
             }
 
-            Toggle("Sonderfolge", isOn: $isSpecial)
-
-            LabeledContent(isSpecial ? "Nummer (optional)" : "Nummer") {
-                TextField(isSpecial ? "Nummer (optional)" : "Nummer", text: $episodeNumberText)
+            HStack {
+                Text(isSpecial ? "Nummer (opt.)" : "Nummer")
+                Spacer()
+                TextField(isSpecial ? "optional" : "Nummer", text: $episodeNumberText)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
+                    .frame(minWidth: 44)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isSpecial.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("#")
+                            .font(.body.weight(.bold))
+                        Text("Sonderfolge")
+                    }
+                    .font(.caption.weight(isSpecial ? .semibold : .medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .foregroundStyle(isSpecial ? appAccentColor.color : .secondary)
+                    .background(
+                        isSpecial ? appAccentColor.color.opacity(0.14) : Color(.systemFill),
+                        in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isSpecial ? "Sonderfolge aktiv" : "Sonderfolge")
+                .accessibilityHint("Aktivieren für Folgen ohne feste Nummer in der Reihe")
+            }
+            if isSpecial {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.caption)
+                        .foregroundStyle(appAccentColor.color)
+                        .frame(width: 20)
+                    Text("Sonderfolgen haben keine feste Nummer in der Reihe. Die Nummer dient nur der Sortierung und ist optional.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 2)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
             if let catalogMatch, isNew {
                 Button(action: onApplyCatalogMatch) {
