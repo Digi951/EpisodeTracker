@@ -38,6 +38,8 @@ final class Episode {
         episodeNumber: Int,
         title: String,
         releaseYear: Int,
+        kind: EpisodeKind = .regular,
+        catalogSlug: String? = nil,
         syncKey: String? = nil,
         personalNote: String? = nil,
         isListened: Bool = false,
@@ -51,9 +53,13 @@ final class Episode {
         moods: [Mood] = []
     ) {
         self.id = id
+        self.kindRaw = kind.rawValue
+        self.catalogSlug = catalogSlug
         self.syncKey = syncKey ?? Episode.makeSyncKey(
             universeSyncKey: universe?.resolvedSyncKey,
-            episodeNumber: episodeNumber
+            kind: kind,
+            episodeNumber: episodeNumber,
+            catalogSlug: catalogSlug
         )
         self.episodeNumber = episodeNumber
         self.title = title
@@ -86,7 +92,9 @@ extension Episode {
 
     static func makeSyncKey(
         universeSyncKey: String?,
-        episodeNumber: Int
+        kind: EpisodeKind,
+        episodeNumber: Int,
+        catalogSlug: String?
     ) -> String {
         guard let universeSyncKey,
               !universeSyncKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -94,7 +102,16 @@ extension Episode {
             return "episode:pending:\(UUID().uuidString.lowercased())"
         }
 
-        return "episode:\(universeSyncKey)#\(episodeNumber)"
+        switch kind {
+        case .regular:
+            return "episode:\(universeSyncKey)#\(episodeNumber)"
+        case .special:
+            let slug = catalogSlug?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+            guard !slug.isEmpty else {
+                return "episode:pending:\(UUID().uuidString.lowercased())"
+            }
+            return "episode:\(universeSyncKey)#special:\(slug)"
+        }
     }
 
     var resolvedSyncKey: String {
@@ -105,7 +122,9 @@ extension Episode {
 
         return Self.makeSyncKey(
             universeSyncKey: universe?.resolvedSyncKey,
-            episodeNumber: episodeNumber
+            kind: kind,
+            episodeNumber: episodeNumber,
+            catalogSlug: catalogSlug
         )
     }
 
@@ -113,14 +132,18 @@ extension Episode {
         if let universe {
             syncKey = Self.makeSyncKey(
                 universeSyncKey: universe.resolvedSyncKey,
-                episodeNumber: episodeNumber
+                kind: kind,
+                episodeNumber: episodeNumber,
+                catalogSlug: catalogSlug
             )
         } else {
             let trimmed = syncKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if trimmed.isEmpty {
                 syncKey = Self.makeSyncKey(
                     universeSyncKey: nil,
-                    episodeNumber: episodeNumber
+                    kind: kind,
+                    episodeNumber: episodeNumber,
+                    catalogSlug: catalogSlug
                 )
             }
         }
