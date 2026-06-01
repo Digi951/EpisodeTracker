@@ -1437,6 +1437,9 @@
         }
       }
     },
+    "Datenbank-Diagnose" : {
+
+    },
     "Deaktivierte Listen werden ausgeblendet. Halte und ziehe um die Reihenfolge zu ändern." : {
       "localizations" : {
         "de" : {
@@ -1516,6 +1519,9 @@
           }
         }
       }
+    },
+    "Die Datenbank musste beim Start automatisch repariert werden. Diese Angabe hilft bei der Fehlersuche und verlässt das Gerät nicht." : {
+
     },
     "Die wichtigsten Zahlen und Muster deiner Sammlung, optimiert für einen schnellen Überblick." : {
       "localizations" : {
@@ -1860,6 +1866,22 @@
         }
       }
     },
+    "EpisodeList.SpecialSection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specials"
+          }
+        }
+      }
+    },
     "Erneut versuchen" : {
       "localizations" : {
         "de" : {
@@ -1984,6 +2006,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episode"
+          }
+        }
+      }
+    },
+    "Folge %d" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge %d"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episode %d"
           }
         }
       }
@@ -2634,6 +2672,7 @@
       }
     },
     "Neu: Akzentfarbe" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2648,6 +2687,9 @@
           }
         }
       }
+    },
+    "Neu: App-Icons" : {
+
     },
     "Neue Folge" : {
       "localizations" : {
@@ -2838,6 +2880,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Number"
+          }
+        }
+      }
+    },
+    "Nummer (optional)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummer (optional)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Number (optional)"
           }
         }
       }
@@ -3082,6 +3140,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save"
+          }
+        }
+      }
+    },
+    "Sonderfolge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special"
+          }
+        }
+      }
+    },
+    "Sonderfolge %d" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolge %d"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special %d"
           }
         }
       }
@@ -4313,7 +4403,11 @@
         }
       }
     },
+    "Wähle dein App-Icon in den Einstellungen." : {
+
+    },
     "Wähle deine Akzentfarbe in den Einstellungen." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
