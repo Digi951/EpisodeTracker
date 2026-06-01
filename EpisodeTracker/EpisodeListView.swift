@@ -681,11 +681,18 @@ struct EpisodeRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(episode.title)
-                        .font(.body)
-                        .lineLimit(isInSidebar ? 2 : 1)
+                Text(episode.title)
+                    .font(.body)
+                    .lineLimit(isInSidebar ? 2 : 1)
 
+                if let notePreview {
+                    Text(notePreview)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                HStack(spacing: 4) {
                     if episode.isSpecial {
                         Text(episode.episodeNumber > 0
                              ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
@@ -696,16 +703,6 @@ struct EpisodeRowView: View {
                             .padding(.vertical, 2)
                             .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
-                }
-
-                if let notePreview {
-                    Text(notePreview)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                HStack(spacing: 4) {
                     if let rating = episode.rating {
                         HStack(spacing: 1) {
                             ForEach(1...5, id: \.self) { star in
