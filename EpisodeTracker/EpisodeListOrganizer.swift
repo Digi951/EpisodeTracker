@@ -619,44 +619,11 @@ enum EpisodeListOrganizer {
         catalogTotalsByUniverse: [String: Int] = [:],
         preferCatalogTotals: Bool = true
     ) -> [EpisodeListGroup] {
-        let specials = episodes.filter(\.isSpecial)
-        let regulars = episodes.filter { !$0.isSpecial }
-
-        let regularGroups = regularGroups(
-            for: regulars,
-            sortOrder: sortOrder,
-            filterUniverse: filterUniverse,
-            universeCount: universeCount,
-            catalogTotalsByUniverse: catalogTotalsByUniverse,
-            preferCatalogTotals: preferCatalogTotals
-        )
-
-        // Sonderfolgen erhalten ihre eigene Sektion ans Listenende — aber nur, wenn die
-        // reguläre Liste ohnehin gruppiert wird. Sonst zeigt die View eine flache Liste,
-        // in der die Sonderfolgen (per sort) bereits am Ende stehen.
-        guard !specials.isEmpty, !regularGroups.isEmpty else { return regularGroups }
-
-        let specialGroup = EpisodeListGroup(
-            id: "special",
-            title: String(localized: "EpisodeList.SpecialSection", defaultValue: "Sonderfolgen"),
-            episodes: specials.sorted(by: specialSort),
-            progressTotalOverride: nil
-        )
-        return regularGroups + [specialGroup]
-    }
-
-    private static func regularGroups(
-        for episodes: [Episode],
-        sortOrder: EpisodeSortOrder,
-        filterUniverse: Universe?,
-        universeCount: Int,
-        catalogTotalsByUniverse: [String: Int],
-        preferCatalogTotals: Bool
-    ) -> [EpisodeListGroup] {
         guard shouldGroup(episodes: episodes, sortOrder: sortOrder, filterUniverse: filterUniverse, universeCount: universeCount) else {
             return []
         }
 
+        // Multi-Universe-Gruppierung: Sonderfolgen landen natürlich bei ihrem Universe.
         if let multiUniverseGroups = multiUniverseNumberGroupsIfNeeded(
             for: episodes,
             sortOrder: sortOrder,
@@ -668,11 +635,14 @@ enum EpisodeListOrganizer {
             return multiUniverseGroups
         }
 
+        // Single-Universe-Gruppierung: Nummernbänder brauchen Spezialbehandlung
+        // (Sonderfolge Nr. 0 gehört nicht ins Band „1-25"), alle anderen Sortierungen
+        // (Titel, Rating, Jahr, Gehört/Offen) gruppieren Sonderfolgen natürlich mit.
         switch sortOrder {
         case .recentlyPlayed:
             return listenedStateGroups(for: episodes)
         case .number:
-            return numberRangeGroups(for: episodes)
+            return numberRangeGroupsWithSpecials(for: episodes)
         case .title:
             return titleGroups(for: episodes)
         case .rating:
@@ -831,6 +801,38 @@ enum EpisodeListOrganizer {
                 progressTotalOverride: totalOverride
             )
         }
+    }
+
+    /// Nummernbänder nur für reguläre Folgen; Sonderfolgen bekommen eine eigene
+    /// Sektion am Ende (in der Single-Universe-Ansicht). In der Multi-Universe-
+    /// Ansicht landen Sonderfolgen direkt bei ihrem Universe (via universeGroups).
+    private static func numberRangeGroupsWithSpecials(for episodes: [Episode]) -> [EpisodeListGroup] {
+        let regulars = episodes.filter { !$0.isSpecial }
+        let specials = episodes.filter(\.isSpecial)
+
+        let grouped = Dictionary(grouping: regulars) { episode in
+            ((max(episode.episodeNumber, 1) - 1) / 25) * 25 + 1
+        }
+        var groups = grouped.keys.sorted().map { start in
+            let end = start + 24
+            return EpisodeListGroup(
+                id: "number:\(start)",
+                title: "\(start)-\(end)",
+                episodes: grouped[start] ?? [],
+                progressTotalOverride: nil
+            )
+        }
+
+        if !specials.isEmpty {
+            groups.append(EpisodeListGroup(
+                id: "special",
+                title: String(localized: "EpisodeList.SpecialSection", defaultValue: "Sonderfolgen"),
+                episodes: specials.sorted(by: specialSort),
+                progressTotalOverride: nil
+            ))
+        }
+
+        return groups
     }
 
     private static func numberRangeGroups(for episodes: [Episode]) -> [EpisodeListGroup] {
