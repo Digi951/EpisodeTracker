@@ -693,16 +693,6 @@ struct EpisodeRowView: View {
                 }
 
                 HStack(spacing: 4) {
-                    if episode.isSpecial {
-                        Text(episode.episodeNumber > 0
-                             ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
-                             : NSLocalizedString("Sonderfolge", comment: ""))
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(appAccentColor.color)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
                     if let rating = episode.rating {
                         HStack(spacing: 1) {
                             ForEach(1...5, id: \.self) { star in
@@ -715,6 +705,16 @@ struct EpisodeRowView: View {
                     if !episode.moods.isEmpty {
                         Text(episode.moods.compactMap(\.iconName).joined())
                             .font(.caption)
+                    }
+                    if episode.isSpecial {
+                        Text(episode.episodeNumber > 0
+                             ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
+                             : NSLocalizedString("Sonderfolge", comment: ""))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(appAccentColor.color)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                 }
             }
