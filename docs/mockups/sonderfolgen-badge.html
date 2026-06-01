@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonderfolgen – Badge-Mockup</title>
+<style>
+  :root{
+    --accent:#C9472B;           /* HörspielLog Akzent (retro-rot, näherungsweise) */
+    --accent-soft:rgba(201,71,43,.14);
+    --bg:#F2F2F7;
+    --card:#FFFFFF;
+    --label:#1C1C1E;
+    --secondary:#8E8E93;
+    --separator:rgba(60,60,67,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000000; --card:#1C1C1E; --label:#FFFFFF;
+      --secondary:#98989F; --separator:rgba(84,84,88,.4);
+      --accent-soft:rgba(255,107,77,.20); --accent:#FF6B4D;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:32px 16px 64px;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+    background:var(--bg); color:var(--label);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:20px; text-align:center; margin:0 0 4px}
+  .sub{text-align:center; color:var(--secondary); font-size:13px; margin:0 auto 28px; max-width:520px; line-height:1.4}
+  .variant{max-width:430px; margin:0 auto 34px}
+  .variant > .cap{font-size:12px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; margin:0 0 8px 6px}
+  .variant > .cap small{display:block; color:var(--secondary); font-weight:400; text-transform:none; letter-spacing:0; margin-top:2px}
+  .list{background:var(--card); border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+  /* ---- Zeile, 1:1 an EpisodeListView nachgebaut ---- */
+  .row{display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--separator)}
+  .row:last-child{border-bottom:none}
+
+  /* 40pt Nummern-Slot */
+  .num{width:40px; flex:0 0 40px; text-align:center; font-size:17px; font-weight:600; color:var(--secondary)}
+  .num .ico{font-size:20px; line-height:1; color:var(--accent)}
+  .num .ico + .t{display:block; font-size:8.5px; font-weight:700; letter-spacing:.02em; color:var(--accent); margin-top:2px; text-transform:uppercase}
+
+  /* Cover/Initial 44x44 */
+  .cover{width:44px; height:44px; flex:0 0 44px; border-radius:6px; background:var(--accent-soft);
+         display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:600; color:var(--accent)}
+
+  .body{min-width:0; flex:1}
+  .title{font-size:16px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .meta{display:flex; align-items:center; gap:6px; margin-top:3px}
+  .note{font-size:12px; color:var(--secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .stars{font-size:11px; color:#E5A800; letter-spacing:1px}
+
+  /* Inline Text-Badge neben/unter dem Titel */
+  .pill{display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:600;
+        color:var(--accent); background:var(--accent-soft); padding:2px 7px; border-radius:6px; white-space:nowrap}
+  .pill .ico{font-size:11px}
+
+  .titlerow{display:flex; align-items:center; gap:7px; min-width:0}
+  .titlerow .title{flex:0 1 auto}
+
+  .legend{max-width:430px; margin:0 auto; font-size:12px; color:var(--secondary); line-height:1.5; padding:14px 16px; background:var(--card); border-radius:12px}
+  .legend b{color:var(--label)}
+</style>
+</head>
+<body>
+  <h1>Sonderfolgen – wie markieren wir „keine Nummer"?</h1>
+  <p class="sub">Reale Folgenzelle nachgebaut: 40pt-Nummern-Slot · 44pt-Cover · Titel/Notiz/Rating.
+     Zum Vergleich oben jeweils eine normale, nummerierte Folge, darunter die Sonderfolge in der jeweiligen Variante.</p>
+
+  <!-- VARIANTE A -->
+  <div class="variant">
+    <p class="cap">Variante A — Icon im Nummern-Slot + Kurztext darunter
+      <small>Markierung sitzt exakt dort, wo sonst die Nummer steht. Kompakt, aber „SONDER" ist sehr klein.</small></p>
+    <div class="list">
+      <div class="row">
+        <div class="num">214</div>
+        <div class="cover">D</div>
+        <div class="body"><div class="title">und der namenlose Angreifer</div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div></div>
+      </div>
+      <div class="row">
+        <div class="num"><span class="ico">✦</span><span class="t">Sonder</span></div>
+        <div class="cover">D</div>
+        <div class="body"><div class="title">und der Phantomsee (Jubiläum)</div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIANTE B -->
+  <div class="variant">
+    <p class="cap">Variante B — Nur Icon im Slot + Text-Pille neben dem Titel
+      <small>Slot bleibt ruhig (nur Symbol), die Beschriftung „Sonderfolge" steht klar lesbar am Titel.</small></p>
+    <div class="list">
+      <div class="row">
+        <div class="num">214</div>
+        <div class="cover">D</div>
+        <div class="body"><div class="title">und der namenlose Angreifer</div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div></div>
+      </div>
+      <div class="row">
+        <div class="num"><span class="ico">✦</span></div>
+        <div class="cover">D</div>
+        <div class="body">
+          <div class="titlerow">
+            <span class="title">und der Phantomsee (Jubiläum)</span>
+            <span class="pill"><span class="ico">✦</span>Sonderfolge</span>
+          </div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIANTE C -->
+  <div class="variant">
+    <p class="cap">Variante C — Nur Icon im Slot (Text nur als Screenreader-Label)
+      <small>Maximal ruhig im Listenbild. „Sonderfolge" erscheint nur in der Detailansicht/VoiceOver.</small></p>
+    <div class="list">
+      <div class="row">
+        <div class="num">214</div>
+        <div class="cover">D</div>
+        <div class="body"><div class="title">und der namenlose Angreifer</div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div></div>
+      </div>
+      <div class="row">
+        <div class="num"><span class="ico">✦</span></div>
+        <div class="cover">D</div>
+        <div class="body"><div class="title">und der Phantomsee (Jubiläum)</div>
+          <div class="meta"><span class="note">2024 · Die drei ???</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="legend">
+    <b>Icon-Wahl:</b> Hier mit „✦" dargestellt — in der App ein SF-Symbol, Kandidaten:
+    <b>sparkles</b> (✨, „besonders"), <b>star.circle</b> (★, „Highlight") oder <b>seal</b> (Siegel/„Edition").
+    Alle in Akzentfarbe, gleiche Größe wie die Nummer.<br><br>
+    <b>Eigene Sektion:</b> Unabhängig von der Badge-Variante landen alle Sonderfolgen am Listenende in einer
+    Gruppe „Sonderfolgen" und zählen nicht in den „X von N"-Fortschritt der nummerierten Reihe.
+  </p>
+</body>
+</html>
