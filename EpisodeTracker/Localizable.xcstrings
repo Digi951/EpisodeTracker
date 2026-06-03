@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "%@" : {
+
+    },
     "%@ · %@" : {
       "localizations" : {
         "de" : {
@@ -2027,6 +2030,7 @@
       }
     },
     "Folge %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3144,38 +3148,6 @@
         }
       }
     },
-    "Sonderfolge" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sonderfolge"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Special"
-          }
-        }
-      }
-    },
-    "Sonderfolge %d" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sonderfolge %d"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Special %d"
-          }
-        }
-      }
-    },
     "Smart Lists" : {
       "localizations" : {
         "de" : {
@@ -3789,6 +3761,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Once you add episodes, your listening progress appears here."
+          }
+        }
+      }
+    },
+    "Sonderfolge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special"
+          }
+        }
+      }
+    },
+    "Sonderfolge %d" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolge %d"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special %d"
           }
         }
       }
