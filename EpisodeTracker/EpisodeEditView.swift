@@ -617,10 +617,17 @@ private struct EpisodeFormSection: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text(entry.kind == .special ? "✨" : entry.number.map(String.init) ?? "–")
-                                        .font(.subheadline.monospacedDigit())
-                                        .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
-                                        .frame(width: 28, alignment: .trailing)
+                                    Group {
+                                        if entry.kind == .special {
+                                            Image(systemName: "sparkles")
+                                        } else {
+                                            Text(entry.number.map(String.init) ?? "–")
+                                                .monospacedDigit()
+                                        }
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
+                                    .frame(width: 28, alignment: .trailing)
                                     Text(entry.title)
                                         .font(.subheadline)
                                         .foregroundStyle(.primary)
@@ -649,10 +656,17 @@ private struct EpisodeFormSection: View {
                             onSelectSuggestedEntry(entry)
                         } label: {
                             HStack {
-                                Text(entry.kind == .special ? "✨" : entry.number.map(String.init) ?? "–")
-                                    .font(.subheadline.monospacedDigit())
-                                    .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
-                                    .frame(width: 28, alignment: .trailing)
+                                Group {
+                                    if entry.kind == .special {
+                                        Image(systemName: "sparkles")
+                                    } else {
+                                        Text(entry.number.map(String.init) ?? "–")
+                                            .monospacedDigit()
+                                    }
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
+                                .frame(width: 28, alignment: .trailing)
                                 Text(entry.title)
                                     .font(.subheadline)
                                     .foregroundStyle(.primary)

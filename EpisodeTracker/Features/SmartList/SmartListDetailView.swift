@@ -669,6 +669,9 @@ private struct CatalogEntryRow: View {
     let entry: CatalogEntry
     var onAdd: () -> Void
 
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    private var appAccentColor: AppAccentColor { AppAccentColor.resolved(from: appAccentColorRawValue) }
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -677,10 +680,17 @@ private struct CatalogEntryRow: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 8) {
-                    Text(entry.number.map(String.init) ?? "✨")
-                        .font(.headline.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: 28, alignment: .trailing)
+                    Group {
+                        if entry.kind == .special {
+                            Image(systemName: "sparkles")
+                        } else {
+                            Text(entry.number.map(String.init) ?? "–")
+                                .monospacedDigit()
+                        }
+                    }
+                    .font(.headline)
+                    .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
+                    .frame(minWidth: 28, alignment: .trailing)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.title)
