@@ -347,6 +347,7 @@ struct EpisodeEditView: View {
         if let episode {
             draft = EpisodeEditDraft(episode: episode, universes: universes)
         } else if let prefillEntry {
+            draft.isSpecial = prefillEntry.kind == .special
             draft.episodeNumberText = prefillEntry.number.map(String.init) ?? ""
             draft.title = prefillEntry.title
             draft.releaseYearText = String(prefillEntry.releaseYear)
@@ -471,11 +472,13 @@ struct EpisodeEditView: View {
 
     private func applyCatalogMatch() {
         guard let catalogMatch else { return }
+        draft.isSpecial = catalogMatch.kind == .special
         draft.title = catalogMatch.title
         draft.releaseYearText = String(catalogMatch.releaseYear)
     }
 
     private func applySuggestedEntry(_ entry: CatalogEntry) {
+        draft.isSpecial = entry.kind == .special
         draft.episodeNumberText = entry.number.map(String.init) ?? ""
         draft.title = entry.title
         draft.releaseYearText = String(entry.releaseYear)
