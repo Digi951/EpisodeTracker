@@ -57,8 +57,10 @@ final class EpisodeCatalog {
 
     func entry(for number: Int, in collectionName: String?) -> CatalogEntry? {
         guard let key = collectionName?.lowercased(), !key.isEmpty else { return nil }
+        // Nummernsuche betrifft nur reguläre Folgen; Sonderfolgen haben eine
+        // eigene Nummerierung die mit der regulären kollidieren kann.
         return entries.reversed().first(where: {
-            $0.number == number && $0.collectionName?.lowercased() == key
+            $0.kind == .regular && $0.number == number && $0.collectionName?.lowercased() == key
         })
     }
 
