@@ -706,16 +706,8 @@ struct EpisodeRowView: View {
                         Text(episode.moods.compactMap(\.iconName).joined())
                             .font(.caption)
                     }
-                    if episode.isSpecial {
-                        Text(episode.episodeNumber > 0
-                             ? String(format: NSLocalizedString("Sonderfolge %d", comment: ""), episode.episodeNumber)
-                             : NSLocalizedString("Sonderfolge", comment: ""))
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(appAccentColor.color)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
+                    // Sonderfolgen-Markierung: Das ✨-Icon im Nummernslot reicht;
+                    // die Detailansicht zeigt "Sonderfolge" als Titel.
                 }
             }
             .layoutPriority(1)
