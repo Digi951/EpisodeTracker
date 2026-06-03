@@ -576,6 +576,8 @@ private struct EpisodeFormSection: View {
     let formValidationMessage: String?
     let duplicateEpisodeWarning: String?
     let canCreateEpisodeUnderCurrentPlan: Bool
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    private var appAccentColor: AppAccentColor { AppAccentColor.resolved(from: appAccentColorRawValue) }
     let onApplyCatalogMatch: () -> Void
     let onSelectSuggestedEntry: (CatalogEntry) -> Void
 
@@ -615,9 +617,9 @@ private struct EpisodeFormSection: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text(entry.number.map(String.init) ?? "✨")
+                                    Text(entry.kind == .special ? "✨" : entry.number.map(String.init) ?? "–")
                                         .font(.subheadline.monospacedDigit())
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
                                         .frame(width: 28, alignment: .trailing)
                                     Text(entry.title)
                                         .font(.subheadline)
@@ -649,7 +651,7 @@ private struct EpisodeFormSection: View {
                             HStack {
                                 Text(entry.kind == .special ? "✨" : entry.number.map(String.init) ?? "–")
                                     .font(.subheadline.monospacedDigit())
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(entry.kind == .special ? appAccentColor.color : .secondary)
                                     .frame(width: 28, alignment: .trailing)
                                 Text(entry.title)
                                     .font(.subheadline)
