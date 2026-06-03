@@ -644,7 +644,7 @@ private struct EpisodeFormSection: View {
                             onSelectSuggestedEntry(entry)
                         } label: {
                             HStack {
-                                Text("\(entry.number)")
+                                Text(entry.number.map(String.init) ?? "✨")
                                     .font(.subheadline.monospacedDigit())
                                     .foregroundStyle(.secondary)
                                     .frame(width: 28, alignment: .trailing)
