@@ -692,7 +692,7 @@ struct EpisodeRowView: View {
                         .lineLimit(1)
                 }
 
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     if let rating = episode.rating {
                         HStack(spacing: 1) {
                             ForEach(1...5, id: \.self) { star in
