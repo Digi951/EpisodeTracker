@@ -126,13 +126,13 @@ struct EpisodeEditView: View {
 
     private var preferredCatalogUniverse: Universe? {
         let sourceNames = CatalogSourceRegistry.managedSources.map(\.name)
-        if let bundledUniverse = universes.first(where: {
+        if let bundledUniverse = activeUniverses.first(where: {
             $0.name.caseInsensitiveCompare(CatalogSourceRegistry.bundledCollectionName) == .orderedSame
         }) {
             return bundledUniverse
         }
 
-        return universes.first { universe in
+        return activeUniverses.first { universe in
             sourceNames.contains { $0.caseInsensitiveCompare(universe.name) == .orderedSame }
         }
     }
@@ -354,13 +354,13 @@ struct EpisodeEditView: View {
             if let prefillUniverseName {
                 draft.selectedUniverse = universes.first {
                     $0.name.caseInsensitiveCompare(prefillUniverseName) == .orderedSame
-                } ?? universes.first
+                } ?? activeUniverses.first
             } else {
-                draft.selectedUniverse = preferredCatalogUniverse ?? universes.first
+                draft.selectedUniverse = preferredCatalogUniverse ?? activeUniverses.first
             }
         } else if draft.releaseYearText.isEmpty {
             draft.releaseYearText = "1979"
-            draft.selectedUniverse = preferredCatalogUniverse ?? universes.first
+            draft.selectedUniverse = preferredCatalogUniverse ?? activeUniverses.first
         }
     }
 

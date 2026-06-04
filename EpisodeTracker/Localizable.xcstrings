@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
-    "%@" : {
-
-    },
     "%@ · %@" : {
       "localizations" : {
         "de" : {
