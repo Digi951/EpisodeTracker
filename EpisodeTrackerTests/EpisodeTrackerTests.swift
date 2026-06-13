@@ -1375,7 +1375,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(recommendation?.message, "Bibi Blocksberg kann in den Katalogen aktiviert werden.")
     }
 
-    func testDeltaCatalogUpdateBannerHidesActivatedNewCatalogs() {
+    func testDeltaCatalogUpdateBannerShowsAddedMessageForActiveNewCatalog() {
         let url = URL(string: "https://example.com/catalog.json")!
         let availability = NewCatalogAvailability(sources: [
             ManagedCatalogSource(id: "bibi-blocksberg", name: "Bibi Blocksberg", url: url)
@@ -1385,6 +1385,51 @@ final class EpisodeTrackerTests: XCTestCase {
             newCatalogAvailability: availability,
             catalogEpisodeDeltas: [],
             activeCatalogIDs: ["bibi-blocksberg"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "Neuer Katalog hinzugefügt")
+        XCTAssertEqual(recommendation?.message, "Bibi Blocksberg wurde deiner Bibliothek hinzugefügt.")
+    }
+
+    func testDeltaCatalogUpdateBannerShowsAddedMessageForMultipleActiveNewCatalogs() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let availability = NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi-blocksberg", name: "Bibi Blocksberg", url: url),
+            ManagedCatalogSource(id: "bibi-und-tina", name: "Bibi und Tina", url: url)
+        ])
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: availability,
+            catalogEpisodeDeltas: [],
+            activeCatalogIDs: ["bibi-blocksberg", "bibi-und-tina"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "2 neue Kataloge hinzugefügt")
+        XCTAssertEqual(recommendation?.message, "Bibi Blocksberg und weitere Kataloge wurden deiner Bibliothek hinzugefügt.")
+    }
+
+    func testDeltaCatalogUpdateBannerPrefersInactiveNewCatalogOverActiveNew() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let availability = NewCatalogAvailability(sources: [
+            ManagedCatalogSource(id: "bibi-blocksberg", name: "Bibi Blocksberg", url: url),
+            ManagedCatalogSource(id: "bibi-und-tina", name: "Bibi und Tina", url: url)
+        ])
+
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: availability,
+            catalogEpisodeDeltas: [],
+            activeCatalogIDs: ["bibi-blocksberg"]
+        )
+
+        XCTAssertEqual(recommendation?.title, "1 neuer Katalog verfügbar")
+        XCTAssertEqual(recommendation?.message, "Bibi und Tina kann in den Katalogen aktiviert werden.")
+    }
+
+    func testDeltaCatalogUpdateBannerIsNilWhenNewCatalogAvailabilityIsEmpty() {
+        let recommendation = EpisodeListOrganizer.catalogUpdateBannerRecommendation(
+            newCatalogAvailability: NewCatalogAvailability(sources: []),
+            catalogEpisodeDeltas: [],
+            activeCatalogIDs: []
         )
 
         XCTAssertNil(recommendation)

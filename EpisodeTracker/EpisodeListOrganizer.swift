@@ -380,6 +380,43 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         )
     }
 
+    static func newActiveCatalogs(_ availability: NewCatalogAvailability) -> CatalogUpdateBannerRecommendation? {
+        guard let firstName = availability.firstName else { return nil }
+        let title = availability.count == 1
+            ? String(localized: "CatalogUpdate.NewActiveCatalogs.Title.One", defaultValue: "Neuer Katalog hinzugefügt")
+            : AppLocalization.format(
+                "CatalogUpdate.NewActiveCatalogs.Title.Many",
+                defaultValue: "%lld neue Kataloge hinzugefügt",
+                Int64(availability.count)
+            )
+        let message = availability.count == 1
+            ? AppLocalization.format(
+                "CatalogUpdate.NewActiveCatalogs.Message.One",
+                defaultValue: "%@ wurde deiner Bibliothek hinzugefügt.",
+                firstName
+            )
+            : AppLocalization.format(
+                "CatalogUpdate.NewActiveCatalogs.Message.Many",
+                defaultValue: "%@ und weitere Kataloge wurden deiner Bibliothek hinzugefügt.",
+                firstName
+            )
+        return CatalogUpdateBannerRecommendation(
+            title: title,
+            message: message,
+            compactMessage: availability.count == 1
+                ? firstName
+                : AppLocalization.format(
+                    "CatalogUpdate.NewCatalogs.Compact.Many",
+                    defaultValue: "%lld neue Kataloge",
+                    Int64(availability.count)
+                ),
+            missingEpisodeCount: 0,
+            universeCount: availability.count,
+            firstUniverseName: firstName,
+            firstEpisodeTitle: firstName
+        )
+    }
+
     static func episodeDelta(_ delta: CatalogEpisodeDelta) -> CatalogUpdateBannerRecommendation? {
         guard delta.addedCount > 0,
               let firstTitle = delta.firstAddedTitle
@@ -550,6 +587,15 @@ enum EpisodeListOrganizer {
             }
             if let recommendation = CatalogUpdateBannerRecommendation.newCatalogs(
                 NewCatalogAvailability(sources: inactiveNewSources)
+            ) {
+                return recommendation
+            }
+
+            let activeNewSources = newCatalogAvailability.sources.filter {
+                activeIDs.contains(normalizedKey($0.id))
+            }
+            if let recommendation = CatalogUpdateBannerRecommendation.newActiveCatalogs(
+                NewCatalogAvailability(sources: activeNewSources)
             ) {
                 return recommendation
             }

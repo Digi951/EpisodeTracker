@@ -1056,6 +1056,70 @@
         }
       }
     },
+    "CatalogUpdate.NewActiveCatalogs.Message.Many" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ und weitere Kataloge wurden deiner Bibliothek hinzugefügt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and more catalogs were added to your library."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewActiveCatalogs.Message.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde deiner Bibliothek hinzugefügt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ was added to your library."
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewActiveCatalogs.Title.Many" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld neue Kataloge hinzugefügt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new catalogs added"
+          }
+        }
+      }
+    },
+    "CatalogUpdate.NewActiveCatalogs.Title.One" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Katalog hinzugefügt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New catalog added"
+          }
+        }
+      }
+    },
     "CatalogUpdate.NewCatalogs.Compact.Many" : {
       "extractionState" : "stale",
       "localizations" : {
