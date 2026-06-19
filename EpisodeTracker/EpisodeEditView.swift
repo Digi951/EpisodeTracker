@@ -14,6 +14,11 @@ struct EpisodeEditView: View {
     @AppStorage("episodeEditMoodSectionCollapsed") private var isMoodSectionCollapsed = false
     @AppStorage("episodeEditNoteSectionCollapsed") private var isNoteSectionCollapsed = false
     @AppStorage("episodeEditStreamingSectionCollapsed") private var isStreamingSectionCollapsed = false
+    @AppStorage(EpisodeEditSectionOrder.storageKey) private var sectionOrderRaw = ""
+
+    private var sectionOrder: [EpisodeEditSection] {
+        EpisodeEditSectionOrder.sections(from: sectionOrderRaw)
+    }
 
     var episode: Episode?
     var prefillEntry: CatalogEntry?
@@ -157,78 +162,82 @@ struct EpisodeEditView: View {
                 onSelectSuggestedEntry: applySuggestedEntry
             )
 
-            CollapsibleEpisodeSection("Cover", isCollapsed: $isCoverSectionCollapsed) {
-                if let coverImage = coverHandler.coverImage {
-                    Image(uiImage: coverImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 200)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .frame(maxWidth: .infinity)
-                } else if !coverHandler.removeCover, let existingName = episode?.coverImageName, !existingName.isEmpty {
-                    CoverImageView(name: existingName, maxHeight: 200)
-                        .frame(maxWidth: .infinity)
-                }
-
-                PhotosPicker(
-                    selection: $coverHandler.selectedPhotoItem,
-                    matching: .images
-                ) {
-                    Label(
-                        hasVisibleCover ? "Cover ersetzen" : "Cover hinzufügen",
-                        systemImage: hasVisibleCover ? "photo.badge.arrow.down" : "photo.badge.plus"
+            ForEach(sectionOrder) { section in
+                switch section {
+                case .cover:
+                    CollapsibleEpisodeSection("Cover", isCollapsed: $isCoverSectionCollapsed) {
+                        if let coverImage = coverHandler.coverImage {
+                            Image(uiImage: coverImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .frame(maxWidth: .infinity)
+                        } else if !coverHandler.removeCover,
+                                  let existingName = episode?.coverImageName,
+                                  !existingName.isEmpty {
+                            CoverImageView(name: existingName, maxHeight: 200)
+                                .frame(maxWidth: .infinity)
+                        }
+                        PhotosPicker(
+                            selection: $coverHandler.selectedPhotoItem,
+                            matching: .images
+                        ) {
+                            Label(
+                                hasVisibleCover ? "Cover ersetzen" : "Cover hinzufügen",
+                                systemImage: hasVisibleCover ? "photo.badge.arrow.down" : "photo.badge.plus"
+                            )
+                        }
+                        Button {
+                            coverHandler.pasteFromClipboard()
+                        } label: {
+                            Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
+                                .foregroundStyle(
+                                    coverHandler.clipboardHasImage
+                                        ? AnyShapeStyle(.tint)
+                                        : AnyShapeStyle(Color(.tertiaryLabel))
+                                )
+                        }
+                        .disabled(!coverHandler.clipboardHasImage)
+                        if hasVisibleCover {
+                            Button(role: .destructive) {
+                                coverHandler.requestRemoval()
+                            } label: {
+                                Label("Cover entfernen", systemImage: "trash")
+                            }
+                        }
+                    }
+                case .status:
+                    EpisodeStatusSection(
+                        isCollapsed: $isStatusSectionCollapsed,
+                        isListened: $draft.isListened,
+                        rating: $draft.rating
+                    )
+                case .moods:
+                    EpisodeMoodSection(
+                        isCollapsed: $isMoodSectionCollapsed,
+                        suggestedMoods: suggestedMoods,
+                        newMoodName: $newMoodName,
+                        newMoodIcon: $newMoodIcon,
+                        moodValidationMessage: moodValidationMessage,
+                        allMoods: visibleMoods,
+                        selectedMoods: draft.selectedMoods,
+                        onAddSuggestedMood: addSuggestedMood,
+                        onAddMood: addMood,
+                        onToggleMood: toggleMoodSelection
+                    )
+                case .note:
+                    EpisodeNoteSection(
+                        isCollapsed: $isNoteSectionCollapsed,
+                        personalNote: $draft.personalNote
+                    )
+                case .streaming:
+                    EpisodeStreamingSection(
+                        isCollapsed: $isStreamingSectionCollapsed,
+                        streamingURL: $draft.streamingURL
                     )
                 }
-
-                Button {
-                    coverHandler.pasteFromClipboard()
-                } label: {
-                    Label("Aus Zwischenablage einfügen", systemImage: "doc.on.clipboard")
-                        .foregroundStyle(
-                            coverHandler.clipboardHasImage
-                                ? AnyShapeStyle(.tint)
-                                : AnyShapeStyle(Color(.tertiaryLabel))
-                        )
-                }
-                .disabled(!coverHandler.clipboardHasImage)
-
-                if hasVisibleCover {
-                    Button(role: .destructive) {
-                        coverHandler.requestRemoval()
-                    } label: {
-                        Label("Cover entfernen", systemImage: "trash")
-                    }
-                }
             }
-
-            EpisodeStatusSection(
-                isCollapsed: $isStatusSectionCollapsed,
-                isListened: $draft.isListened,
-                rating: $draft.rating
-            )
-
-            EpisodeMoodSection(
-                isCollapsed: $isMoodSectionCollapsed,
-                suggestedMoods: suggestedMoods,
-                newMoodName: $newMoodName,
-                newMoodIcon: $newMoodIcon,
-                moodValidationMessage: moodValidationMessage,
-                allMoods: visibleMoods,
-                selectedMoods: draft.selectedMoods,
-                onAddSuggestedMood: addSuggestedMood,
-                onAddMood: addMood,
-                onToggleMood: toggleMoodSelection
-            )
-
-            EpisodeNoteSection(
-                isCollapsed: $isNoteSectionCollapsed,
-                personalNote: $draft.personalNote
-            )
-
-            EpisodeStreamingSection(
-                isCollapsed: $isStreamingSectionCollapsed,
-                streamingURL: $draft.streamingURL
-            )
 
             if !isNew {
                 Section {
