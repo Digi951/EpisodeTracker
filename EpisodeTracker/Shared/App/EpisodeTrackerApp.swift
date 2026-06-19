@@ -5,7 +5,6 @@ import WidgetKit
 @main
 struct EpisodeTrackerApp: App {
     private let containerSet: AppModelContainerSet
-    @StateObject private var containerAccess: AppContainerAccess
     @State private var syncCoordinator: SyncCoordinator
     @State private var widgetSnapshotCoordinator = WidgetSnapshotCoordinator()
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
@@ -18,7 +17,6 @@ struct EpisodeTrackerApp: App {
     init() {
         let containerSet = AppModelContainerFactory.makeSharedContainerSet()
         self.containerSet = containerSet
-        _containerAccess = StateObject(wrappedValue: AppContainerAccess(containerSet: containerSet))
         _syncCoordinator = State(wrappedValue: SyncCoordinator(
             container: containerSet.primary,
             isEnabled: containerSet.runtimeMode.usesCloudSync
@@ -47,9 +45,20 @@ struct EpisodeTrackerApp: App {
                 AppAccentColor.mirrorToAppGroup(rawValue: newValue)
                 WidgetCenter.shared.reloadAllTimelines()
             }
-            .environmentObject(containerAccess)
+            .environment(\.appContainerSet, containerSet)
         }
         .defaultSize(width: 1180, height: 820)
         .modelContainer(containerSet.primary)
+    }
+}
+
+private struct AppContainerSetKey: EnvironmentKey {
+    static let defaultValue: AppModelContainerSet? = nil
+}
+
+extension EnvironmentValues {
+    var appContainerSet: AppModelContainerSet? {
+        get { self[AppContainerSetKey.self] }
+        set { self[AppContainerSetKey.self] = newValue }
     }
 }

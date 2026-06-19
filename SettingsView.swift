@@ -6,7 +6,7 @@ import UIKit
 #endif
 
 struct SettingsView: View {
-    @EnvironmentObject private var containerAccess: AppContainerAccess
+    @Environment(\.appContainerSet) private var appContainerSet
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
     @AppStorage("libraryTitle") private var libraryTitle: String = "Meine Hörspiele"
@@ -60,7 +60,7 @@ struct SettingsView: View {
             cloudStartupError: cloudStartupError,
             automaticCloudMigrationStatus: automaticCloudMigrationStatus,
             migrationReadiness: SyncMigrationReadinessEvaluator.evaluate(
-                containerSet: containerAccess.containerSet,
+                containerSet: appContainerSet!,
                 userDefaults: .standard
             )
         )
@@ -224,7 +224,7 @@ struct SettingsView: View {
     @MainActor
     private func runInternalSyncMigration() {
         let result = SettingsSyncDiagnosticsRunner.runMigration(
-            containerSet: containerAccess.containerSet,
+            containerSet: appContainerSet!,
             userDefaults: UserDefaults.standard
         )
         syncMigrationStatusIsError = result.isError
