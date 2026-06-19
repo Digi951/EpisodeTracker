@@ -5,10 +5,13 @@ struct UpNextView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage(SmartListPreferences.hiddenStorageKey) private var hiddenSmartListsRaw = ""
     @AppStorage(SmartListPreferences.orderStorageKey) private var smartListOrderRaw = ""
+    @Environment(SavedFilterStore.self) private var savedFilterStore
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
     @State private var showingEditSheet = false
+    @State private var renameFilter: SavedFilter?
+    @State private var renameText = ""
     @Binding var iPadNavSelection: SmartListNavigation?
     private let usesSelectionMode: Bool
 
@@ -59,6 +62,14 @@ struct UpNextView: View {
             ForEach(SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)) { smartList in
                 smartListRow(smartList)
             }
+
+            if !savedFilterStore.filters.isEmpty {
+                Section(String(localized: "UpNext.MyLists.Header", defaultValue: "Meine Listen")) {
+                    ForEach(savedFilterStore.filters) { filter in
+                        savedFilterRow(filter)
+                    }
+                }
+            }
         }
         .contentMargins(.top, horizontalSizeClass == .regular ? 6 : 0, for: .scrollContent)
         .modifier(AdaptiveUpNextListStyle(isRegularWidth: horizontalSizeClass == .regular))
@@ -79,6 +90,25 @@ struct UpNextView: View {
         }
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)
+        }
+        .alert(
+            String(localized: "SavedFilter.Rename.Title", defaultValue: "Liste umbenennen"),
+            isPresented: Binding(get: { renameFilter != nil }, set: { if !$0 { renameFilter = nil } })
+        ) {
+            TextField(
+                String(localized: "SavedFilter.Rename.Placeholder", defaultValue: "Name"),
+                text: $renameText
+            )
+            Button(String(localized: "SavedFilter.Rename.Save", defaultValue: "Speichern")) {
+                if var filter = renameFilter, !renameText.trimmingCharacters(in: .whitespaces).isEmpty {
+                    filter.name = renameText.trimmingCharacters(in: .whitespaces)
+                    savedFilterStore.update(filter)
+                }
+                renameFilter = nil
+            }
+            Button(String(localized: "General.Cancel", defaultValue: "Abbrechen"), role: .cancel) {
+                renameFilter = nil
+            }
         }
     }
 
@@ -139,6 +169,58 @@ struct UpNextView: View {
                 content
             }
             .opacity(hasItems ? 1 : 0.5)
+        }
+    }
+
+    @ViewBuilder
+    private func savedFilterRow(_ filter: SavedFilter) -> some View {
+        let navValue = SmartListNavigation.savedFilter(filter)
+
+        Group {
+            if usesSelectionMode {
+                Button {
+                    iPadNavSelection = navValue
+                } label: {
+                    savedFilterRowContent(filter)
+                }
+                .listRowBackground(
+                    iPadNavSelection == navValue
+                        ? Color.accentColor.opacity(0.12)
+                        : nil
+                )
+            } else {
+                NavigationLink(value: navValue) {
+                    savedFilterRowContent(filter)
+                }
+            }
+        }
+        .contextMenu {
+            Button {
+                renameFilter = filter
+                renameText = filter.name
+            } label: {
+                Label(
+                    String(localized: "SavedFilter.Action.Rename", defaultValue: "Umbenennen"),
+                    systemImage: "pencil"
+                )
+            }
+            Button(role: .destructive) {
+                savedFilterStore.delete(filter)
+            } label: {
+                Label(
+                    String(localized: "SavedFilter.Action.Delete", defaultValue: "Löschen"),
+                    systemImage: "trash"
+                )
+            }
+        }
+    }
+
+    private func savedFilterRowContent(_ filter: SavedFilter) -> some View {
+        HStack {
+            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                .foregroundStyle(.tint)
+                .frame(width: 28)
+            Text(filter.name)
         }
     }
 }
