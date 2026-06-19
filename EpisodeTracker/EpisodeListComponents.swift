@@ -100,6 +100,7 @@ struct EpisodeListSortFilterMenu: View {
     @Binding var controls: EpisodeListControlsState
     let universes: [Universe]
     var resetsMoodFilter = true
+    var onSaveFilter: (() -> Void)? = nil
 
     var body: some View {
         Menu {
@@ -108,12 +109,30 @@ struct EpisodeListSortFilterMenu: View {
             statusMenu
 
             if controls.hasActiveFilter {
-                Button("Filter zurücksetzen", role: .destructive) {
+                Divider()
+                if let onSaveFilter {
+                    Button {
+                        onSaveFilter()
+                    } label: {
+                        Label(
+                            String(localized: "EpisodeList.Filter.SaveAsList",
+                                   defaultValue: "Als Liste speichern"),
+                            systemImage: "line.3.horizontal.decrease.circle.fill"
+                        )
+                    }
+                }
+                Button(
+                    String(localized: "EpisodeList.Filter.Reset", defaultValue: "Filter zurücksetzen"),
+                    role: .destructive
+                ) {
                     controls.resetFilters(resetMood: resetsMoodFilter)
                 }
             }
         } label: {
-            Label("Sortieren und filtern", systemImage: "arrow.up.arrow.down")
+            Label(
+                String(localized: "EpisodeList.SortAndFilter", defaultValue: "Sortieren und filtern"),
+                systemImage: "arrow.up.arrow.down"
+            )
         }
     }
 

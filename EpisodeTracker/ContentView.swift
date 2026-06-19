@@ -225,12 +225,15 @@ private struct IPadEpisodeListView: View {
     let libraryTitle: String
     @Binding var selection: Episode?
 
+    @Environment(SavedFilterStore.self) private var savedFilterStore
     @State private var controls = EpisodeListControlsState()
     @State private var deleteState = EpisodeDeleteState()
     @State private var showingDeleteConfirmation = false
     @State private var showingAddEpisode = false
     @State private var selectionController = EpisodeSelectionController()
     @State private var isEditing = false
+    @State private var showingSaveFilterAlert = false
+    @State private var saveFilterName = ""
 
     private var librarySnapshot: SidebarLibrarySnapshot {
         SidebarLibrarySnapshot(episodes: episodes)
@@ -370,7 +373,11 @@ private struct IPadEpisodeListView: View {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: availableUniverseFilters,
-                        resetsMoodFilter: false
+                        resetsMoodFilter: false,
+                        onSaveFilter: {
+                            saveFilterName = ""
+                            showingSaveFilterAlert = true
+                        }
                     )
                     Button {
                         showingAddEpisode = true
@@ -415,6 +422,31 @@ private struct IPadEpisodeListView: View {
             }
         } message: {
             Text(deleteState.message(usesCloudSync: prefersICloudSync))
+        }
+        .alert(
+            String(localized: "EpisodeList.Filter.SaveAlert.Title", defaultValue: "Liste speichern"),
+            isPresented: $showingSaveFilterAlert
+        ) {
+            TextField(
+                String(localized: "EpisodeList.Filter.SaveAlert.Placeholder", defaultValue: "Name"),
+                text: $saveFilterName
+            )
+            Button(String(localized: "EpisodeList.Filter.SaveAlert.Save", defaultValue: "Speichern")) {
+                let trimmed = saveFilterName.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { return }
+                let filter = SavedFilter(
+                    name: trimmed,
+                    statusFilter: controls.statusFilter,
+                    universeName: controls.filterUniverse?.name,
+                    moodName: controls.filterMood?.name,
+                    sortOrder: controls.sortOrder
+                )
+                savedFilterStore.add(filter)
+            }
+            Button(String(localized: "General.Cancel", defaultValue: "Abbrechen"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "EpisodeList.Filter.SaveAlert.Message",
+                        defaultValue: "Der aktuelle Filter wird als neue Liste gespeichert."))
         }
         .onAppear {
             if selection == nil {
