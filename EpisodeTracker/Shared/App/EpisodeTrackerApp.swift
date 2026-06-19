@@ -7,6 +7,7 @@ struct EpisodeTrackerApp: App {
     private let containerSet: AppModelContainerSet
     @State private var syncCoordinator: SyncCoordinator
     @State private var widgetSnapshotCoordinator = WidgetSnapshotCoordinator()
+    @State private var savedFilterStore = SavedFilterStore()
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
     @Environment(\.scenePhase) private var scenePhase
 
@@ -46,6 +47,7 @@ struct EpisodeTrackerApp: App {
                 WidgetCenter.shared.reloadAllTimelines()
             }
             .environment(\.appContainerSet, containerSet)
+            .environment(savedFilterStore)
         }
         .defaultSize(width: 1180, height: 820)
         .modelContainer(containerSet.primary)
