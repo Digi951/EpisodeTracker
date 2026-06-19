@@ -129,6 +129,8 @@ private struct PhoneEpisodesRoot: View {
                         MoodPickerView()
                     case .moodDetail(let mood):
                         SmartListDetailView(smartList: .randomByMood, mood: mood)
+                    case .savedFilter(let filter):
+                        SavedFilterDetailView(filter: filter)
                     }
                 }
                 .navigationTitle(libraryTitle)
@@ -151,6 +153,8 @@ private struct PhoneUpNextRoot: View {
                         MoodPickerView()
                     case .moodDetail(let mood):
                         SmartListDetailView(smartList: .randomByMood, mood: mood)
+                    case .savedFilter(let filter):
+                        SavedFilterDetailView(filter: filter)
                     }
                 }
                 .navigationTitle("Als nächstes")
@@ -340,6 +344,8 @@ private struct IPadEpisodeListView: View {
                     mood: mood,
                     iPadSelection: $selection
                 )
+            case .savedFilter(let filter):
+                SavedFilterDetailView(filter: filter)
             }
         }
         .toolbar {
@@ -698,6 +704,8 @@ private struct UpNextSplitView: View {
             MoodPickerView()
         case .moodDetail(let mood):
             SmartListDetailView(smartList: .randomByMood, mood: mood)
+        case .savedFilter(let filter):
+            SavedFilterDetailView(filter: filter)
         }
     }
 }
