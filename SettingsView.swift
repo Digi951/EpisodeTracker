@@ -81,6 +81,7 @@ struct SettingsView: View {
                 managedCatalogCount: managedCatalogCount,
                 moodCount: moods.count
             )
+            SettingsSavedFilterSection()
             SettingsAppIconNavigationSection(
                 selectedIconName: selectedAppIconName,
                 statusMessage: appIconStatusMessage,
@@ -929,6 +930,22 @@ private struct SettingsStoreRecoverySection: View {
             Text("Datenbank-Diagnose")
         } footer: {
             Text("Die Datenbank musste beim Start automatisch repariert werden. Diese Angabe hilft bei der Fehlersuche und verlässt das Gerät nicht.")
+        }
+    }
+}
+
+private struct SettingsSavedFilterSection: View {
+    var body: some View {
+        Section {
+            NavigationLink {
+                SavedFilterManagementView()
+            } label: {
+                Label(
+                    String(localized: "Settings.SavedFilters.Label",
+                           defaultValue: "Meine Listen"),
+                    systemImage: "line.3.horizontal.decrease.circle.fill"
+                )
+            }
         }
     }
 }
