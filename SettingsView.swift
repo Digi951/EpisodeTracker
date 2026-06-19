@@ -82,6 +82,7 @@ struct SettingsView: View {
                 moodCount: moods.count
             )
             SettingsSavedFilterSection()
+            SettingsEpisodeEditOrderSection()
             SettingsAppIconNavigationSection(
                 selectedIconName: selectedAppIconName,
                 statusMessage: appIconStatusMessage,
@@ -944,6 +945,22 @@ private struct SettingsSavedFilterSection: View {
                     String(localized: "Settings.SavedFilters.Label",
                            defaultValue: "Meine Listen"),
                     systemImage: "line.3.horizontal.decrease.circle.fill"
+                )
+            }
+        }
+    }
+}
+
+private struct SettingsEpisodeEditOrderSection: View {
+    var body: some View {
+        Section {
+            NavigationLink {
+                EpisodeEditSectionOrderView()
+            } label: {
+                Label(
+                    String(localized: "Settings.EpisodeEditOrder.Label",
+                           defaultValue: "Felder-Reihenfolge"),
+                    systemImage: "list.number"
                 )
             }
         }
