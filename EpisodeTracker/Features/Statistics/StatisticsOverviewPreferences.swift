@@ -31,6 +31,7 @@ enum StatisticsOverviewKind: String, CaseIterable, Identifiable {
     case totalListens
     case averageRating
     case favorites
+    case bookmarked
 
     var id: String { rawValue }
 
@@ -42,6 +43,7 @@ enum StatisticsOverviewKind: String, CaseIterable, Identifiable {
         case .totalListens: String(localized: "Statistics.Overview.TotalListens", defaultValue: "Hördurchgänge")
         case .averageRating: String(localized: "Statistics.Overview.AverageRating", defaultValue: "Schnitt")
         case .favorites: String(localized: "Statistics.Overview.Favorites", defaultValue: "Favoriten")
+        case .bookmarked: String(localized: "Statistics.Overview.Bookmarked", defaultValue: "Gemerkt")
         }
     }
 
@@ -53,6 +55,7 @@ enum StatisticsOverviewKind: String, CaseIterable, Identifiable {
         case .totalListens: "ear"
         case .averageRating: "star"
         case .favorites: "heart.fill"
+        case .bookmarked: "bookmark.fill"
         }
     }
 }

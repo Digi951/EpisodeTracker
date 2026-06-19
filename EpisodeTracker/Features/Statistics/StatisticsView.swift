@@ -37,6 +37,12 @@ struct StatisticsView: View {
             )
         }
 
+        if statistics.bookmarkedCount > 0 {
+            items.append(
+                StatisticsOverviewItem(kind: .bookmarked, value: "\(statistics.bookmarkedCount)")
+            )
+        }
+
         return items
     }
 
