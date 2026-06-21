@@ -6,6 +6,36 @@ enum EpisodeSortOrder: String, CaseIterable {
     case title = "Titel A-Z"
     case rating = "Bewertung"
     case releaseYear = "Erscheinungsjahr"
+
+    var displayLocalizationKey: String {
+        switch self {
+        case .recentlyPlayed:
+            "EpisodeSortOrder.RecentlyPlayed"
+        case .number:
+            "EpisodeSortOrder.Number"
+        case .title:
+            "EpisodeSortOrder.Title"
+        case .rating:
+            "EpisodeSortOrder.Rating"
+        case .releaseYear:
+            "EpisodeSortOrder.ReleaseYear"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .recentlyPlayed:
+            String(localized: "EpisodeSortOrder.RecentlyPlayed", defaultValue: "Zuletzt gespielt")
+        case .number:
+            String(localized: "EpisodeSortOrder.Number", defaultValue: "Nummer")
+        case .title:
+            String(localized: "EpisodeSortOrder.Title", defaultValue: "Titel A-Z")
+        case .rating:
+            String(localized: "EpisodeSortOrder.Rating", defaultValue: "Bewertung")
+        case .releaseYear:
+            String(localized: "EpisodeSortOrder.ReleaseYear", defaultValue: "Erscheinungsjahr")
+        }
+    }
 }
 
 enum EpisodeStatusFilter: String, CaseIterable {
@@ -16,6 +46,44 @@ enum EpisodeStatusFilter: String, CaseIterable {
     case rated = "Bewertet"
     case noted = "Mit Notiz"
     case specials = "Sonderfolgen"
+
+    var displayLocalizationKey: String {
+        switch self {
+        case .all:
+            "EpisodeStatusFilter.All"
+        case .open:
+            "EpisodeStatusFilter.Open"
+        case .listened:
+            "EpisodeStatusFilter.Listened"
+        case .favorites:
+            "EpisodeStatusFilter.Favorites"
+        case .rated:
+            "EpisodeStatusFilter.Rated"
+        case .noted:
+            "EpisodeStatusFilter.Noted"
+        case .specials:
+            "EpisodeStatusFilter.Specials"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .all:
+            String(localized: "EpisodeStatusFilter.All", defaultValue: "Alle")
+        case .open:
+            String(localized: "EpisodeStatusFilter.Open", defaultValue: "Offen")
+        case .listened:
+            String(localized: "EpisodeStatusFilter.Listened", defaultValue: "Gehört")
+        case .favorites:
+            String(localized: "EpisodeStatusFilter.Favorites", defaultValue: "Favoriten")
+        case .rated:
+            String(localized: "EpisodeStatusFilter.Rated", defaultValue: "Bewertet")
+        case .noted:
+            String(localized: "EpisodeStatusFilter.Noted", defaultValue: "Mit Notiz")
+        case .specials:
+            String(localized: "EpisodeStatusFilter.Specials", defaultValue: "Sonderfolgen")
+        }
+    }
 }
 
 struct EpisodeListControlsState {
@@ -691,7 +759,8 @@ enum EpisodeListOrganizer {
         case .number:
             return numberRangeGroupsWithSpecials(for: episodes)
         case .title:
-            return titleGroups(for: episodes)
+            let isSingleUniverse = filterUniverse != nil || universeCount <= 1
+            return isSingleUniverse ? [] : titleGroups(for: episodes)
         case .rating:
             return ratingGroups(for: episodes)
         case .releaseYear:

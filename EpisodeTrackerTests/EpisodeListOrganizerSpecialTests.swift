@@ -72,20 +72,11 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
                        "Sonderfolge muss in der Universe-Gruppe ihrer Sammlung landen")
     }
 
-    // MARK: - Andere Sortierungen (Sonderfolgen natürlich eingruppiert)
+    // MARK: - Title sort grouping
 
-    func testTitleGroupingIncludesSpecials() {
+    func testTitleSortWithUniverseFilterProducesFlatList() {
         let universe = Universe(name: "Die drei ???")
-        var episodes = makeRegulars(12, universe: universe)
-        let special = Episode(
-            episodeNumber: 0,
-            title: "Phantomsee",
-            releaseYear: 2024,
-            kind: .special,
-            catalogSlug: "phantomsee-2024",
-            universe: universe
-        )
-        episodes.append(special)
+        let episodes = makeRegulars(15, universe: universe)
 
         let groups = EpisodeListOrganizer.groups(
             for: episodes,
@@ -94,9 +85,37 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
             universeCount: 1
         )
 
-        let pGroup = groups.first { $0.title == "P" }
-        XCTAssertNotNil(pGroup)
-        XCTAssertTrue(pGroup!.episodes.contains { $0.title == "Phantomsee" })
+        XCTAssertTrue(groups.isEmpty, "Single-universe title sort should return no groups (flat list)")
+    }
+
+    func testTitleSortWithSingleUniverseInLibraryProducesFlatList() {
+        let universe = Universe(name: "Die drei ???")
+        let episodes = makeRegulars(15, universe: universe)
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .title,
+            filterUniverse: nil,
+            universeCount: 1
+        )
+
+        XCTAssertTrue(groups.isEmpty, "Single-universe library with title sort should return no groups")
+    }
+
+    func testTitleSortWithMultipleUniversesProducesLetterGroups() {
+        let ddf = Universe(name: "Die drei ???")
+        let tkkg = Universe(name: "TKKG")
+        var episodes = makeRegulars(8, universe: ddf)
+        episodes += makeRegulars(8, universe: tkkg)
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .title,
+            filterUniverse: nil,
+            universeCount: 2
+        )
+
+        XCTAssertFalse(groups.isEmpty, "Multi-universe title sort should produce letter groups")
     }
 
     // MARK: - Sort
