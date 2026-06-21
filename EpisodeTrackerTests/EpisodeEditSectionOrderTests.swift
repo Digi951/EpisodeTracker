@@ -22,7 +22,7 @@ final class EpisodeEditSectionOrderTests: XCTestCase {
     }
 
     func testNewSectionsAppendedAtEndWhenMissingFromSaved() {
-        // cover, status und note sind gespeichert — moods und streaming fehlen
+        // Cover, status, and note are saved; moods and streaming are missing.
         let order = EpisodeEditSectionOrder.sections(from: "cover,status,note")
         XCTAssertEqual(order.prefix(3), [.cover, .status, .note])
         XCTAssertTrue(order.contains(.moods))

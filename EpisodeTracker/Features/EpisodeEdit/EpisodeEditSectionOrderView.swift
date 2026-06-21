@@ -11,11 +11,7 @@ struct EpisodeEditSectionOrderView: View {
         List {
             Section {
                 ForEach(sections) { section in
-                    HStack {
-                        Image(systemName: "line.3.horizontal")
-                            .foregroundStyle(.secondary)
-                        Text(section.displayName)
-                    }
+                    Text(section.displayName)
                 }
                 .onMove { from, to in
                     var ordered = sections

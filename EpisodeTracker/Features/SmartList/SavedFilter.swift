@@ -4,6 +4,8 @@ struct SavedFilter: Codable, Identifiable, Hashable {
     let id: UUID
     var name: String
     var statusFilterRaw: String
+    // Names are intentionally stored as values instead of SwiftData IDs so saved filters stay decoupled from models.
+    // If a universe or mood is renamed/deleted, that filter dimension may no longer match until the user updates it.
     var universeName: String?
     var moodName: String?
     var sortOrderRaw: String
@@ -30,6 +32,25 @@ struct SavedFilter: Codable, Identifiable, Hashable {
 
     var resolvedSortOrder: EpisodeSortOrder {
         EpisodeSortOrder(rawValue: sortOrderRaw) ?? .number
+    }
+
+    var summaryText: String {
+        var parts: [String] = []
+        if resolvedStatusFilter != .all {
+            parts.append(resolvedStatusFilter.displayName)
+        }
+        if let universeName {
+            parts.append(universeName)
+        }
+        if let moodName {
+            parts.append(moodName)
+        }
+        if resolvedSortOrder != .number {
+            parts.append(resolvedSortOrder.displayName)
+        }
+        return parts.isEmpty
+            ? String(localized: "SavedFilter.Summary.AllEpisodes", defaultValue: "Alle Folgen")
+            : parts.joined(separator: " · ")
     }
 }
 

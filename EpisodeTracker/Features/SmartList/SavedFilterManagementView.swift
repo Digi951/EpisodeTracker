@@ -62,7 +62,7 @@ struct SavedFilterManagementView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(filter.name)
-                Text(filterSummary(filter))
+                Text(filter.summaryText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -76,20 +76,5 @@ struct SavedFilterManagementView: View {
             }
             .buttonStyle(.borderless)
         }
-    }
-
-    private func filterSummary(_ filter: SavedFilter) -> String {
-        var parts: [String] = []
-        if filter.resolvedStatusFilter != .all {
-            parts.append(filter.resolvedStatusFilter.rawValue)
-        }
-        if let name = filter.universeName { parts.append(name) }
-        if let name = filter.moodName { parts.append(name) }
-        if filter.resolvedSortOrder != .number {
-            parts.append(filter.resolvedSortOrder.rawValue)
-        }
-        return parts.isEmpty
-            ? String(localized: "SavedFilter.Summary.AllEpisodes", defaultValue: "Alle Folgen")
-            : parts.joined(separator: " · ")
     }
 }

@@ -25,6 +25,48 @@ final class SavedFilterTests: XCTestCase {
         XCTAssertEqual(decoded.resolvedSortOrder, .rating)
     }
 
+    func testSavedFilterSummaryUsesDisplayValues() {
+        let filter = SavedFilter(
+            name: "Highlights",
+            statusFilter: .open,
+            universeName: "Die drei ???",
+            moodName: "Gruselig",
+            sortOrder: .rating
+        )
+
+        XCTAssertEqual(
+            filter.summaryText,
+            "\(EpisodeStatusFilter.open.displayName) · Die drei ??? · Gruselig · \(EpisodeSortOrder.rating.displayName)"
+        )
+    }
+
+    func testSavedFilterSummaryFallsBackToAllEpisodes() {
+        let filter = SavedFilter(name: "Alle")
+
+        XCTAssertEqual(
+            filter.summaryText,
+            String(localized: "SavedFilter.Summary.AllEpisodes", defaultValue: "Alle Folgen")
+        )
+    }
+
+    func testSavedFilterDisplayKeysAreLocalizedInGermanAndEnglish() throws {
+        let stringCatalogURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("EpisodeTracker/Localizable.xcstrings")
+        let data = try Data(contentsOf: stringCatalogURL)
+        let catalog = try JSONDecoder().decode(StringCatalog.self, from: data)
+        let expectedKeys = EpisodeStatusFilter.allCases.map(\.displayLocalizationKey)
+            + EpisodeSortOrder.allCases.map(\.displayLocalizationKey)
+            + ["SavedFilter.Summary.AllEpisodes"]
+
+        for key in expectedKeys {
+            let languages = try XCTUnwrap(catalog.strings[key]?.localizations, "Missing localization key: \(key)")
+            XCTAssertNotNil(languages["de"]?.stringUnit.value, "Missing German localization for \(key)")
+            XCTAssertNotNil(languages["en"]?.stringUnit.value, "Missing English localization for \(key)")
+        }
+    }
+
     func testInvalidStatusFilterRawValueFallsBackToAll() throws {
         let data = """
         {"id":"00000000-0000-0000-0000-000000000001","name":"Test",
@@ -79,4 +121,20 @@ final class SavedFilterTests: XCTestCase {
         XCTAssertEqual(store2.filters.first?.name, "Persistiert")
         XCTAssertEqual(store2.filters.first?.resolvedStatusFilter, .listened)
     }
+}
+
+private struct StringCatalog: Decodable {
+    let strings: [String: StringCatalogEntry]
+}
+
+private struct StringCatalogEntry: Decodable {
+    let localizations: [String: StringCatalogLocalization]?
+}
+
+private struct StringCatalogLocalization: Decodable {
+    let stringUnit: StringCatalogStringUnit
+}
+
+private struct StringCatalogStringUnit: Decodable {
+    let value: String
 }

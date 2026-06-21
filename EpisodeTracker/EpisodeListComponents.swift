@@ -8,7 +8,7 @@ struct EpisodeStatusFilterBar: View {
             HStack(spacing: 8) {
                 ForEach(EpisodeStatusFilter.allCases, id: \.self) { filter in
                     EpisodeFilterChip(
-                        label: filter.rawValue,
+                        label: filter.displayName,
                         isSelected: selection == filter
                     ) {
                         selection = filter
@@ -143,7 +143,7 @@ struct EpisodeListSortFilterMenu: View {
                 controls.sortOrder = sortOrder
             } label: {
                 EpisodeListMenuLabel(
-                    text: sortOrder.rawValue,
+                    text: sortOrder.displayName,
                     isSelected: controls.sortOrder == sortOrder
                 )
             }
@@ -181,7 +181,7 @@ struct EpisodeListSortFilterMenu: View {
                     controls.statusFilter = filter
                 } label: {
                     EpisodeListMenuLabel(
-                        text: filter.rawValue,
+                        text: filter.displayName,
                         isSelected: controls.statusFilter == filter
                     )
                 }
