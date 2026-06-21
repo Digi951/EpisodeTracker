@@ -1057,6 +1057,7 @@
       }
     },
     "CatalogUpdate.NewActiveCatalogs.Message.Many" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1073,6 +1074,7 @@
       }
     },
     "CatalogUpdate.NewActiveCatalogs.Message.One" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1089,6 +1091,7 @@
       }
     },
     "CatalogUpdate.NewActiveCatalogs.Title.Many" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1832,6 +1835,142 @@
         }
       }
     },
+    "EpisodeEdit.Section.Cover" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cover"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover"
+          }
+        }
+      }
+    },
+    "EpisodeEdit.Section.Moods" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stimmungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moods"
+          }
+        }
+      }
+    },
+    "EpisodeEdit.Section.Note" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Persönliche Notiz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal Note"
+          }
+        }
+      }
+    },
+    "EpisodeEdit.Section.Status" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Status"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        }
+      }
+    },
+    "EpisodeEdit.Section.Streaming" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Streaming-Link"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming Link"
+          }
+        }
+      }
+    },
+    "EpisodeEditSectionOrder.Footer" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zieht die Felder in die gewünschte Reihenfolge."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag the fields into your preferred order."
+          }
+        }
+      }
+    },
+    "EpisodeEditSectionOrder.Header" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Felder in der Folgenbearbeitung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fields in Episode Editing"
+          }
+        }
+      }
+    },
+    "EpisodeEditSectionOrder.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Felder-Reihenfolge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Field Order"
+          }
+        }
+      }
+    },
     "EpisodeFilter.All" : {
       "localizations" : {
         "de" : {
@@ -1896,6 +2035,108 @@
         }
       }
     },
+    "EpisodeList.Filter.Reset" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Filter zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Filter"
+          }
+        }
+      }
+    },
+    "EpisodeList.Filter.SaveAlert.Message" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Der aktuelle Filter wird als neue Liste gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The current filter will be saved as a new list."
+          }
+        }
+      }
+    },
+    "EpisodeList.Filter.SaveAlert.Placeholder" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "EpisodeList.Filter.SaveAlert.Save" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "EpisodeList.Filter.SaveAlert.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Liste speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save List"
+          }
+        }
+      }
+    },
+    "EpisodeList.Filter.SaveAsList" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Als Liste speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save as List"
+          }
+        }
+      }
+    },
     "EpisodeList.GroupSummary" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1930,6 +2171,17 @@
         }
       }
     },
+    "EpisodeList.SortAndFilter" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Sortieren und filtern"
+          }
+        }
+      }
+    },
     "EpisodeList.SpecialSection" : {
       "localizations" : {
         "de" : {
@@ -1942,6 +2194,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Specials"
+          }
+        }
+      }
+    },
+    "EpisodeSortOrder.Number" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Number"
+          }
+        }
+      }
+    },
+    "EpisodeSortOrder.Rating" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewertung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rating"
+          }
+        }
+      }
+    },
+    "EpisodeSortOrder.RecentlyPlayed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt gespielt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recently Played"
+          }
+        }
+      }
+    },
+    "EpisodeSortOrder.ReleaseYear" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erscheinungsjahr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release Year"
+          }
+        }
+      }
+    },
+    "EpisodeSortOrder.Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel A-Z"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title A-Z"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Listened" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehört"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listened"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Noted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit Notiz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With Note"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Open" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Rated" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewertet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rated"
+          }
+        }
+      }
+    },
+    "EpisodeStatusFilter.Specials" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special Episodes"
           }
         }
       }
@@ -2027,6 +2471,7 @@
       }
     },
     "Filter zurücksetzen" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2235,6 +2680,17 @@
         }
       }
     },
+    "General.Cancel" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
     "Hinzufügen" : {
       "localizations" : {
         "de" : {
@@ -2414,6 +2870,9 @@
           }
         }
       }
+    },
+    "Katalog suchen" : {
+
     },
     "Kataloge" : {
       "localizations" : {
@@ -3094,6 +3553,181 @@
         }
       }
     },
+    "SavedFilter.Action.Delete" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Löschen"
+          }
+        }
+      }
+    },
+    "SavedFilter.Action.Rename" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Umbenennen"
+          }
+        }
+      }
+    },
+    "SavedFilter.Empty.Message" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keine Folgen entsprechen den gespeicherten Filterkriterien."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No episodes match the saved filter criteria."
+          }
+        }
+      }
+    },
+    "SavedFilter.Empty.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keine Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Episodes"
+          }
+        }
+      }
+    },
+    "SavedFilter.Management.Empty.Message" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Speichere einen aktiven Filter aus der Bibliothek als Liste."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save an active filter from the library as a list."
+          }
+        }
+      }
+    },
+    "SavedFilter.Management.Empty.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keine gespeicherten Listen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Saved Lists"
+          }
+        }
+      }
+    },
+    "SavedFilter.Management.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Meine Listen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Lists"
+          }
+        }
+      }
+    },
+    "SavedFilter.Rename.Placeholder" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "SavedFilter.Rename.Save" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "SavedFilter.Rename.Title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Liste umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename List"
+          }
+        }
+      }
+    },
+    "SavedFilter.Summary.AllEpisodes" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Alle Folgen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Episodes"
+          }
+        }
+      }
+    },
     "Selection.All" : {
       "localizations" : {
         "de" : {
@@ -3143,6 +3777,23 @@
         }
       }
     },
+    "Settings.EpisodeEditOrder.Label" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Felder-Reihenfolge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Field Order"
+          }
+        }
+      }
+    },
     "Settings.Manage.CatalogsSubtitle" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3173,6 +3824,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld moods saved"
+          }
+        }
+      }
+    },
+    "Settings.SavedFilters.Label" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Meine Listen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Lists"
           }
         }
       }
@@ -3859,6 +4527,7 @@
       }
     },
     "Sortieren und filtern" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3950,6 +4619,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Average"
+          }
+        }
+      }
+    },
+    "Statistics.Overview.Bookmarked" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Gemerkt"
           }
         }
       }
@@ -4388,7 +5068,19 @@
         }
       }
     },
+    "UpNext.MyLists.Header" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Meine Listen"
+          }
+        }
+      }
+    },
     "Verfügbare Kataloge" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

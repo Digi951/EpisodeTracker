@@ -11,11 +11,27 @@ struct CatalogManagementView: View {
     @State private var catalogStatusIsError = false
     @State private var isRefreshingCatalogs = false
     @State private var activeCatalogIDs: Set<String> = []
+    @State private var searchText = ""
     private let activeCatalogStore = ActiveCatalogStore()
 
     private var predefinedCatalogSources: [ManagedCatalogSource] {
         CatalogSourceRegistry.managedSources
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    private var filteredSources: [ManagedCatalogSource] {
+        guard !searchText.isEmpty else { return predefinedCatalogSources }
+        return predefinedCatalogSources.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    private var activeSources: [ManagedCatalogSource] {
+        filteredSources.filter { activeCatalogIDs.contains($0.id) }
+    }
+
+    private var inactiveSources: [ManagedCatalogSource] {
+        filteredSources.filter { !activeCatalogIDs.contains($0.id) }
     }
 
     private var existingUniverseNameKeys: Set<String> {
@@ -33,19 +49,37 @@ struct CatalogManagementView: View {
 
     var body: some View {
         List {
+            if !activeSources.isEmpty {
+                Section {
+                    ForEach(activeSources, id: \.id) { source in
+                        CatalogToggleRow(
+                            source: source,
+                            episodeCount: episodeCount(for: source.name),
+                            isActive: true,
+                            onToggle: { newValue in toggleCatalog(source, active: newValue) }
+                        )
+                    }
+                } header: {
+                    Text(CatalogToggleRow.activeCountLabel(
+                        active: activeSources.count,
+                        total: predefinedCatalogSources.count
+                    ))
+                }
+            }
+
             Section {
-                ForEach(predefinedCatalogSources, id: \.id) { source in
+                ForEach(inactiveSources, id: \.id) { source in
                     CatalogToggleRow(
                         source: source,
                         episodeCount: episodeCount(for: source.name),
-                        isActive: activeCatalogIDs.contains(source.id),
-                        onToggle: { newValue in
-                            toggleCatalog(source, active: newValue)
-                        }
+                        isActive: false,
+                        onToggle: { newValue in toggleCatalog(source, active: newValue) }
                     )
                 }
             } header: {
-                Text("Verfügbare Kataloge")
+                Text(activeSources.isEmpty
+                     ? CatalogToggleRow.activeCountLabel(active: 0, total: predefinedCatalogSources.count)
+                     : "Verfügbar")
             } footer: {
                 Text("Aktivierte Kataloge werden automatisch aktualisiert und liefern Titelvorschläge beim Hinzufügen neuer Folgen.")
             }
@@ -128,6 +162,7 @@ struct CatalogManagementView: View {
             }
         }
         .navigationTitle("Kataloge")
+        .searchable(text: $searchText, prompt: "Katalog suchen")
         .onAppear {
             activeCatalogIDs = activeCatalogStore.activeIDs
         }
@@ -210,19 +245,27 @@ struct CatalogToggleRow: View {
     let isActive: Bool
     let onToggle: (Bool) -> Void
 
+    static func catalogSubtitle(episodeCount: Int, titleCount: Int?) -> String {
+        guard let titleCount else { return "Nicht geladen" }
+        if episodeCount == 1 {
+            return "1 Folge · \(titleCount) Titel"
+        } else if episodeCount > 1 {
+            return "\(episodeCount) Folgen · \(titleCount) Titel"
+        } else {
+            return "\(titleCount) Titel"
+        }
+    }
+
+    static func activeCountLabel(active: Int, total: Int) -> String {
+        "\(active) von \(total) aktiv"
+    }
+
     private var subtitle: String {
         let store = CatalogCacheStore()
         let titleCount = store.loadRemoteCatalogStatus(
             universeName: source.name, cacheKey: source.id
         ).cachedEntryCount
-
-        if episodeCount > 0, let titleCount {
-            return "\(episodeCount) Folgen · \(titleCount) Titel"
-        } else if let titleCount {
-            return "\(titleCount) Titel verfügbar"
-        } else {
-            return "Nicht geladen"
-        }
+        return CatalogToggleRow.catalogSubtitle(episodeCount: episodeCount, titleCount: titleCount)
     }
 
     var body: some View {
