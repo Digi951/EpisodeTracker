@@ -123,6 +123,10 @@ struct SettingsView: View {
             if let storeRecovery = AppModelContainerFactory.lastStoreRecovery() {
                 SettingsStoreRecoverySection(record: storeRecovery)
             }
+
+#if DEBUG
+            SettingsDemoSection()
+#endif
         }
         .navigationTitle("Einstellungen")
         .tint(AppAccentColor.resolved(from: appAccentColorRawValue).color)
@@ -1150,3 +1154,19 @@ private extension Bundle {
         return "\(version) (\(build))"
     }
 }
+
+#if DEBUG
+private struct SettingsDemoSection: View {
+    @AppStorage("isDemoModeActive") private var isDemoModeActive = false
+
+    var body: some View {
+        Section {
+            Toggle("Demo-Modus", isOn: $isDemoModeActive)
+        } header: {
+            Text("Entwicklung")
+        } footer: {
+            Text("Demo-Modus füllt die App mit fiktiven Hörspieldaten. Tritt nach dem nächsten App-Start in Kraft. Echte Daten bleiben unberührt.")
+        }
+    }
+}
+#endif
