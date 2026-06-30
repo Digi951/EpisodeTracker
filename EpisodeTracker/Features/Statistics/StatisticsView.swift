@@ -136,7 +136,8 @@ struct StatisticsView: View {
                     topRated: statistics.topRated,
                     moodDistribution: statistics.moodDistribution,
                     moodSummaryText: moodSummaryText,
-                    heroEpisode: statistics.heroEpisode
+                    heroEpisode: statistics.heroEpisode,
+                    ratingDistribution: statistics.ratingDistribution
                 )
             }
         }
@@ -158,7 +159,8 @@ struct StatisticsView: View {
                         topRated: statistics.topRated,
                         moodDistribution: statistics.moodDistribution,
                         moodSummaryText: moodSummaryText,
-                        heroEpisode: statistics.heroEpisode
+                        heroEpisode: statistics.heroEpisode,
+                        ratingDistribution: statistics.ratingDistribution
                     )
                     .frame(maxWidth: layout.contentWidth, alignment: .leading)
                     .padding(.horizontal, layout.horizontalPadding)

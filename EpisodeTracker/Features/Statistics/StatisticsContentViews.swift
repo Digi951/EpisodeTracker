@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct StatisticsPhoneContent: View {
     let visibleSections: [StatisticsSectionKind]
@@ -7,6 +8,7 @@ struct StatisticsPhoneContent: View {
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
     let heroEpisode: Episode?
+    let ratingDistribution: [(rating: Int, count: Int)]
 
     var body: some View {
         if let hero = heroEpisode {
@@ -26,7 +28,9 @@ struct StatisticsPhoneContent: View {
                     moodSummaryText: moodSummaryText
                 )
             case .chart:
-                EmptyView()
+                if ratingDistribution.contains(where: { $0.count > 0 }) {
+                    StatisticsRatingChartSection(distribution: ratingDistribution)
+                }
             }
         }
     }
@@ -40,6 +44,7 @@ struct StatisticsPadContent: View {
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
     let heroEpisode: Episode?
+    let ratingDistribution: [(rating: Int, count: Int)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -68,7 +73,9 @@ struct StatisticsPadContent: View {
                         moodSummaryText: moodSummaryText
                     )
                 case .chart:
-                    EmptyView()
+                    if ratingDistribution.contains(where: { $0.count > 0 }) {
+                        StatisticsRatingChartSection(distribution: ratingDistribution)
+                    }
                 }
             }
         }
@@ -419,5 +426,32 @@ private struct StatCard: View {
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// MARK: - StatisticsRatingChartSection
+
+struct StatisticsRatingChartSection: View {
+    let distribution: [(rating: Int, count: Int)]
+
+    var body: some View {
+        Section(StatisticsSectionKind.chart.title) {
+            Chart(distribution, id: \.rating) { item in
+                BarMark(
+                    x: .value("Sterne", "\(item.rating) ★"),
+                    y: .value("Folgen", item.count)
+                )
+                .foregroundStyle(
+                    item.count == 0
+                        ? Color.yellow.opacity(0.25).gradient
+                        : Color.yellow.gradient
+                )
+                .cornerRadius(4)
+            }
+            .frame(height: 140)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
     }
 }
