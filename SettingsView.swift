@@ -71,10 +71,17 @@ struct SettingsView: View {
         List {
             SettingsLibrarySection(
                 libraryTitle: $libraryTitle,
-                appearanceModeRawValue: $appearanceModeRawValue,
-                appAccentColorRawValue: $appAccentColorRawValue,
                 showsLibrarySnapshot: $showsLibrarySnapshot,
                 prefersCatalogProgressTotals: $prefersCatalogProgressTotals
+            )
+            SettingsPersonalizationSection(
+                appearanceModeRawValue: $appearanceModeRawValue,
+                appAccentColorRawValue: $appAccentColorRawValue,
+                selectedIconName: selectedAppIconName,
+                statusMessage: appIconStatusMessage,
+                statusIsError: appIconStatusIsError,
+                isChangingIcon: isChangingAppIcon,
+                onSelectIcon: changeAppIcon
             )
             SettingsManagementSection(
                 activeCatalogCount: activeCatalogCount,
@@ -83,13 +90,6 @@ struct SettingsView: View {
             )
             SettingsSavedFilterSection()
             SettingsEpisodeEditOrderSection()
-            SettingsAppIconNavigationSection(
-                selectedIconName: selectedAppIconName,
-                statusMessage: appIconStatusMessage,
-                statusIsError: appIconStatusIsError,
-                isChangingIcon: isChangingAppIcon,
-                onSelect: changeAppIcon
-            )
             SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsBackupSection(
                 episodeCount: episodes.count,
@@ -447,43 +447,65 @@ struct SettingsView: View {
 
 private struct SettingsLibrarySection: View {
     @Binding var libraryTitle: String
-    @Binding var appearanceModeRawValue: String
-    @Binding var appAccentColorRawValue: String
     @Binding var showsLibrarySnapshot: Bool
     @Binding var prefersCatalogProgressTotals: Bool
-
-    private var appAccentColor: Color {
-        AppAccentColor.resolved(from: appAccentColorRawValue).color
-    }
-
-    private var appearanceMode: AppearanceMode {
-        AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
-    }
 
     var body: some View {
         Section {
             TextField("Sammlungsname", text: $libraryTitle)
-            SettingsMenuSelectionRow(
-                title: "Design",
-                valueSystemImage: appearanceMode.iconName,
-                value: appearanceMode.title,
-                accentColor: appAccentColor
-            ) {
-                ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                    Button {
-                        appearanceModeRawValue = mode.rawValue
-                    } label: {
-                        Label(mode.title, systemImage: mode.iconName)
-                    }
-                }
-            }
-            AccentColorPickerRow(selection: $appAccentColorRawValue)
             Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
             Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
         } header: {
             Text("Mediathek")
         } footer: {
             Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
+        }
+    }
+}
+
+private struct SettingsPersonalizationSection: View {
+    @Binding var appearanceModeRawValue: String
+    @Binding var appAccentColorRawValue: String
+    let selectedIconName: String?
+    let statusMessage: String?
+    let statusIsError: Bool
+    let isChangingIcon: Bool
+    let onSelectIcon: (AppIconChoice) -> Void
+
+    private var appearanceMode: AppearanceMode {
+        AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
+    }
+
+    var body: some View {
+        Section("Darstellung") {
+            AccentColorPickerRow(selection: $appAccentColorRawValue)
+
+            Picker("Erscheinungsbild", selection: $appearanceModeRawValue) {
+                ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                    Text(mode.title).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+
+#if canImport(UIKit)
+            if UIApplication.shared.supportsAlternateIcons {
+                NavigationLink {
+                    SettingsAppIconSelectionView(
+                        selectedIconName: selectedIconName,
+                        statusMessage: statusMessage,
+                        statusIsError: statusIsError,
+                        isChangingIcon: isChangingIcon,
+                        onSelect: onSelectIcon
+                    )
+                } label: {
+                    SettingsNavigationRow(
+                        title: "App-Icon",
+                        subtitle: AppIconChoice.resolved(from: selectedIconName).title,
+                        systemImage: "app"
+                    )
+                }
+            }
+#endif
         }
     }
 }
@@ -590,33 +612,6 @@ private enum AppIconChoice: String, CaseIterable, Identifiable {
     }
 }
 
-private struct SettingsAppIconNavigationSection: View {
-    let selectedIconName: String?
-    let statusMessage: String?
-    let statusIsError: Bool
-    let isChangingIcon: Bool
-    let onSelect: (AppIconChoice) -> Void
-
-    var body: some View {
-        Section {
-            NavigationLink {
-                SettingsAppIconSelectionView(
-                    selectedIconName: selectedIconName,
-                    statusMessage: statusMessage,
-                    statusIsError: statusIsError,
-                    isChangingIcon: isChangingIcon,
-                    onSelect: onSelect
-                )
-            } label: {
-                SettingsNavigationRow(
-                    title: "App-Icon",
-                    subtitle: AppIconChoice.resolved(from: selectedIconName).title,
-                    systemImage: "app"
-                )
-            }
-        }
-    }
-}
 
 private struct SettingsAppIconSelectionView: View {
     let selectedIconName: String?
