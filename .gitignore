@@ -65,3 +65,6 @@ AuthKey_*.p8
 .claude/
 .superpowers/
 docs/superpowers/
+
+# ===== Git worktrees =====
+.worktrees/
