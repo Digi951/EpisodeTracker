@@ -88,8 +88,7 @@ struct SettingsView: View {
                 managedCatalogCount: managedCatalogCount,
                 moodCount: moods.count
             )
-            SettingsSavedFilterSection()
-            SettingsEpisodeEditOrderSection()
+            SettingsCustomizationSection()
             SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsBackupSection(
                 episodeCount: episodes.count,
@@ -934,9 +933,9 @@ private struct SettingsStoreRecoverySection: View {
     }
 }
 
-private struct SettingsSavedFilterSection: View {
+private struct SettingsCustomizationSection: View {
     var body: some View {
-        Section {
+        Section("Anpassen") {
             NavigationLink {
                 SavedFilterManagementView()
             } label: {
@@ -946,13 +945,6 @@ private struct SettingsSavedFilterSection: View {
                     systemImage: "line.3.horizontal.decrease.circle.fill"
                 )
             }
-        }
-    }
-}
-
-private struct SettingsEpisodeEditOrderSection: View {
-    var body: some View {
-        Section {
             NavigationLink {
                 EpisodeEditSectionOrderView()
             } label: {
