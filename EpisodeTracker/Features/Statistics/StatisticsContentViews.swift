@@ -6,8 +6,12 @@ struct StatisticsPhoneContent: View {
     let topRated: [Episode]
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
+    let heroEpisode: Episode?
 
     var body: some View {
+        if let hero = heroEpisode {
+            StatisticsHeroCard(episode: hero)
+        }
         ForEach(visibleSections) { section in
             switch section {
             case .overview:
@@ -35,10 +39,15 @@ struct StatisticsPadContent: View {
     let topRated: [Episode]
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
+    let heroEpisode: Episode?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             StatisticsHeader()
+
+            if let hero = heroEpisode {
+                StatisticsHeroCard(episode: hero)
+            }
 
             ForEach(visibleSections) { section in
                 switch section {
@@ -334,6 +343,49 @@ private struct MoodStatisticsDetailView: View {
             }
         }
         .navigationTitle(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"))
+    }
+}
+
+// MARK: - StatisticsHeroCard
+
+struct StatisticsHeroCard: View {
+    let episode: Episode
+
+    private var universeName: String {
+        AppLocalization.displayName(forUniverseName: episode.universe?.name)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Top-Hörspiel")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tint.opacity(0.8))
+            Text(episode.title)
+                .font(.headline)
+                .lineLimit(2)
+            HStack(spacing: 6) {
+                Text(universeName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if let rating = episode.rating {
+                    Text("· \(rating) ⭐")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if episode.listenCount > 1 {
+                    Text("· \(episode.listenCount)× gehört")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 }
 
