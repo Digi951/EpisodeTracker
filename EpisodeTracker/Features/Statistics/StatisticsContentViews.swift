@@ -11,7 +11,9 @@ struct StatisticsPhoneContent: View {
         ForEach(visibleSections) { section in
             switch section {
             case .overview:
-                StatisticsOverviewSection(stats: visibleOverviewStats)
+                Section(StatisticsSectionKind.overview.title) {
+                    StatCardGrid(stats: visibleOverviewStats)
+                }
             case .topRated:
                 StatisticsTopRatedSection(topRated: topRated)
             case .moods:
@@ -19,6 +21,8 @@ struct StatisticsPhoneContent: View {
                     moodDistribution: moodDistribution,
                     moodSummaryText: moodSummaryText
                 )
+            case .chart:
+                EmptyView()
             }
         }
     }
@@ -54,6 +58,8 @@ struct StatisticsPadContent: View {
                         moodDistribution: moodDistribution,
                         moodSummaryText: moodSummaryText
                     )
+                case .chart:
+                    EmptyView()
                 }
             }
         }
@@ -328,5 +334,38 @@ private struct MoodStatisticsDetailView: View {
             }
         }
         .navigationTitle(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"))
+    }
+}
+
+// MARK: - StatCardGrid
+
+struct StatCardGrid: View {
+    let stats: [StatisticsOverviewItem]
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            ForEach(stats) { stat in
+                StatCard(stat: stat)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+}
+
+private struct StatCard: View {
+    let stat: StatisticsOverviewItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(stat.kind.emoji).font(.title2)
+            Text(stat.value).font(.title2.weight(.bold)).monospacedDigit()
+            Text(stat.kind.title).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
