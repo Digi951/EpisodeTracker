@@ -8,6 +8,8 @@ struct StatisticsSnapshot {
     let averageRating: Double?
     let totalListens: Int
     let topRated: [Episode]
+    let heroEpisode: Episode?
+    let ratingDistribution: [(rating: Int, count: Int)]
     let moodDistribution: [(Mood, Int)]
 
     init(episodes: [Episode]) {
@@ -42,6 +44,20 @@ struct StatisticsSnapshot {
             }
             .prefix(5)
             .map { $0 }
+
+        heroEpisode = episodes
+            .filter { $0.rating != nil && $0.isListened }
+            .sorted {
+                let lr = $0.rating ?? 0, rr = $1.rating ?? 0
+                if lr != rr { return lr > rr }
+                return $0.listenCount > $1.listenCount
+            }
+            .first
+
+        var ratingCounts: [Int: Int] = [:]
+        for r in 1...5 { ratingCounts[r] = 0 }
+        for r in episodes.compactMap(\.rating) { ratingCounts[r, default: 0] += 1 }
+        ratingDistribution = (1...5).map { (rating: $0, count: ratingCounts[$0] ?? 0) }
 
         var moodCounts: [String: (mood: Mood, count: Int)] = [:]
         for episode in episodes {

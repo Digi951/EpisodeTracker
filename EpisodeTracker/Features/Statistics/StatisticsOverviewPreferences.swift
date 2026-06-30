@@ -4,6 +4,7 @@ enum StatisticsSectionKind: String, CaseIterable, Identifiable {
     case overview
     case topRated
     case moods
+    case chart
 
     var id: String { rawValue }
 
@@ -12,6 +13,7 @@ enum StatisticsSectionKind: String, CaseIterable, Identifiable {
         case .overview: String(localized: "Statistics.Section.Overview", defaultValue: "Übersicht")
         case .topRated: String(localized: "Statistics.Section.TopRated", defaultValue: "Beste Bewertungen")
         case .moods: String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen")
+        case .chart: String(localized: "Statistics.Section.Chart", defaultValue: "Bewertungen")
         }
     }
 
@@ -20,6 +22,7 @@ enum StatisticsSectionKind: String, CaseIterable, Identifiable {
         case .overview: "rectangle.grid.2x2"
         case .topRated: "star"
         case .moods: "tag"
+        case .chart: "chart.bar"
         }
     }
 }
@@ -56,6 +59,18 @@ enum StatisticsOverviewKind: String, CaseIterable, Identifiable {
         case .averageRating: "star"
         case .favorites: "heart.fill"
         case .bookmarked: "bookmark.fill"
+        }
+    }
+
+    var emoji: String {
+        switch self {
+        case .episodes:      "🎧"
+        case .listened:      "✅"
+        case .open:          "⏳"
+        case .totalListens:  "🔄"
+        case .averageRating: "⭐"
+        case .favorites:     "❤️"
+        case .bookmarked:    "🔖"
         }
     }
 }

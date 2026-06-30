@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct StatisticsPhoneContent: View {
     let visibleSections: [StatisticsSectionKind]
@@ -6,12 +7,19 @@ struct StatisticsPhoneContent: View {
     let topRated: [Episode]
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
+    let heroEpisode: Episode?
+    let ratingDistribution: [(rating: Int, count: Int)]
 
     var body: some View {
+        if let hero = heroEpisode {
+            StatisticsHeroCard(episode: hero)
+        }
         ForEach(visibleSections) { section in
             switch section {
             case .overview:
-                StatisticsOverviewSection(stats: visibleOverviewStats)
+                Section(StatisticsSectionKind.overview.title) {
+                    StatCardGrid(stats: visibleOverviewStats)
+                }
             case .topRated:
                 StatisticsTopRatedSection(topRated: topRated)
             case .moods:
@@ -19,6 +27,10 @@ struct StatisticsPhoneContent: View {
                     moodDistribution: moodDistribution,
                     moodSummaryText: moodSummaryText
                 )
+            case .chart:
+                if ratingDistribution.contains(where: { $0.count > 0 }) {
+                    StatisticsRatingChartSection(distribution: ratingDistribution)
+                }
             }
         }
     }
@@ -31,10 +43,16 @@ struct StatisticsPadContent: View {
     let topRated: [Episode]
     let moodDistribution: [(Mood, Int)]
     let moodSummaryText: String
+    let heroEpisode: Episode?
+    let ratingDistribution: [(rating: Int, count: Int)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             StatisticsHeader()
+
+            if let hero = heroEpisode {
+                StatisticsHeroCard(episode: hero)
+            }
 
             ForEach(visibleSections) { section in
                 switch section {
@@ -54,6 +72,10 @@ struct StatisticsPadContent: View {
                         moodDistribution: moodDistribution,
                         moodSummaryText: moodSummaryText
                     )
+                case .chart:
+                    if ratingDistribution.contains(where: { $0.count > 0 }) {
+                        StatisticsRatingChartSection(distribution: ratingDistribution)
+                    }
                 }
             }
         }
@@ -328,5 +350,108 @@ private struct MoodStatisticsDetailView: View {
             }
         }
         .navigationTitle(String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen"))
+    }
+}
+
+// MARK: - StatisticsHeroCard
+
+struct StatisticsHeroCard: View {
+    let episode: Episode
+
+    private var universeName: String {
+        AppLocalization.displayName(forUniverseName: episode.universe?.name)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Top-Hörspiel")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tint.opacity(0.8))
+            Text(episode.title)
+                .font(.headline)
+                .lineLimit(2)
+            HStack(spacing: 6) {
+                Text(universeName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if let rating = episode.rating {
+                    Text("· \(rating) ⭐")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if episode.listenCount > 1 {
+                    Text("· \(episode.listenCount)× gehört")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+}
+
+// MARK: - StatCardGrid
+
+struct StatCardGrid: View {
+    let stats: [StatisticsOverviewItem]
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            ForEach(stats) { stat in
+                StatCard(stat: stat)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+}
+
+private struct StatCard: View {
+    let stat: StatisticsOverviewItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(stat.kind.emoji).font(.title2)
+            Text(stat.value).font(.title2.weight(.bold)).monospacedDigit()
+            Text(stat.kind.title).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// MARK: - StatisticsRatingChartSection
+
+struct StatisticsRatingChartSection: View {
+    let distribution: [(rating: Int, count: Int)]
+
+    var body: some View {
+        Section(StatisticsSectionKind.chart.title) {
+            Chart(distribution, id: \.rating) { item in
+                BarMark(
+                    x: .value("Sterne", "\(item.rating) ★"),
+                    y: .value("Folgen", item.count)
+                )
+                .foregroundStyle(
+                    item.count == 0
+                        ? Color.yellow.opacity(0.25).gradient
+                        : Color.yellow.gradient
+                )
+                .cornerRadius(4)
+            }
+            .frame(height: 140)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
     }
 }

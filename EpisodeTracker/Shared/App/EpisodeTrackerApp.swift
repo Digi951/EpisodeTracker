@@ -16,6 +16,17 @@ struct EpisodeTrackerApp: App {
     }
 
     init() {
+#if DEBUG
+        if UserDefaults.standard.bool(forKey: DemoDataProvider.userDefaultsKey) {
+            let demoSet = DemoDataProvider.makeContainerSet()
+            self.containerSet = demoSet
+            _syncCoordinator = State(wrappedValue: SyncCoordinator(
+                container: demoSet.primary,
+                isEnabled: false
+            ))
+            return
+        }
+#endif
         let containerSet = AppModelContainerFactory.makeSharedContainerSet()
         self.containerSet = containerSet
         _syncCoordinator = State(wrappedValue: SyncCoordinator(
