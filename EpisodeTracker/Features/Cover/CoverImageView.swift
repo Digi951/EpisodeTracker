@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CoverImageView: View {
     let name: String
+    var updatedAt: Date? = nil
     var maxHeight: CGFloat = 200
     @State private var image: UIImage?
 
@@ -9,11 +10,13 @@ struct CoverImageView: View {
         if let image {
             coverImage(image)
                 .onChange(of: name) { _, newName in loadImage(named: newName) }
+                .onChange(of: updatedAt) { _, _ in self.image = nil }
         } else {
             Color.clear
                 .frame(width: 0, height: 0)
                 .onAppear { loadImage(named: name) }
                 .onChange(of: name) { _, newName in loadImage(named: newName) }
+                .onChange(of: updatedAt) { _, _ in loadImage(named: name) }
         }
     }
 
@@ -32,6 +35,7 @@ struct CoverImageView: View {
 
 struct CoverImageThumbnailView: View {
     let name: String
+    var updatedAt: Date? = nil
     var size: CGFloat = 44
     @State private var image: UIImage?
 
@@ -39,11 +43,13 @@ struct CoverImageThumbnailView: View {
         if let image {
             thumbnail(image)
                 .onChange(of: name) { _, newName in loadImage(named: newName) }
+                .onChange(of: updatedAt) { _, _ in self.image = nil }
         } else {
             Color.clear
                 .frame(width: 0, height: 0)
                 .onAppear { loadImage(named: name) }
                 .onChange(of: name) { _, newName in loadImage(named: newName) }
+                .onChange(of: updatedAt) { _, _ in loadImage(named: name) }
         }
     }
 

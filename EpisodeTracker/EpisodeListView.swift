@@ -681,7 +681,7 @@ struct EpisodeRowView: View {
             }
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
-                CoverImageThumbnailView(name: coverName)
+                CoverImageThumbnailView(name: coverName, updatedAt: episode.coverUpdatedAt)
             } else if anyEpisodeHasCover {
                 Text(collectionInitial)
                     .font(.headline.weight(.semibold))

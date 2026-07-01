@@ -49,6 +49,7 @@ final class WidgetSnapshotCoordinator {
                 episode.kindRaw,
                 rating,
                 listenedAt,
+                episode.coverImageName ?? "",
             ].joined(separator: "|")
         }
         .joined(separator: "\n")

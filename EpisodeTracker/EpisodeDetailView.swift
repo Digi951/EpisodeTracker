@@ -112,7 +112,7 @@ struct EpisodeDetailView: View {
     // MARK: - Hero cover
 
     private func heroCover(coverName: String) -> some View {
-        CoverImageView(name: coverName, maxHeight: coverMaxHeight)
+        CoverImageView(name: coverName, updatedAt: episode.coverUpdatedAt, maxHeight: coverMaxHeight)
             .frame(maxWidth: .infinity)
     }
 

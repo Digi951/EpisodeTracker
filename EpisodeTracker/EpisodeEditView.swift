@@ -812,6 +812,7 @@ private struct EpisodeStreamingSection: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .foregroundStyle(streamingURL.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tint))
         }
     }
 }

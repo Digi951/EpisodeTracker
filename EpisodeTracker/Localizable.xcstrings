@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "· %lld ⭐" : {
+
+    },
+    "· %lld× gehört" : {
+
+    },
     "%@ · %@" : {
       "localizations" : {
         "de" : {
@@ -272,6 +278,9 @@
           }
         }
       }
+    },
+    "Anpassen" : {
+
     },
     "App-Icon" : {
 
@@ -1456,6 +1465,9 @@
         }
       }
     },
+    "Darstellung" : {
+
+    },
     "Darstellung zurücksetzen" : {
       "localizations" : {
         "de" : {
@@ -2405,6 +2417,9 @@
           }
         }
       }
+    },
+    "Erscheinungsbild" : {
+
     },
     "Erscheinungsjahr" : {
       "localizations" : {
@@ -4715,6 +4730,17 @@
         }
       }
     },
+    "Statistics.Section.Chart" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bewertungen"
+          }
+        }
+      }
+    },
     "Statistics.Section.Moods" : {
       "localizations" : {
         "de" : {
@@ -4843,6 +4869,9 @@
         }
       }
     },
+    "Sterne" : {
+
+    },
     "Stimmungen" : {
       "localizations" : {
         "de" : {
@@ -4954,6 +4983,9 @@
           }
         }
       }
+    },
+    "Top-Hörspiel" : {
+
     },
     "Über" : {
       "localizations" : {
