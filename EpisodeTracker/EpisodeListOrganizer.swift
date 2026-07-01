@@ -7,6 +7,16 @@ enum EpisodeSortOrder: String, CaseIterable {
     case rating = "Bewertung"
     case releaseYear = "Erscheinungsjahr"
 
+    var localizationKey: String {
+        switch self {
+        case .recentlyPlayed: "EpisodeSortOrder.RecentlyPlayed"
+        case .number: "EpisodeSortOrder.Number"
+        case .title: "EpisodeSortOrder.Title"
+        case .rating: "EpisodeSortOrder.Rating"
+        case .releaseYear: "EpisodeSortOrder.ReleaseYear"
+        }
+    }
+
     var displayName: String {
         switch self {
         case .recentlyPlayed:
@@ -31,6 +41,18 @@ enum EpisodeStatusFilter: String, CaseIterable {
     case rated = "Bewertet"
     case noted = "Mit Notiz"
     case specials = "Sonderfolgen"
+
+    var localizationKey: String {
+        switch self {
+        case .all: "EpisodeStatusFilter.All"
+        case .open: "EpisodeStatusFilter.Open"
+        case .listened: "EpisodeStatusFilter.Listened"
+        case .favorites: "EpisodeStatusFilter.Favorites"
+        case .rated: "EpisodeStatusFilter.Rated"
+        case .noted: "EpisodeStatusFilter.Noted"
+        case .specials: "EpisodeStatusFilter.Specials"
+        }
+    }
 
     var displayName: String {
         switch self {

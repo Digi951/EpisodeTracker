@@ -56,8 +56,8 @@ final class SavedFilterTests: XCTestCase {
             .appendingPathComponent("EpisodeTracker/Localizable.xcstrings")
         let data = try Data(contentsOf: stringCatalogURL)
         let catalog = try JSONDecoder().decode(StringCatalog.self, from: data)
-        let expectedKeys = EpisodeStatusFilter.allCases.map(\.displayLocalizationKey)
-            + EpisodeSortOrder.allCases.map(\.displayLocalizationKey)
+        let expectedKeys = EpisodeStatusFilter.allCases.map(\.localizationKey)
+            + EpisodeSortOrder.allCases.map(\.localizationKey)
             + ["SavedFilter.Summary.AllEpisodes"]
 
         for key in expectedKeys {
