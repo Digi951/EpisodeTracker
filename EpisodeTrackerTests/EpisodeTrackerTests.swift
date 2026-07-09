@@ -259,6 +259,7 @@ final class EpisodeTrackerTests: XCTestCase {
 
     func testContainerModeProvidesDebugTitles() {
         XCTAssertEqual(AppModelContainerMode.previewInMemory.debugTitle, "Preview (In-Memory)")
+        XCTAssertEqual(AppModelContainerMode.demo.debugTitle, "Demo")
         XCTAssertEqual(AppModelContainerMode.localPersistent.debugTitle, "Lokal")
         XCTAssertEqual(
             AppModelContainerMode.cloudPersistent(containerIdentifier: "iCloud.example").debugTitle,
@@ -2365,6 +2366,34 @@ final class EpisodeTrackerTests: XCTestCase {
             defaults.string(forKey: AppDataBootstrapper.automaticCloudMigrationStatusKey),
             "Automatische Cloud-Migration übersprungen: lokaler Container ist nicht verfügbar."
         )
+    }
+
+    @MainActor
+    func testBootstrapSkipsRealStateMutationsInDemoMode() async throws {
+        let container = try makeInMemoryContainer()
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defaults.set(0, forKey: AppDataBootstrapper.schemaVersionKey)
+
+        let report = await AppDataBootstrapper.bootstrap(
+            containerSet: AppModelContainerSet(
+                primary: container,
+                localPersistent: nil,
+                cloudPersistent: nil,
+                runtimeMode: .demo
+            ),
+            userDefaults: defaults
+        )
+
+        // Demo mode must not bump the real schema version, seed collections/moods,
+        // or repair covers — it runs on a throwaway container, not the user's data.
+        XCTAssertEqual(defaults.integer(forKey: AppDataBootstrapper.schemaVersionKey), 0)
+        XCTAssertEqual(report.seededMoods, false)
+        XCTAssertEqual(report.seededCollections, false)
+        XCTAssertEqual(report.removedOrphanCovers, 0)
+
+        let universes = try container.mainContext.fetch(FetchDescriptor<Universe>())
+        XCTAssertTrue(universes.isEmpty)
     }
 
     @MainActor

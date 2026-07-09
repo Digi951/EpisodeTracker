@@ -10,11 +10,7 @@ struct StatisticsView: View {
     @Query private var episodes: [Episode]
     @State private var showingCustomization = false
 
-    private var statistics: StatisticsSnapshot {
-        StatisticsSnapshot(episodes: episodes)
-    }
-
-    private var availableOverviewItems: [StatisticsOverviewItem] {
+    private func availableOverviewItems(statistics: StatisticsSnapshot) -> [StatisticsOverviewItem] {
         var items = [
             StatisticsOverviewItem(kind: .episodes, value: "\(episodes.count)"),
             StatisticsOverviewItem(kind: .listened, value: "\(statistics.listenedCount)"),
@@ -46,18 +42,15 @@ struct StatisticsView: View {
         return items
     }
 
-    private var overviewOrder: [StatisticsOverviewKind] {
-        StatisticsOverviewPreferences.orderedItems(
-            from: overviewOrderRaw,
-            availableKinds: Set(availableOverviewItems.map(\.kind))
-        )
-    }
-
-    private var hiddenOverviewItems: Set<StatisticsOverviewKind> {
-        StatisticsOverviewPreferences.hiddenItems(
-            from: hiddenOverviewItemsRaw,
-            availableKinds: Set(availableOverviewItems.map(\.kind))
-        )
+    private func visibleOverviewStats(availableItems: [StatisticsOverviewItem]) -> [StatisticsOverviewItem] {
+        let availableKinds = Set(availableItems.map(\.kind))
+        let order = StatisticsOverviewPreferences.orderedItems(from: overviewOrderRaw, availableKinds: availableKinds)
+        let hidden = StatisticsOverviewPreferences.hiddenItems(from: hiddenOverviewItemsRaw, availableKinds: availableKinds)
+        let byKind = Dictionary(uniqueKeysWithValues: availableItems.map { ($0.kind, $0) })
+        return order.compactMap { kind in
+            guard !hidden.contains(kind) else { return nil }
+            return byKind[kind]
+        }
     }
 
     private var sectionOrder: [StatisticsSectionKind] {
@@ -72,15 +65,7 @@ struct StatisticsView: View {
         sectionOrder.filter { !hiddenSections.contains($0) }
     }
 
-    private var visibleOverviewStats: [StatisticsOverviewItem] {
-        let byKind = Dictionary(uniqueKeysWithValues: availableOverviewItems.map { ($0.kind, $0) })
-        return overviewOrder.compactMap { kind in
-            guard !hiddenOverviewItems.contains(kind) else { return nil }
-            return byKind[kind]
-        }
-    }
-
-    private var moodSummaryText: String {
+    private func moodSummaryText(statistics: StatisticsSnapshot) -> String {
         guard !statistics.moodDistribution.isEmpty else {
             return String(
                 localized: "Noch keine Stimmungen in deiner Bibliothek",
@@ -95,11 +80,14 @@ struct StatisticsView: View {
     }
 
     var body: some View {
+        let statistics = StatisticsSnapshot(episodes: episodes)
+        let availableItems = availableOverviewItems(statistics: statistics)
+
         Group {
             if horizontalSizeClass == .regular {
-                iPadBody
+                iPadBody(statistics: statistics, availableItems: availableItems)
             } else {
-                iPhoneBody
+                iPhoneBody(statistics: statistics, availableItems: availableItems)
             }
         }
         .navigationTitle("Statistiken")
@@ -120,22 +108,22 @@ struct StatisticsView: View {
                 hiddenSectionsRaw: $hiddenSectionsRaw,
                 overviewOrderRaw: $overviewOrderRaw,
                 hiddenOverviewItemsRaw: $hiddenOverviewItemsRaw,
-                items: availableOverviewItems
+                items: availableItems
             )
         }
     }
 
-    private var iPhoneBody: some View {
+    private func iPhoneBody(statistics: StatisticsSnapshot, availableItems: [StatisticsOverviewItem]) -> some View {
         List {
             if episodes.isEmpty {
                 StatisticsEmptyState()
             } else {
                 StatisticsPhoneContent(
                     visibleSections: visibleSections,
-                    visibleOverviewStats: visibleOverviewStats,
+                    visibleOverviewStats: visibleOverviewStats(availableItems: availableItems),
                     topRated: statistics.topRated,
                     moodDistribution: statistics.moodDistribution,
-                    moodSummaryText: moodSummaryText,
+                    moodSummaryText: moodSummaryText(statistics: statistics),
                     heroEpisode: statistics.heroEpisode,
                     ratingDistribution: statistics.ratingDistribution
                 )
@@ -143,7 +131,7 @@ struct StatisticsView: View {
         }
     }
 
-    private var iPadBody: some View {
+    private func iPadBody(statistics: StatisticsSnapshot, availableItems: [StatisticsOverviewItem]) -> some View {
         GeometryReader { geometry in
             let layout = StatisticsRegularLayout(containerWidth: geometry.size.width)
 
@@ -155,10 +143,10 @@ struct StatisticsView: View {
                     StatisticsPadContent(
                         layout: layout,
                         visibleSections: visibleSections,
-                        visibleOverviewStats: visibleOverviewStats,
+                        visibleOverviewStats: visibleOverviewStats(availableItems: availableItems),
                         topRated: statistics.topRated,
                         moodDistribution: statistics.moodDistribution,
-                        moodSummaryText: moodSummaryText,
+                        moodSummaryText: moodSummaryText(statistics: statistics),
                         heroEpisode: statistics.heroEpisode,
                         ratingDistribution: statistics.ratingDistribution
                     )

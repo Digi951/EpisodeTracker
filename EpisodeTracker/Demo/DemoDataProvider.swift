@@ -1,9 +1,15 @@
 import Foundation
 import SwiftData
+import os.log
 
 #if DEBUG
 enum DemoDataProvider {
     static let userDefaultsKey = "isDemoModeActive"
+
+    private static let logger = Logger(
+        subsystem: "com.Digi.EpisodeTracker",
+        category: "DemoDataProvider"
+    )
 
     static func makeContainerSet() -> AppModelContainerSet {
         do {
@@ -17,7 +23,7 @@ enum DemoDataProvider {
                 primary: container,
                 localPersistent: nil,
                 cloudPersistent: nil,
-                runtimeMode: .previewInMemory
+                runtimeMode: .demo
             )
         } catch {
             fatalError("Demo container creation failed: \(error)")
@@ -110,7 +116,11 @@ enum DemoDataProvider {
             universe: freigeister)
         [f1, f2, f3].forEach { context.insert($0) }
 
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            logger.error("Demo seeding failed to save: \(String(describing: error), privacy: .public)")
+        }
     }
 }
 #endif

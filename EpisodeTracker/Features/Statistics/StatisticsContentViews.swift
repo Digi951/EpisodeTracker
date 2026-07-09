@@ -11,11 +11,12 @@ struct StatisticsPhoneContent: View {
     let ratingDistribution: [(rating: Int, count: Int)]
 
     var body: some View {
-        if let hero = heroEpisode {
-            StatisticsHeroCard(episode: hero)
-        }
         ForEach(visibleSections) { section in
             switch section {
+            case .hero:
+                if let hero = heroEpisode {
+                    StatisticsHeroCard(episode: hero)
+                }
             case .overview:
                 Section(StatisticsSectionKind.overview.title) {
                     StatCardGrid(stats: visibleOverviewStats)
@@ -50,12 +51,12 @@ struct StatisticsPadContent: View {
         VStack(alignment: .leading, spacing: 24) {
             StatisticsHeader()
 
-            if let hero = heroEpisode {
-                StatisticsHeroCard(episode: hero)
-            }
-
             ForEach(visibleSections) { section in
                 switch section {
+                case .hero:
+                    if let hero = heroEpisode {
+                        StatisticsHeroCard(episode: hero)
+                    }
                 case .overview:
                     LazyVGrid(
                         columns: layout.summaryColumns,
@@ -413,6 +414,9 @@ struct StatCardGrid: View {
     }
 }
 
+// ponytail: intentionally separate from StatSummaryTile above — iPhone (emoji tile)
+// and iPad (icon tile) already render this data with different visual designs.
+// Merge only if a shared look is explicitly wanted for both idioms.
 private struct StatCard: View {
     let stat: StatisticsOverviewItem
 

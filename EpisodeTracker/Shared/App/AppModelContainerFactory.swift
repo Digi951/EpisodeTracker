@@ -4,6 +4,7 @@ import SwiftData
 
 enum AppModelContainerMode: Equatable {
     case previewInMemory
+    case demo
     case localPersistent
     case cloudPersistent(containerIdentifier: String)
 
@@ -18,6 +19,8 @@ enum AppModelContainerMode: Equatable {
         switch self {
         case .previewInMemory:
             "Preview (In-Memory)"
+        case .demo:
+            "Demo"
         case .localPersistent:
             "Lokal"
         case .cloudPersistent:
@@ -171,6 +174,8 @@ enum AppModelContainerFactory {
         )
 
         switch resolveMode(environment: environment, userDefaults: userDefaults) {
+        case .demo:
+            fatalError("resolveMode() never returns .demo — demo mode is constructed via DemoDataProvider before this factory runs.")
         case .previewInMemory:
             recordRuntimeMode(.previewInMemory, userDefaults: userDefaults)
             return AppModelContainerSet(

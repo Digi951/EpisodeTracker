@@ -1144,7 +1144,7 @@ private extension Bundle {
 
 #if DEBUG
 private struct SettingsDemoSection: View {
-    @AppStorage("isDemoModeActive") private var isDemoModeActive = false
+    @AppStorage(DemoDataProvider.userDefaultsKey) private var isDemoModeActive = false
 
     var body: some View {
         Section {

@@ -2,10 +2,36 @@
   "sourceLanguage" : "de",
   "strings" : {
     "· %lld ⭐" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld ⭐"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld ⭐"
+          }
+        }
+      }
     },
     "· %lld× gehört" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld× gehört"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld× listened"
+          }
+        }
+      }
     },
     "%@ · %@" : {
       "localizations" : {
@@ -4985,7 +5011,20 @@
       }
     },
     "Top-Hörspiel" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top-Hörspiel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top Pick"
+          }
+        }
+      }
     },
     "Über" : {
       "localizations" : {

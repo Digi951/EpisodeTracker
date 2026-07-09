@@ -1,6 +1,7 @@
 import Foundation
 
 enum StatisticsSectionKind: String, CaseIterable, Identifiable {
+    case hero
     case overview
     case topRated
     case moods
@@ -10,6 +11,7 @@ enum StatisticsSectionKind: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .hero: String(localized: "Top-Hörspiel", defaultValue: "Top-Hörspiel")
         case .overview: String(localized: "Statistics.Section.Overview", defaultValue: "Übersicht")
         case .topRated: String(localized: "Statistics.Section.TopRated", defaultValue: "Beste Bewertungen")
         case .moods: String(localized: "Statistics.Section.Moods", defaultValue: "Stimmungen")
@@ -19,6 +21,7 @@ enum StatisticsSectionKind: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .hero: "crown"
         case .overview: "rectangle.grid.2x2"
         case .topRated: "star"
         case .moods: "tag"

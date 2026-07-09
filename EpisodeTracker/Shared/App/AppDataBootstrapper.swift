@@ -18,6 +18,12 @@ enum AppDataBootstrapper {
         containerSet: AppModelContainerSet,
         userDefaults: UserDefaults = .standard
     ) async -> BootstrapReport {
+        guard containerSet.runtimeMode != .demo else {
+            // Demo mode runs on a throwaway in-memory container; it must never touch
+            // the real store's schema version, pre-migration backup, or cover files.
+            return BootstrapReport()
+        }
+
         var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
