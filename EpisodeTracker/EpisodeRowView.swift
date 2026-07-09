@@ -26,59 +26,61 @@ struct EpisodeRowView: View {
         return String(first).uppercased()
     }
 
-    static func hasCoverAnchor(coverImageName: String?, anyEpisodeHasCover: Bool) -> Bool {
-        coverImageName?.isEmpty == false || anyEpisodeHasCover
-    }
-
-    private var hasCoverAnchor: Bool {
-        Self.hasCoverAnchor(coverImageName: episode.coverImageName, anyEpisodeHasCover: anyEpisodeHasCover)
-    }
-
     @ViewBuilder
-    private var favoriteCornerBadge: some View {
+    private var numberSlotContent: some View {
+        if episode.isSpecial {
+            Image(systemName: "sparkles")
+        } else {
+            Text("\(episode.episodeNumber)")
+        }
+    }
+
+    // Favoriten-Markierung im Zahlenslot statt als Cover-Badge: gefüllter
+    // Akzent-Kreis mit Mini-Herz oben rechts. Das Lesezeichen erscheint
+    // bewusst nur noch in der Detailansicht.
+    @ViewBuilder
+    private var numberSlot: some View {
+        let slotWidth: CGFloat = isInSidebar ? 26 : 40
         if episode.isFavorite {
-            cornerBadge(systemName: "heart.fill", color: .red)
+            let circleSize: CGFloat = isInSidebar ? 24 : 30
+            numberSlotContent
+                .font(.footnote.weight(.semibold))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .foregroundStyle(.white)
+                .frame(width: circleSize, height: circleSize)
+                .background(appAccentColor.color, in: Circle())
+                .overlay(alignment: .topTrailing) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(appAccentColor.color)
+                        .padding(2)
+                        .background(.background, in: Circle())
+                        .offset(x: 3, y: -3)
+                }
+                .frame(width: slotWidth, alignment: .center)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(episode.isSpecial ? "Sonderfolge, Favorit" : "Folge \(episode.episodeNumber), Favorit"))
+        } else if episode.isSpecial {
+            numberSlotContent
+                .font(.headline)
+                .foregroundStyle(appAccentColor.color)
+                .frame(width: slotWidth, alignment: .center)
+                .accessibilityLabel(Text("Sonderfolge"))
+        } else {
+            numberSlotContent
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .frame(width: slotWidth, alignment: .center)
         }
-    }
-
-    @ViewBuilder
-    private var bookmarkCornerBadge: some View {
-        if episode.isBookmarked {
-            cornerBadge(systemName: "bookmark.fill", color: .cyan)
-        }
-    }
-
-    private func cornerBadge(systemName: String, color: Color) -> some View {
-        Circle()
-            .fill(color)
-            .frame(width: 17, height: 17)
-            .overlay(Circle().strokeBorder(.background, lineWidth: 2))
-            .overlay {
-                Image(systemName: systemName)
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white)
-            }
     }
 
     var body: some View {
         HStack(spacing: isInSidebar ? 8 : 12) {
-            if episode.isSpecial {
-                Image(systemName: "sparkles")
-                    .font(.headline)
-                    .foregroundStyle(appAccentColor.color)
-                    .frame(width: isInSidebar ? 26 : 40, alignment: .center)
-                    .accessibilityLabel(Text("Sonderfolge"))
-            } else {
-                Text("\(episode.episodeNumber)")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: isInSidebar ? 26 : 40, alignment: .center)
-            }
+            numberSlot
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
                 CoverImageThumbnailView(name: coverName, updatedAt: episode.coverUpdatedAt)
-                    .overlay(alignment: .topTrailing) { favoriteCornerBadge }
-                    .overlay(alignment: .topLeading) { bookmarkCornerBadge }
             } else if anyEpisodeHasCover {
                 Text(collectionInitial)
                     .font(.headline.weight(.semibold))
@@ -86,8 +88,6 @@ struct EpisodeRowView: View {
                     .frame(width: 44, height: 44)
                     .background(appAccentColor.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .accessibilityHidden(true)
-                    .overlay(alignment: .topTrailing) { favoriteCornerBadge }
-                    .overlay(alignment: .topLeading) { bookmarkCornerBadge }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -125,24 +125,6 @@ struct EpisodeRowView: View {
 
             Spacer()
 
-            // Fallback ohne Cover-Anker: Bewusste Ausnahme statt erzwungener Konsistenz.
-            // Ohne Cover-Box entsteht kein zusätzliches Platzproblem (kein 44pt-Element
-            // verdrängt den Titel), und ein künstlicher Platzhalter-Anker würde wie ein
-            // fehlendes Bild wirken. Siehe docs/superpowers/specs/2026-07-09-episode-row-badges-design.md.
-            if !hasCoverAnchor && episode.isFavorite {
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(.red)
-                    .font(.caption)
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
-            }
-
-            if !hasCoverAnchor && episode.isBookmarked {
-                Image(systemName: "bookmark.fill")
-                    .foregroundStyle(.cyan)
-                    .font(.caption)
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
-            }
-
             if episode.isListened {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
@@ -153,10 +135,14 @@ struct EpisodeRowView: View {
 }
 
 #if DEBUG
-#Preview("EpisodeRowView – Badge-Varianten") {
+#Preview("EpisodeRowView – Favorit im Zahlenslot") {
     List {
         EpisodeRowView(
             episode: Episode(episodeNumber: 4, title: "Gefahr im Fitnessstudio", releaseYear: 2020, isFavorite: true, isBookmarked: true),
+            anyEpisodeHasCover: true
+        )
+        EpisodeRowView(
+            episode: Episode(episodeNumber: 240, title: "Dreistellige Folgennummer als Favorit", releaseYear: 2024, isFavorite: true),
             anyEpisodeHasCover: true
         )
         EpisodeRowView(
