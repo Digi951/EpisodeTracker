@@ -665,6 +665,14 @@ struct EpisodeRowView: View {
         return String(first).uppercased()
     }
 
+    static func hasCoverAnchor(coverImageName: String?, anyEpisodeHasCover: Bool) -> Bool {
+        coverImageName?.isEmpty == false || anyEpisodeHasCover
+    }
+
+    private var hasCoverAnchor: Bool {
+        Self.hasCoverAnchor(coverImageName: episode.coverImageName, anyEpisodeHasCover: anyEpisodeHasCover)
+    }
+
     var body: some View {
         HStack(spacing: isInSidebar ? 8 : 12) {
             if episode.isSpecial {
@@ -716,6 +724,7 @@ struct EpisodeRowView: View {
                     if !episode.moods.isEmpty {
                         Text(episode.moods.compactMap(\.iconName).joined())
                             .font(.caption)
+                            .lineLimit(1)
                     }
                     // Sonderfolgen-Markierung: Das ✨-Icon im Nummernslot reicht;
                     // die Detailansicht zeigt "Sonderfolge" als Titel.
