@@ -1,0 +1,19 @@
+AudioPlayLog helps you keep track of your audio drama episodes.
+Mark episodes as listened, rate them, add personal notes, and filter your collection by catalog, mood, or listening status.
+
+For many popular children's audio drama and mystery series, episode lists are already prepared and can be activated individually. Catalogs are updated via public JSON lists, so new series and episodes become available without an app update.
+
+Every available episode can be opened directly in Spotify, Apple Music, Deezer, or Audible with a single tap. Matching links are already set up for many episodes. You can choose your preferred service in Settings.
+The app does not provide any audio content itself, does not play audio dramas, and is not affiliated with any audio drama publishers or rights holders. Your own entries, ratings, notes, and backups stay on your device unless you export them yourself.
+
+Key features:
+
+– Import catalogs that are maintained and expanded without app updates
+
+– SmartLists for a quick overview
+
+– Personalization through accent colors and icons
+
+– Jump directly from the app to your streaming service
+
+– Extensive categorization for individual episodes

@@ -1,0 +1,19 @@
+HörspielLog hilft dir, deine Hörspiel-Folgen übersichtlich zu verwalten.
+Markiere Folgen als gehört, vergib Bewertungen, notiere persönliche Eindrücke und filtere deine Sammlung nach Katalog, Stimmung oder Hörstatus.
+
+Für viele beliebte Kinderhörspiel- und Krimi-Reihen sind Folgenlisten bereits vorbereitet und lassen sich einzeln aktivieren. Die Kataloge werden über öffentliche JSON-Listen aktualisiert, sodass neue Reihen und Folgen auch ohne App-Update verfügbar werden.
+
+Jede verfügbare Folge lässt sich mit einem Tipp direkt in Spotify, Apple Music, Deezer oder Audible öffnen. Für viele Folgen sind die passenden Verknüpfungen schon hinterlegt. Den bevorzugten Dienst wählst du in den Einstellungen.
+Die App stellt selbst keine Audioinhalte bereit, spielt keine Hörspiele ab und ist nicht mit Hörspiel-Verlagen oder Markeninhabern verbunden. Deine eigenen Einträge, Bewertungen, Notizen und Backups bleiben auf deinem Gerät, sofern du sie nicht selbst exportierst.
+
+Kernfeatures:
+
+– Kataloge importieren, die ohne Update gepflegt und erweitert werden
+
+– SmartLists für schnellen Überblick
+
+– Personalisierung über Akzentfarben und Icons
+
+– Direkter Sprung von der App in deinen Streaming-Dienst
+
+– Umfangreiche Kategorisierung einzelner Folgen
