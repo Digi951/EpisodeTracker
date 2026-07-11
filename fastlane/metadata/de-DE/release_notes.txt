@@ -1,1 +1,9 @@
+Diese Version macht die Folgenliste aufgeräumter und deine Favoriten auf den ersten Blick erkennbar.
 
+• Favoriten im Zahlenslot: Favorisierte Folgen zeigen jetzt einen farbigen Kreis mit kleinem Herz direkt an der Folgennummer — statt eines zusätzlichen Icons am Zeilenrand.
+
+• Ruhigere Zeilen: Die Merkliste-Markierung ist aus der Liste verschwunden. Du findest und änderst sie weiterhin zuverlässig in der Detailansicht einer Folge.
+
+• Top-Hörspiel anpassbar: Die Hero-Karte in der Statistik lässt sich jetzt wie alle anderen Bereiche ein-/ausblenden und in der Reihenfolge sortieren.
+
+Viel Freude beim Hören!

@@ -1,1 +1,9 @@
+This version tidies up the episode list and makes your favorites easier to spot at a glance.
 
+• Favorites in the number slot: Favorited episodes now show a colored circle with a small heart right at the episode number — instead of a separate icon at the row's edge.
+
+• Calmer rows: The bookmark badge is gone from the list. You'll still find and change it reliably in an episode's detail view.
+
+• Customizable Top Pick: The hero card in Statistics can now be shown, hidden, and reordered like every other section.
+
+Enjoy your listening!
