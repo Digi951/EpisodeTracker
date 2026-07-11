@@ -2593,6 +2593,22 @@
         }
       }
     },
+    "Folge %lld, Favorit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folge %lld, Favorit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episode %lld, Favorite"
+          }
+        }
+      }
+    },
     "Folge bearbeiten" : {
       "localizations" : {
         "de" : {
@@ -4563,6 +4579,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Special %d"
+          }
+        }
+      }
+    },
+    "Sonderfolge, Favorit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonderfolge, Favorit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special Episode, Favorite"
           }
         }
       }
