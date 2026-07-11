@@ -246,7 +246,7 @@ struct EpisodeListView: View {
 
     @ViewBuilder
     private var featureAnnouncementRow: some View {
-        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+        if !episodes.isEmpty && !controls.hasActiveFilter && controls.searchText.isEmpty {
             FeatureAnnouncementBannerRow(style: .phone)
         }
     }

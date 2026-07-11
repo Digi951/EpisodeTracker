@@ -10,7 +10,7 @@ enum FeatureAnnouncement {
 
     /// Bump this whenever a new feature should be announced to existing users.
     /// Changing it makes the banner reappear once for everyone who updates.
-    static let currentFingerprint = "v1.11-app-icons"
+    static let currentFingerprint = "v1.16-personalization"
 
     /// Marks the current announcement as already seen (e.g. for a fresh install).
     static func markSeen(in userDefaults: UserDefaults) {

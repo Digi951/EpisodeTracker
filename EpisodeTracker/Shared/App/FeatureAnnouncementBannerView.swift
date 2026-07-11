@@ -37,20 +37,20 @@ private struct FeatureAnnouncementBannerView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
-            Image(systemName: "square.grid.2x2.fill")
+            Image(systemName: "paintpalette.fill")
                 .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
                 .foregroundStyle(.tint)
                 .frame(width: isSidebar ? 30 : 36, height: isSidebar ? 30 : 36)
                 .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: isSidebar ? 3 : 5) {
-                Text("Neu: App-Icons")
+                Text("Neu: Farbe & Icon")
                     .font(isSidebar ? .subheadline.weight(.semibold) : .headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
-                Text("Wähle dein App-Icon in den Einstellungen.")
+                Text("Personalisiere App-Icon und Akzentfarbe in den Einstellungen.")
                     .font(isSidebar ? .caption : .footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
