@@ -27,6 +27,13 @@ enum AppDataBootstrapper {
         var report = BootstrapReport()
         let lastSchemaVersion = userDefaults.integer(forKey: schemaVersionKey)
 
+        let libraryIsEmpty = ((try? containerSet.primary.mainContext.fetchCount(FetchDescriptor<Episode>())) ?? 0) == 0
+        FeatureAnnouncement.recordInstallOriginIfNeeded(
+            lastSchemaVersion: lastSchemaVersion,
+            libraryIsEmpty: libraryIsEmpty,
+            in: userDefaults
+        )
+
         // Pre-Migration: prepare local container and run sync repair before migration
         if let localContainer = containerSet.localPersistent {
             report = prepareContainer(

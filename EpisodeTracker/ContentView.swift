@@ -462,8 +462,8 @@ private struct IPadEpisodeListView: View {
         moodFilterRow
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
-        if !episodes.isEmpty && !controls.hasActiveFilter && controls.searchText.isEmpty {
-            FeatureAnnouncementBannerRow(style: .sidebar)
+        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+            FeatureAnnouncementBannerRow(style: .sidebar, libraryIsEmpty: episodes.isEmpty)
         }
 
         if filteredEpisodes.isEmpty {

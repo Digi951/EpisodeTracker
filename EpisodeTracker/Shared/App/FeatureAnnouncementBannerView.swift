@@ -6,15 +6,25 @@ enum FeatureAnnouncementBannerStyle {
 }
 
 /// In-app announcement for a newly added feature. Only shown while the current
-/// announcement is still pending (i.e. not yet dismissed and not pre-dismissed
-/// for a fresh install).
+/// announcement is still pending — see `FeatureAnnouncement.shouldShow` for the
+/// exact rule, which the caller's `libraryIsEmpty` feeds into.
 struct FeatureAnnouncementBannerRow: View {
     let style: FeatureAnnouncementBannerStyle
+    let libraryIsEmpty: Bool
 
     @AppStorage(FeatureAnnouncement.storageKey) private var dismissedFingerprint = ""
+    @AppStorage(FeatureAnnouncement.establishedInstallKey) private var isEstablishedInstall = false
+
+    private var shouldShow: Bool {
+        FeatureAnnouncement.shouldShow(
+            isPending: dismissedFingerprint != FeatureAnnouncement.currentFingerprint,
+            libraryIsEmpty: libraryIsEmpty,
+            isEstablishedInstall: isEstablishedInstall
+        )
+    }
 
     var body: some View {
-        if dismissedFingerprint != FeatureAnnouncement.currentFingerprint {
+        if shouldShow {
             FeatureAnnouncementBannerView(style: style) {
                 withAnimation { dismissedFingerprint = FeatureAnnouncement.currentFingerprint }
             }
