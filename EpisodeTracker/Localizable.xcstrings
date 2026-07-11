@@ -3269,8 +3269,21 @@
         }
       }
     },
-    "Neu: App-Icons" : {
-
+    "Neu: Farbe & Icon" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu: Farbe & Icon"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New: Color & Icon"
+          }
+        }
+      }
     },
     "Neue Folge" : {
       "localizations" : {
@@ -5263,8 +5276,21 @@
         }
       }
     },
-    "Wähle dein App-Icon in den Einstellungen." : {
-
+    "Personalisiere App-Icon und Akzentfarbe in den Einstellungen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalisiere App-Icon und Akzentfarbe in den Einstellungen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalize your app icon and accent color in Settings."
+          }
+        }
+      }
     },
     "Wähle deine Akzentfarbe in den Einstellungen." : {
       "extractionState" : "stale",
