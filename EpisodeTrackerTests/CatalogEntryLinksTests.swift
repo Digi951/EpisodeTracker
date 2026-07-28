@@ -1,0 +1,119 @@
+import XCTest
+@testable import EpisodeTracker
+
+final class CatalogEntryLinksTests: XCTestCase {
+
+    private func decode(_ json: String) throws -> CatalogEntry {
+        try JSONDecoder().decode(CatalogEntry.self, from: Data(json.utf8))
+    }
+
+    // MARK: - Legacy-Felder
+
+    func testDecodesLegacyNamedFieldsIntoLinks() throws {
+        let entry = try decode("""
+        {
+          "number": 1,
+          "title": "und der Super-Papagei",
+          "releaseYear": 1979,
+          "spotifyURL": "https://open.spotify.com/album/abc",
+          "appleMusicURL": "https://music.apple.com/album/1",
+          "deezerURL": "https://deezer.com/album/2",
+          "audibleURL": "https://audible.de/pd/3"
+        }
+        """)
+
+        XCTAssertEqual(entry.links["spotify"], "https://open.spotify.com/album/abc")
+        XCTAssertEqual(entry.links["apple"], "https://music.apple.com/album/1")
+        XCTAssertEqual(entry.links["deezer"], "https://deezer.com/album/2")
+        XCTAssertEqual(entry.links["audible"], "https://audible.de/pd/3")
+    }
+
+    func testLegacyAccessorsStillReadFromLinks() throws {
+        let entry = try decode("""
+        {
+          "number": 1,
+          "title": "Test",
+          "releaseYear": 2000,
+          "links": { "spotify": "https://open.spotify.com/album/xyz" }
+        }
+        """)
+
+        XCTAssertEqual(entry.spotifyURL, "https://open.spotify.com/album/xyz")
+        XCTAssertNil(entry.appleMusicURL)
+    }
+
+    // MARK: - Neues links-Feld
+
+    func testDecodesLinksDictionary() throws {
+        let entry = try decode("""
+        {
+          "number": null,
+          "kind": "special",
+          "slug": "weihnachten-2024",
+          "title": "Sondersendung",
+          "releaseYear": 2024,
+          "links": { "audioteka": "https://audioteka.com/pl/audiobook/x" }
+        }
+        """)
+
+        XCTAssertEqual(entry.links["audioteka"], "https://audioteka.com/pl/audiobook/x")
+    }
+
+    func testExplicitLinksWinOverLegacyFields() throws {
+        let entry = try decode("""
+        {
+          "number": 1,
+          "title": "Test",
+          "releaseYear": 2000,
+          "spotifyURL": "https://legacy.example/album",
+          "links": { "spotify": "https://explicit.example/album" }
+        }
+        """)
+
+        XCTAssertEqual(entry.links["spotify"], "https://explicit.example/album")
+    }
+
+    func testIgnoresEmptyAndWhitespaceLinkValues() throws {
+        let entry = try decode("""
+        {
+          "number": 1,
+          "title": "Test",
+          "releaseYear": 2000,
+          "spotifyURL": "   ",
+          "links": { "deezer": "" }
+        }
+        """)
+
+        XCTAssertTrue(entry.links.isEmpty)
+        XCTAssertFalse(entry.hasStreamingLink)
+    }
+
+    // MARK: - Roundtrip
+
+    func testEncodeDecodeRoundtripPreservesUnknownServices() throws {
+        let original = CatalogEntry(
+            number: 5,
+            title: "Test",
+            releaseYear: 2001,
+            links: ["storytel": "https://storytel.com/nl/books/9"]
+        )
+
+        let data = try JSONEncoder().encode(original)
+        let restored = try JSONDecoder().decode(CatalogEntry.self, from: data)
+
+        XCTAssertEqual(restored.links["storytel"], "https://storytel.com/nl/books/9")
+        XCTAssertEqual(restored, original)
+    }
+
+    func testConvenienceInitBuildsLinks() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            spotifyURL: "https://open.spotify.com/album/abc",
+            audibleURL: nil
+        )
+
+        XCTAssertEqual(entry.links, ["spotify": "https://open.spotify.com/album/abc"])
+    }
+}

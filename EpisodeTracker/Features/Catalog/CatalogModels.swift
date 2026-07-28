@@ -7,11 +7,46 @@ struct CatalogEntry: Codable, Equatable {
     let title: String
     let releaseYear: Int
     let collectionName: String?
-    let spotifyURL: String?
-    let appleMusicURL: String?
-    let deezerURL: String?
-    let audibleURL: String?
+    /// Streaming-Links, keyed by `StreamingService.rawValue`. Ersetzt die früheren
+    /// vier festen URL-Felder: ein neuer Dienst braucht nur Katalogdaten, keine
+    /// Änderung an Parser, Cache-Store oder Katalog-Pipeline.
+    let links: [String: String]
 
+    private enum CodingKeys: String, CodingKey {
+        case number
+        case kind
+        case slug
+        case title
+        case releaseYear
+        case collectionName
+        case links
+        // Legacy-Felder: werden weiterhin gelesen, aber nicht mehr geschrieben.
+        case spotifyURL
+        case appleMusicURL
+        case deezerURL
+        case audibleURL
+    }
+
+    init(
+        number: Int?,
+        kind: EpisodeKind = .regular,
+        slug: String? = nil,
+        title: String,
+        releaseYear: Int,
+        collectionName: String? = nil,
+        links: [String: String]
+    ) {
+        self.number = number
+        self.kind = kind
+        self.slug = slug
+        self.title = title
+        self.releaseYear = releaseYear
+        self.collectionName = collectionName
+        self.links = Self.sanitized(links)
+    }
+
+    /// Convenience-Init mit den historischen benannten Feldern. Bleibt erhalten,
+    /// damit bestehende Aufrufstellen und Tests unverändert kompilieren.
     init(
         number: Int?,
         kind: EpisodeKind = .regular,
@@ -24,16 +59,20 @@ struct CatalogEntry: Codable, Equatable {
         deezerURL: String? = nil,
         audibleURL: String? = nil
     ) {
-        self.number = number
-        self.kind = kind
-        self.slug = slug
-        self.title = title
-        self.releaseYear = releaseYear
-        self.collectionName = collectionName
-        self.spotifyURL = spotifyURL
-        self.appleMusicURL = appleMusicURL
-        self.deezerURL = deezerURL
-        self.audibleURL = audibleURL
+        self.init(
+            number: number,
+            kind: kind,
+            slug: slug,
+            title: title,
+            releaseYear: releaseYear,
+            collectionName: collectionName,
+            links: Self.linksFromLegacyFields(
+                spotifyURL: spotifyURL,
+                appleMusicURL: appleMusicURL,
+                deezerURL: deezerURL,
+                audibleURL: audibleURL
+            )
+        )
     }
 
     init(from decoder: Decoder) throws {
@@ -44,17 +83,68 @@ struct CatalogEntry: Codable, Equatable {
         title = try container.decode(String.self, forKey: .title)
         releaseYear = try container.decode(Int.self, forKey: .releaseYear)
         collectionName = try container.decodeIfPresent(String.self, forKey: .collectionName)
-        spotifyURL = try container.decodeIfPresent(String.self, forKey: .spotifyURL)
-        appleMusicURL = try container.decodeIfPresent(String.self, forKey: .appleMusicURL)
-        deezerURL = try container.decodeIfPresent(String.self, forKey: .deezerURL)
-        audibleURL = try container.decodeIfPresent(String.self, forKey: .audibleURL)
+
+        var resolved = try container.decodeIfPresent([String: String].self, forKey: .links) ?? [:]
+
+        let legacy = Self.linksFromLegacyFields(
+            spotifyURL: try container.decodeIfPresent(String.self, forKey: .spotifyURL),
+            appleMusicURL: try container.decodeIfPresent(String.self, forKey: .appleMusicURL),
+            deezerURL: try container.decodeIfPresent(String.self, forKey: .deezerURL),
+            audibleURL: try container.decodeIfPresent(String.self, forKey: .audibleURL)
+        )
+        // Explizite links-Einträge gewinnen gegen Legacy-Felder.
+        for (key, value) in legacy where resolved[key] == nil {
+            resolved[key] = value
+        }
+
+        links = Self.sanitized(resolved)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(number, forKey: .number)
+        try container.encode(kind, forKey: .kind)
+        try container.encodeIfPresent(slug, forKey: .slug)
+        try container.encode(title, forKey: .title)
+        try container.encode(releaseYear, forKey: .releaseYear)
+        try container.encodeIfPresent(collectionName, forKey: .collectionName)
+        try container.encode(links, forKey: .links)
+    }
+
+    private static func linksFromLegacyFields(
+        spotifyURL: String?,
+        appleMusicURL: String?,
+        deezerURL: String?,
+        audibleURL: String?
+    ) -> [String: String] {
+        var result: [String: String] = [:]
+        result[StreamingService.spotify.rawValue] = spotifyURL
+        result[StreamingService.apple.rawValue] = appleMusicURL
+        result[StreamingService.deezer.rawValue] = deezerURL
+        result[StreamingService.audible.rawValue] = audibleURL
+        return result
+    }
+
+    private static func sanitized(_ links: [String: String]) -> [String: String] {
+        links.reduce(into: [String: String]()) { result, pair in
+            let value = pair.value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { return }
+            result[pair.key] = value
+        }
     }
 
     var hasStreamingLink: Bool {
-        [spotifyURL, appleMusicURL, deezerURL, audibleURL].contains { urlString in
-            urlString?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        }
+        !links.isEmpty
     }
+}
+
+extension CatalogEntry {
+    /// Legacy-Zugriffe. Bleiben, bis alle Aufrufstellen auf `links` umgestellt sind
+    /// (Task 3), und werden danach entfernt.
+    var spotifyURL: String? { links[StreamingService.spotify.rawValue] }
+    var appleMusicURL: String? { links[StreamingService.apple.rawValue] }
+    var deezerURL: String? { links[StreamingService.deezer.rawValue] }
+    var audibleURL: String? { links[StreamingService.audible.rawValue] }
 }
 
 struct CatalogManifest: Codable {
