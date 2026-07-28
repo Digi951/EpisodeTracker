@@ -159,19 +159,22 @@ struct ManagedCatalogSource: Codable, Equatable {
     let id: String
     let name: String
     let language: String?
+    let style: String?
     let url: URL
 
     private enum CodingKeys: String, CodingKey {
         case id
         case name
         case language
+        case style
         case url
     }
 
-    init(id: String, name: String, language: String? = "de", url: URL) {
+    init(id: String, name: String, language: String? = "de", style: String? = nil, url: URL) {
         self.id = id
         self.name = name
         self.language = language
+        self.style = style
         self.url = url.normalizedGitHubRawURL
     }
 
@@ -180,6 +183,7 @@ struct ManagedCatalogSource: Codable, Equatable {
         id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         language = try container.decodeIfPresent(String.self, forKey: .language)
+        style = try container.decodeIfPresent(String.self, forKey: .style)
         url = try container.decode(URL.self, forKey: .url).normalizedGitHubRawURL
     }
 }
@@ -195,6 +199,10 @@ extension ManagedCatalogSource {
 
     var matchesDeviceLanguage: Bool {
         effectiveLanguage == Self.deviceLanguage
+    }
+
+    var effectiveStyle: CatalogStyle {
+        CatalogStyle.resolve(style)
     }
 }
 
