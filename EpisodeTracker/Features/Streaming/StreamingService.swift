@@ -5,6 +5,8 @@ enum StreamingService: String, CaseIterable, Identifiable {
     case apple
     case deezer
     case audible
+    case audioteka
+    case storytel
 
     var id: String { rawValue }
 
@@ -14,6 +16,8 @@ enum StreamingService: String, CaseIterable, Identifiable {
         case "apple", "appleMusic": self = .apple
         case "deezer": self = .deezer
         case "audible": self = .audible
+        case "audioteka": self = .audioteka
+        case "storytel": self = .storytel
         default: return nil
         }
     }
@@ -24,6 +28,8 @@ enum StreamingService: String, CaseIterable, Identifiable {
         case .apple: "Apple"
         case .deezer: "Deezer"
         case .audible: "Audible"
+        case .audioteka: "Audioteka"
+        case .storytel: "Storytel"
         }
     }
 
@@ -40,20 +46,15 @@ enum StreamingService: String, CaseIterable, Identifiable {
         case .apple: "music.note"
         case .deezer: "music.note.list"
         case .audible: "headphones"
+        case .audioteka: "waveform.circle"
+        case .storytel: "book.circle"
         }
     }
 
+    /// Ein Dictionary-Lookup statt eines `switch` über alle Dienste: ein neuer
+    /// Dienst braucht hier keine Änderung mehr, nur einen neuen Enum-Case.
     func catalogURL(from entry: CatalogEntry) -> URL? {
-        switch self {
-        case .spotify:
-            return entry.spotifyURL.flatMap { URL(string: $0) }
-        case .apple:
-            return entry.appleMusicURL.flatMap { URL(string: $0) }
-        case .deezer:
-            return entry.deezerURL.flatMap { URL(string: $0) }
-        case .audible:
-            return entry.audibleURL.flatMap { URL(string: $0) }
-        }
+        directURL(from: entry.links[rawValue])
     }
 
     func directURL(from urlString: String?) -> URL? {

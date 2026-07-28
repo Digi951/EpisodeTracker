@@ -123,7 +123,10 @@ final class StreamingServiceTests: XCTestCase {
     }
 
     func testAllCasesContainsSupportedServices() {
-        XCTAssertEqual(StreamingService.allCases, [.spotify, .apple, .deezer, .audible])
+        XCTAssertEqual(
+            StreamingService.allCases,
+            [.spotify, .apple, .deezer, .audible, .audioteka, .storytel]
+        )
     }
 
     // MARK: - Backward Compatibility
@@ -209,5 +212,59 @@ final class StreamingServiceTests: XCTestCase {
         let result = resolver.resolve(for: episode)
 
         XCTAssertNil(result)
+    }
+
+    // MARK: - Dictionary-basierte Auflösung
+
+    func testCatalogURLResolvesFromLinksDictionary() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            links: ["deezer": "https://deezer.com/album/42"]
+        )
+
+        XCTAssertEqual(
+            StreamingService.deezer.catalogURL(from: entry)?.absoluteString,
+            "https://deezer.com/album/42"
+        )
+    }
+
+    func testCatalogURLReturnsNilForServiceWithoutLink() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            links: ["spotify": "https://open.spotify.com/album/abc"]
+        )
+
+        XCTAssertNil(StreamingService.audible.catalogURL(from: entry))
+    }
+
+    func testCatalogURLResolvesNewMarketServices() {
+        let entry = CatalogEntry(
+            number: nil,
+            kind: .special,
+            slug: "pl-1",
+            title: "Słuchowisko",
+            releaseYear: 2024,
+            links: [
+                "audioteka": "https://audioteka.com/pl/audiobook/x",
+                "storytel": "https://storytel.com/nl/books/9"
+            ]
+        )
+
+        XCTAssertEqual(
+            StreamingService.audioteka.catalogURL(from: entry)?.absoluteString,
+            "https://audioteka.com/pl/audiobook/x"
+        )
+        XCTAssertEqual(
+            StreamingService.storytel.catalogURL(from: entry)?.absoluteString,
+            "https://storytel.com/nl/books/9"
+        )
+    }
+
+    func testLegacyAppleMusicRawValueStillDecodes() {
+        XCTAssertEqual(StreamingService(rawValue: "appleMusic"), .apple)
     }
 }
