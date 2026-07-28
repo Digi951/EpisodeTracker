@@ -116,4 +116,32 @@ final class CatalogEntryLinksTests: XCTestCase {
 
         XCTAssertEqual(entry.links, ["spotify": "https://open.spotify.com/album/abc"])
     }
+
+    // MARK: - Pipeline-Durchreichung
+
+    func testParserPreservesUnknownServiceLinks() throws {
+        let json = """
+        {
+          "version": 1,
+          "entries": [
+            {
+              "number": 1,
+              "title": "Odcinek pierwszy",
+              "releaseYear": 2024,
+              "links": { "audioteka": "https://audioteka.com/pl/audiobook/x" }
+            }
+          ]
+        }
+        """
+
+        let document = try CatalogParser().parseNormalizedCatalogDocument(
+            from: Data(json.utf8),
+            fallbackCollectionName: "Testkatalog"
+        )
+
+        XCTAssertEqual(
+            document.entries.first?.links["audioteka"],
+            "https://audioteka.com/pl/audiobook/x"
+        )
+    }
 }

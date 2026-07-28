@@ -75,10 +75,7 @@ final class EpisodeCatalog {
                 title: $0.title,
                 releaseYear: $0.releaseYear,
                 collectionName: collectionName,
-                spotifyURL: $0.spotifyURL,
-                appleMusicURL: $0.appleMusicURL,
-                deezerURL: $0.deezerURL,
-                audibleURL: $0.audibleURL
+                links: $0.links
             )
         }
         try cacheStore.replaceCustomCatalog(collectionName: collectionName, entries: normalizedEntries)
@@ -178,10 +175,7 @@ final class EpisodeCatalog {
                         title: $0.title,
                         releaseYear: $0.releaseYear,
                         collectionName: source.name,
-                        spotifyURL: $0.spotifyURL,
-                        appleMusicURL: $0.appleMusicURL,
-                        deezerURL: $0.deezerURL,
-                        audibleURL: $0.audibleURL
+                        links: $0.links
                     )
                 }
                 let previousSnapshot = cacheStore.loadCatalogSnapshot(universeName: source.name, cacheKey: source.id)
