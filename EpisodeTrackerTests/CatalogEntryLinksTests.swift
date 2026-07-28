@@ -28,7 +28,7 @@ final class CatalogEntryLinksTests: XCTestCase {
         XCTAssertEqual(entry.links["audible"], "https://audible.de/pd/3")
     }
 
-    func testLegacyAccessorsStillReadFromLinks() throws {
+    func testExplicitLinksFieldDecodesDirectly() throws {
         let entry = try decode("""
         {
           "number": 1,
@@ -38,8 +38,8 @@ final class CatalogEntryLinksTests: XCTestCase {
         }
         """)
 
-        XCTAssertEqual(entry.spotifyURL, "https://open.spotify.com/album/xyz")
-        XCTAssertNil(entry.appleMusicURL)
+        XCTAssertEqual(entry.links["spotify"], "https://open.spotify.com/album/xyz")
+        XCTAssertNil(entry.links["apple"])
     }
 
     // MARK: - Neues links-Feld
@@ -143,5 +143,39 @@ final class CatalogEntryLinksTests: XCTestCase {
             document.entries.first?.links["audioteka"],
             "https://audioteka.com/pl/audiobook/x"
         )
+    }
+
+    // MARK: - Bevorzugter Link ohne feste Dienstnamen
+
+    func testPreferredLinkFollowsMarketProfileOrder() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            links: [
+                "audible": "https://audible.de/pd/1",
+                "spotify": "https://open.spotify.com/album/2"
+            ]
+        )
+
+        XCTAssertEqual(
+            entry.preferredLink(for: [.spotify, .apple, .deezer, .audible]),
+            "https://open.spotify.com/album/2"
+        )
+        XCTAssertEqual(
+            entry.preferredLink(for: [.audible, .spotify]),
+            "https://audible.de/pd/1"
+        )
+    }
+
+    func testPreferredLinkReturnsNilWhenNoServiceMatches() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            links: ["storytel": "https://storytel.com/nl/books/9"]
+        )
+
+        XCTAssertNil(entry.preferredLink(for: [.spotify, .apple]))
     }
 }

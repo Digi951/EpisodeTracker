@@ -120,7 +120,7 @@ final class EpisodeCatalogTests: XCTestCase {
         try catalog.importCatalog(data: Data(json.utf8), into: "Test Katalog")
 
         let entry = catalog.entry(for: 1, in: "Test Katalog")
-        XCTAssertEqual(entry?.deezerURL, "https://www.deezer.com/album/1234567")
+        XCTAssertEqual(entry?.links["deezer"], "https://www.deezer.com/album/1234567")
         XCTAssertEqual(
             entry.flatMap { StreamingService.deezer.catalogURL(from: $0) }?.absoluteString,
             "https://www.deezer.com/album/1234567"
@@ -170,7 +170,7 @@ final class EpisodeCatalogTests: XCTestCase {
 
         XCTAssertEqual(fetcher.sourceMetadataRequests.count, 1)
         XCTAssertNil(fetcher.sourceMetadataRequests[0])
-        XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.deezerURL, "https://www.deezer.com/album/12761822")
+        XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.links["deezer"], "https://www.deezer.com/album/12761822")
     }
 
     func testCatalogEntryDecodesSpecialKindAndSlug() throws {

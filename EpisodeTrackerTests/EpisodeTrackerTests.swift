@@ -55,7 +55,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(entries[0].title, "und der Super-Papagei")
         XCTAssertEqual(entries[0].releaseYear, 1979)
         XCTAssertEqual(entries[0].collectionName, "Die drei ???")
-        XCTAssertEqual(entries[0].deezerURL, "https://www.deezer.com/album/1234567")
+        XCTAssertEqual(entries[0].links["deezer"], "https://www.deezer.com/album/1234567")
     }
 
     func testParsesFlatCatalogEntriesWithFallbackCollection() throws {
@@ -107,7 +107,7 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(document.entryCount, 124)
         XCTAssertEqual(document.entries.map(\.number), [1])
         XCTAssertEqual(document.entries[0].collectionName, "Bibi und Tina")
-        XCTAssertEqual(document.entries[0].deezerURL, "https://www.deezer.com/album/7654321")
+        XCTAssertEqual(document.entries[0].links["deezer"], "https://www.deezer.com/album/7654321")
     }
 
     func testParsesManifestAndNormalizesGitHubBlobURLs() throws {

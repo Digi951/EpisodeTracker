@@ -152,15 +152,19 @@ final class EpisodeCatalog {
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
         let hasStreamingLinks = cachedEntries?.contains(where: \.hasStreamingLink) == true
-        let hasDeezerLinks = cachedEntries?.contains { entry in
-            entry.deezerURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        // Ein Cache, der vor der links-Umstellung geschrieben wurde, kennt nur die
+        // vier historischen Dienste. Ein einmaliger Refresh holt die vollständigen
+        // Links nach, sobald ein Dienst des aktuellen Marktprofils fehlt.
+        let marketServices = StreamingMarketProfile.current.services
+        let hasAllMarketLinks = cachedEntries?.contains { entry in
+            entry.preferredLink(for: marketServices) != nil
         } == true
         let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
-        let needsDeezerLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasDeezerLinks
-        guard force || !hasCachedEntries || needsStreamingLinkRefresh || needsDeezerLinkRefresh || shouldRefresh(previousMetadata) else { return }
+        let needsMarketLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasAllMarketLinks
+        guard force || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return }
 
         do {
-            let requestMetadata = force || needsStreamingLinkRefresh || needsDeezerLinkRefresh ? nil : previousMetadata
+            let requestMetadata = force || needsStreamingLinkRefresh || needsMarketLinkRefresh ? nil : previousMetadata
             let result = try await remoteDataSource.fetch(from: source, metadata: requestMetadata)
             var metadata = previousMetadata ?? RemoteCatalogMetadata()
 

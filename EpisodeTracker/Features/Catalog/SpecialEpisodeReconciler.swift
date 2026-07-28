@@ -23,7 +23,7 @@ enum SpecialEpisodeReconciler {
 
             episode.catalogSlug = slug
             if episode.streamingURL == nil {
-                episode.streamingURL = match.spotifyURL ?? match.appleMusicURL
+                episode.streamingURL = match.preferredLink(for: StreamingMarketProfile.current.services)
             }
             episode.specialUpdatedAt = .now
             episode.refreshSyncKeyIfPossible()

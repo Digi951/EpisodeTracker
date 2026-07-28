@@ -139,12 +139,14 @@ struct CatalogEntry: Codable, Equatable {
 }
 
 extension CatalogEntry {
-    /// Legacy-Zugriffe. Bleiben, bis alle Aufrufstellen auf `links` umgestellt sind
-    /// (Task 3), und werden danach entfernt.
-    var spotifyURL: String? { links[StreamingService.spotify.rawValue] }
-    var appleMusicURL: String? { links[StreamingService.apple.rawValue] }
-    var deezerURL: String? { links[StreamingService.deezer.rawValue] }
-    var audibleURL: String? { links[StreamingService.audible.rawValue] }
+    /// Erster verfügbarer Link entlang der übergebenen Dienst-Priorität.
+    /// Ersetzt dienstspezifische Fallbacks wie `spotifyURL ?? appleMusicURL`.
+    func preferredLink(for services: [StreamingService]) -> String? {
+        for service in services {
+            if let link = links[service.rawValue] { return link }
+        }
+        return nil
+    }
 }
 
 struct CatalogManifest: Codable {
