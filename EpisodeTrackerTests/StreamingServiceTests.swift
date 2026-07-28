@@ -267,4 +267,43 @@ final class StreamingServiceTests: XCTestCase {
     func testLegacyAppleMusicRawValueStillDecodes() {
         XCTAssertEqual(StreamingService(rawValue: "appleMusic"), .apple)
     }
+
+    // MARK: - Marktprofile
+
+    func testProfileForGermanKeepsExistingOrder() {
+        XCTAssertEqual(
+            StreamingMarketProfile.profile(forLanguageCode: "de").services,
+            [.spotify, .apple, .deezer, .audible]
+        )
+    }
+
+    func testProfileForPolandLeadsWithAudioteka() {
+        XCTAssertEqual(
+            StreamingMarketProfile.profile(forLanguageCode: "pl").services.first,
+            .audioteka
+        )
+    }
+
+    func testProfileForNetherlandsExcludesAudible() {
+        let services = StreamingMarketProfile.profile(forLanguageCode: "nl").services
+        XCTAssertFalse(services.contains(.audible))
+        XCTAssertTrue(services.contains(.storytel))
+    }
+
+    func testProfileForFranceIncludesDeezerAndAudible() {
+        let services = StreamingMarketProfile.profile(forLanguageCode: "fr").services
+        XCTAssertTrue(services.contains(.deezer))
+        XCTAssertTrue(services.contains(.audible))
+    }
+
+    func testUnknownLanguageFallsBackToAppleAndAudible() {
+        XCTAssertEqual(
+            StreamingMarketProfile.profile(forLanguageCode: "ja").services,
+            [.apple, .audible]
+        )
+    }
+
+    func testDefaultServiceIsFirstInProfile() {
+        XCTAssertEqual(StreamingMarketProfile.profile(forLanguageCode: "pl").defaultService, .audioteka)
+    }
 }
