@@ -84,4 +84,34 @@ final class CatalogStyleReconcilerTests: XCTestCase {
 
         XCTAssertEqual(universe.style, .anthology)
     }
+
+    // MARK: - Dedupe
+
+    func testDeduplicationKeepsDeclaredAnthologyStyle() throws {
+        let context = try makeContext()
+
+        let winner = Universe(name: "Teatr Polskiego Radia")
+        let loser = Universe(name: "Teatr Polskiego Radia")
+        loser.style = .anthology
+        context.insert(winner)
+        context.insert(loser)
+
+        EntityDeduplicator.mergeUniverseStyle(from: loser, into: winner)
+
+        XCTAssertEqual(winner.style, .anthology)
+    }
+
+    func testDeduplicationDoesNotDowngradeAnthologyToNumbered() throws {
+        let context = try makeContext()
+
+        let winner = Universe(name: "Teatr Polskiego Radia")
+        winner.style = .anthology
+        let loser = Universe(name: "Teatr Polskiego Radia")
+        context.insert(winner)
+        context.insert(loser)
+
+        EntityDeduplicator.mergeUniverseStyle(from: loser, into: winner)
+
+        XCTAssertEqual(winner.style, .anthology)
+    }
 }

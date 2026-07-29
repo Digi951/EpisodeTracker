@@ -146,6 +146,7 @@ enum EntityDeduplicator {
                     didChange = true
                 }
 
+                mergeUniverseStyle(from: duplicate, into: keeper)
                 context.delete(duplicate)
                 didChange = true
                 summary.mergedUniverses += 1
@@ -153,6 +154,15 @@ enum EntityDeduplicator {
         }
 
         return didChange
+    }
+
+    /// Ein deklarierter Anthologie-Stil gewinnt gegen den Default `numbered`:
+    /// `numbered` kann „nie gesetzt" bedeuten, `anthology` ist immer eine
+    /// bewusste Deklaration aus dem Manifest.
+    static func mergeUniverseStyle(from loser: Universe, into winner: Universe) {
+        if loser.style == .anthology {
+            winner.style = .anthology
+        }
     }
 
     private static func universeDeduplicationKey(_ universe: Universe) -> String {
