@@ -37,6 +37,35 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
         }
     }
 
+    func testAnthologyUniverseNumberBandsDoNotCollapseIntoSpecialSection() {
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+        // shouldGroup() only groups a single filtered universe once it has >= 12 episodes.
+        let episodes = (1...12).map {
+            Episode(
+                episodeNumber: 0,
+                title: "Odcinek \($0)",
+                releaseYear: 2024,
+                kind: .special,
+                catalogSlug: "s\($0)",
+                universe: universe
+            )
+        }
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .number,
+            filterUniverse: universe,
+            universeCount: 1
+        )
+
+        XCTAssertFalse(
+            groups.contains { $0.id == "special" },
+            "Ein Anthologie-Katalog darf nicht komplett unter \"Sonderfolgen\" landen"
+        )
+        XCTAssertEqual(groups.flatMap(\.episodes).count, 12)
+    }
+
     // MARK: - Multi-Universe (Sonderfolgen bei ihrem Universe)
 
     func testMultiUniverseKeepsSpecialsInTheirUniverse() {

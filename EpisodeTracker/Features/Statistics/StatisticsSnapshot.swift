@@ -14,8 +14,10 @@ struct StatisticsSnapshot {
 
     init(episodes: [Episode]) {
         // Reihen-Kennzahlen (gehört / offen) zählen nur reguläre, nummerierte
-        // Folgen — Sonderfolgen würden den Katalog-Fortschritt verzerren.
-        let regular = episodes.filter { !$0.isSpecial }
+        // Folgen — Sonderfolgen würden den Katalog-Fortschritt verzerren. In
+        // Anthologie-Katalogen ist jede Folge `.special`, zählt hier aber als
+        // regulär mit, weil es dort keine Ausnahme-Sonderfolge gibt.
+        let regular = episodes.filter { !$0.showsSpecialBadge }
         listenedCount = regular.filter(\.isListened).count
         unlistenedCount = regular.count - listenedCount
         favoriteCount = episodes.filter(\.isFavorite).count

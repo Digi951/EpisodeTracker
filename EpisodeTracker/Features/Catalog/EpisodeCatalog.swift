@@ -154,11 +154,14 @@ final class EpisodeCatalog {
         let hasStreamingLinks = cachedEntries?.contains(where: \.hasStreamingLink) == true
         // Ein Cache, der vor der links-Umstellung geschrieben wurde, kennt nur die
         // vier historischen Dienste. Ein einmaliger Refresh holt die vollständigen
-        // Links nach, sobald ein Dienst des aktuellen Marktprofils fehlt.
-        let marketServices = StreamingMarketProfile.current.services
-        let hasAllMarketLinks = cachedEntries?.contains { entry in
-            entry.preferredLink(for: marketServices) != nil
-        } == true
+        // Links nach, sobald ein Dienst des Markts dieser Quelle im gesamten Cache
+        // fehlt. Das Marktprofil richtet sich nach der Katalogsprache, nicht nach
+        // der Geräte-UI-Sprache — sonst würde ein PL-Katalog auf einem DE-Gerät nie
+        // als vollständig gelten und bei jedem Refresh den ETag-Cache verwerfen.
+        let marketServices = StreamingMarketProfile.profile(forLanguageCode: source.effectiveLanguage).services
+        let hasAllMarketLinks = marketServices.allSatisfy { service in
+            cachedEntries?.contains { entry in entry.links[service.rawValue] != nil } == true
+        }
         let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
         let needsMarketLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasAllMarketLinks
         guard force || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return }

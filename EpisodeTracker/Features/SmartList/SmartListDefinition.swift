@@ -195,7 +195,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     static func continuationEpisodes(from episodes: [Episode]) -> [Episode] {
         // Nummern-basierte Reihenfolge: nur reguläre Folgen.
-        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.isSpecial }
+        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.showsSpecialBadge }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(episode: Episode, lastActivity: Date)] = []
@@ -222,7 +222,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     static func skippedEpisodes(from episodes: [Episode]) -> [Episode] {
         // Nummern-basierte Reihenfolge: nur reguläre Folgen.
-        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.isSpecial }
+        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.showsSpecialBadge }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         var results: [(universeName: String, episode: Episode)] = []
@@ -255,7 +255,7 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
 
     static func longPauseEpisodes(from episodes: [Episode], referenceDate: Date = .now) -> [Episode] {
         // Nummern-basierte Reihenfolge: nur reguläre Folgen.
-        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.isSpecial }
+        let withUniverse = visible(episodes).filter { $0.universe != nil && !$0.showsSpecialBadge }
         let grouped = Dictionary(grouping: withUniverse) { $0.universe! }
 
         guard let thresholdDate = Calendar.current.date(

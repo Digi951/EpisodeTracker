@@ -19,8 +19,17 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
     var rating: Int?
     var lastListenedAt: Date?
     var coverImageName: String?
+    /// Spiegelt `CatalogStyle.usesEpisodeNumbers` der zugehörigen Sammlung. Fehlt
+    /// dieses Feld in älteren, vor der Anthologie-Unterstützung geschriebenen
+    /// Snapshots, gilt `true` (bisheriges Verhalten: alle Kataloge nummeriert).
+    var usesEpisodeNumbers: Bool
 
     var isSpecial: Bool { kindRaw == "special" }
+
+    /// Wie `Episode.showsSpecialBadge`: eine Sonderfolge ist nur in einer
+    /// nummerierten Reihe eine Ausnahme. In Anthologie-Katalogen ist jede Folge
+    /// `.special`, ohne dass das etwas Besonderes bedeutet.
+    var showsSpecialBadge: Bool { isSpecial && usesEpisodeNumbers }
 
     init(
         id: UUID,
@@ -33,7 +42,8 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         kindRaw: String = "regular",
         rating: Int? = nil,
         lastListenedAt: Date? = nil,
-        coverImageName: String? = nil
+        coverImageName: String? = nil,
+        usesEpisodeNumbers: Bool = true
     ) {
         self.id = id
         self.episodeNumber = episodeNumber
@@ -46,6 +56,7 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         self.rating = rating
         self.lastListenedAt = lastListenedAt
         self.coverImageName = coverImageName
+        self.usesEpisodeNumbers = usesEpisodeNumbers
     }
 
     init(from decoder: Decoder) throws {
@@ -61,5 +72,6 @@ struct WidgetEpisodeSnapshot: Codable, Hashable {
         rating = try container.decodeIfPresent(Int.self, forKey: .rating)
         lastListenedAt = try container.decodeIfPresent(Date.self, forKey: .lastListenedAt)
         coverImageName = try container.decodeIfPresent(String.self, forKey: .coverImageName)
+        usesEpisodeNumbers = try container.decodeIfPresent(Bool.self, forKey: .usesEpisodeNumbers) ?? true
     }
 }

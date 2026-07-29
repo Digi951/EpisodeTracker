@@ -51,7 +51,8 @@ enum WidgetSyncStore {
                     kindRaw: episode.kindRaw,
                     rating: episode.rating,
                     lastListenedAt: episode.lastListenedAt,
-                    coverImageName: coverName
+                    coverImageName: coverName,
+                    usesEpisodeNumbers: (episode.universe?.style ?? .numbered).usesEpisodeNumbers
                 )
             }
         )

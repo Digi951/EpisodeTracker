@@ -36,10 +36,14 @@ struct EpisodeRowView: View {
 
     @ViewBuilder
     private var numberSlotContent: some View {
-        if episode.isSpecial {
+        if episode.showsSpecialBadge {
             Image(systemName: "sparkles")
-        } else {
+        } else if (episode.universe?.style ?? .numbered).usesEpisodeNumbers {
             Text("\(episode.episodeNumber)")
+        } else {
+            // Anthologie-Folge: weder eine sinnvolle Nummer noch eine Ausnahme,
+            // also auch kein Sparkles-Badge, das "Sonderfolge" suggerieren würde.
+            EmptyView()
         }
     }
 
@@ -69,7 +73,7 @@ struct EpisodeRowView: View {
                 .frame(width: slotWidth, alignment: .center)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(episode.isSpecial ? "\(specialAccessibilityLabel), Favorit" : "Folge \(episode.episodeNumber), Favorit"))
-        } else if episode.isSpecial {
+        } else if episode.showsSpecialBadge {
             numberSlotContent
                 .font(.headline)
                 .foregroundStyle(appAccentColor.color)

@@ -920,4 +920,26 @@ final class SmartListTests: XCTestCase {
 
         XCTAssertEqual(result.map(\.title), ["Next"], "Sonderfolge darf nicht in Lange nicht gehört erscheinen")
     }
+
+    // MARK: - Anthologie-Kataloge
+
+    func testAnthologyEpisodesAreNotBlanketExcludedFromContinuationGrouping() {
+        // In einem Anthologie-Katalog ist jede Folge kind == .special, aber
+        // showsSpecialBadge == false (keine Reihen-Nummer, also keine Ausnahme).
+        // Die Funktionen filtern jetzt auf showsSpecialBadge statt auf das rohe
+        // isSpecial, damit ein Anthologie-Katalog nicht pauschal ausgeschlossen wird.
+        // Hinweis: Weil alle Anthologie-Folgen ohne Nummernfeld dieselbe
+        // episodeNumber (0) speichern, liefert die zahlenbasierte
+        // "nächste/übersprungene Folge"-Logik hier weiterhin keinen Treffer —
+        // das ist eine separate, tiefere Lücke (keine sinnvolle Reihenfolge für
+        // Anthologie-Inhalte), nicht Gegenstand dieses Fixes.
+        let u = Universe(name: "Teatr Polskiego Radia")
+        u.style = .anthology
+        let listened = Episode(episodeNumber: 0, title: "Odcinek 1", releaseYear: 2024, kind: .special, catalogSlug: "s1", isListened: true, universe: u)
+        let unlistened = Episode(episodeNumber: 0, title: "Odcinek 2", releaseYear: 2024, kind: .special, catalogSlug: "s2", universe: u)
+
+        XCTAssertTrue(SmartListDefinition.continuationEpisodes(from: [listened, unlistened]).isEmpty)
+        XCTAssertTrue(SmartListDefinition.skippedEpisodes(from: [listened, unlistened]).isEmpty)
+        XCTAssertTrue(SmartListDefinition.longPauseEpisodes(from: [listened, unlistened]).isEmpty)
+    }
 }

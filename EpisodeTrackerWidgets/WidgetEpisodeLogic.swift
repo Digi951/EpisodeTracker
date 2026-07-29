@@ -49,7 +49,7 @@ enum WidgetEpisodeLogic {
 
         for (_, allUniverseEpisodes) in grouped {
             // „Nächste Folge in der Reihe" gilt nur für reguläre, nummerierte Folgen.
-            let universeEpisodes = allUniverseEpisodes.filter { !$0.isSpecial }
+            let universeEpisodes = allUniverseEpisodes.filter { !$0.showsSpecialBadge }
             let listened = universeEpisodes.filter(\.isListened)
             guard !listened.isEmpty else { continue }
 

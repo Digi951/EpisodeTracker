@@ -915,8 +915,8 @@ enum EpisodeListOrganizer {
     /// Sektion am Ende (in der Single-Universe-Ansicht). In der Multi-Universe-
     /// Ansicht landen Sonderfolgen direkt bei ihrem Universe (via universeGroups).
     private static func numberRangeGroupsWithSpecials(for episodes: [Episode]) -> [EpisodeListGroup] {
-        let regulars = episodes.filter { !$0.isSpecial }
-        let specials = episodes.filter(\.isSpecial)
+        let regulars = episodes.filter { !$0.showsSpecialBadge }
+        let specials = episodes.filter(\.showsSpecialBadge)
 
         let grouped = Dictionary(grouping: regulars) { episode in
             ((max(episode.episodeNumber, 1) - 1) / 25) * 25 + 1

@@ -31,6 +31,18 @@ final class StatisticsSnapshotTests: XCTestCase {
         XCTAssertEqual(snapshot.totalListens, 3, "Hörzähler bleibt global über alle Folgen")
     }
 
+    func testAnthologyCatalogCountsEveryEpisodeTowardProgress() {
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+        let listened = Episode(episodeNumber: 0, title: "Odcinek 1", releaseYear: 2024, kind: .special, catalogSlug: "s1", isListened: true, universe: universe)
+        let unlistened = Episode(episodeNumber: 0, title: "Odcinek 2", releaseYear: 2024, kind: .special, catalogSlug: "s2", isListened: false, universe: universe)
+
+        let snapshot = StatisticsSnapshot(episodes: [listened, unlistened])
+
+        XCTAssertEqual(snapshot.listenedCount, 1, "In einem Anthologie-Katalog ist jede Folge .special, soll aber trotzdem zaehlen")
+        XCTAssertEqual(snapshot.unlistenedCount, 1)
+    }
+
     func testSnapshotSortsTopRatedByRatingUniverseAndEpisodeNumber() {
         let alpha = Universe(name: "Alpha")
         let beta = Universe(name: "Beta")
