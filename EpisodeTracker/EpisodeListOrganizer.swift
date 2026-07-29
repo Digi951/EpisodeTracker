@@ -806,7 +806,7 @@ enum EpisodeListOrganizer {
                 return !note.isEmpty
             }
         case .specials:
-            return episodes.filter(\.isSpecial)
+            return episodes.filter(\.showsSpecialBadge)
         }
     }
 
@@ -864,10 +864,12 @@ enum EpisodeListOrganizer {
         }
 
         // Sonderfolgen ans Ende verschieben, Reihenfolge innerhalb der jeweiligen
-        // Gruppe bleibt erhalten (filter ist ordnungserhaltend).
-        let specials = episodes.filter(\.isSpecial)
+        // Gruppe bleibt erhalten (filter ist ordnungserhaltend). In einem
+        // Anthologie-Katalog gibt es keine Ausnahme-Sonderfolgen, die einen
+        // eigenen Platz am Ende verdienen — dort bleibt die Sortierung unverändert.
+        let specials = episodes.filter(\.showsSpecialBadge)
         if !specials.isEmpty {
-            episodes = episodes.filter { !$0.isSpecial } + specials
+            episodes = episodes.filter { !$0.showsSpecialBadge } + specials
         }
     }
 

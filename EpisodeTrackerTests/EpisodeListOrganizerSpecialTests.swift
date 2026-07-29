@@ -137,4 +137,77 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
 
         XCTAssertEqual(sorted.map(\.title), ["A", "B", "Special"])
     }
+
+    // MARK: - showsSpecialBadge
+
+    func testAnthologyUniverseDoesNotSplitOutSpecials() {
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+
+        let episode = Episode(
+            episodeNumber: 0,
+            title: "Słuchowisko",
+            releaseYear: 2024,
+            kind: .special,
+            catalogSlug: "pl-1",
+            universe: universe
+        )
+        universe.episodes = [episode]
+
+        XCTAssertFalse(episode.showsSpecialBadge)
+    }
+
+    func testNumberedUniverseKeepsSpecialBadge() {
+        let universe = Universe(name: "Die drei ???")
+
+        let episode = Episode(
+            episodeNumber: 0,
+            title: "Und der Weihnachtsfall",
+            releaseYear: 2024,
+            kind: .special,
+            catalogSlug: "xmas-2024",
+            universe: universe
+        )
+        universe.episodes = [episode]
+
+        XCTAssertTrue(episode.showsSpecialBadge)
+    }
+
+    func testSortDoesNotPushAnthologySpecialsToEnd() {
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+        let first = Episode(episodeNumber: 0, title: "A", releaseYear: 2020, kind: .special, catalogSlug: "a", universe: universe)
+        let second = Episode(episodeNumber: 0, title: "B", releaseYear: 2021, kind: .special, catalogSlug: "b", universe: universe)
+
+        let filtered = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: [second, first],
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: .all,
+            sortOrder: .releaseYear
+        )
+
+        XCTAssertEqual(filtered.map(\.title), ["B", "A"])
+    }
+
+    func testSpecialsFilterOnlyMatchesNumberedUniverseSpecials() {
+        let numbered = Universe(name: "Die drei ???")
+        let anthology = Universe(name: "Teatr Polskiego Radia")
+        anthology.style = .anthology
+
+        let numberedSpecial = Episode(episodeNumber: 0, title: "Jubiläum", releaseYear: 2024, kind: .special, catalogSlug: "jub", universe: numbered)
+        let anthologyEpisode = Episode(episodeNumber: 0, title: "Odcinek", releaseYear: 2024, kind: .special, catalogSlug: "od", universe: anthology)
+
+        let filtered = EpisodeListOrganizer.filteredAndSortedEpisodes(
+            episodes: [numberedSpecial, anthologyEpisode],
+            searchText: "",
+            filterUniverse: nil,
+            filterMood: nil,
+            statusFilter: .specials,
+            sortOrder: .number
+        )
+
+        XCTAssertEqual(filtered.map(\.title), ["Jubiläum"])
+    }
 }

@@ -90,6 +90,13 @@ extension Episode {
 
     var isSpecial: Bool { kind == .special }
 
+    /// Eine Sonderfolge ist nur in einer nummerierten Reihe eine Ausnahme.
+    /// In einem Anthologie-Katalog ist jede Folge eigenständig — dort wäre
+    /// die Auszeichnung sinnlos und würde die Liste verrauschen.
+    var showsSpecialBadge: Bool {
+        isSpecial && (universe?.style ?? .numbered).usesEpisodeNumbers
+    }
+
     static func makeSyncKey(
         universeSyncKey: String?,
         kind: EpisodeKind,
