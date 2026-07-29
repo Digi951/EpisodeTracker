@@ -7,6 +7,7 @@ final class Universe {
     var name: String = ""
     var syncKey: String?
     var coverImageName: String?
+    var styleRaw: String = CatalogStyle.numbered.rawValue
     @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
 
     init(
@@ -27,6 +28,13 @@ extension Universe {
         get { episodeRelationships ?? [] }
         set { episodeRelationships = newValue }
     }
+
+    var style: CatalogStyle {
+        get { CatalogStyle(rawValue: styleRaw) ?? .numbered }
+        set { styleRaw = newValue.rawValue }
+    }
+
+    var isAnthology: Bool { style == .anthology }
 
     static func makeSyncKey(name: String) -> String {
         "universe:\(name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"

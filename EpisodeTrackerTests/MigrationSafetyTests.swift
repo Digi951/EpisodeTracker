@@ -722,7 +722,7 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 7)
+        XCTAssertEqual(schemas.count, 8)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
@@ -730,22 +730,63 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertTrue(schemas[4] == SchemaV5.self)
         XCTAssertTrue(schemas[5] == SchemaV6.self)
         XCTAssertTrue(schemas[6] == SchemaV7.self)
+        XCTAssertTrue(schemas[7] == SchemaV8.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 6, "Should have V1→V2, V2→V3, V3→V4, V4→V5, V5→V6, and V6→V7 stages")
+        XCTAssertEqual(stages.count, 7, "Should have V1→V2, V2→V3, V3→V4, V4→V5, V5→V6, V6→V7, and V7→V8 stages")
     }
 
     func testMigrationPlanIncludesV6() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 7)
+        XCTAssertEqual(schemas.count, 8)
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(5, 0, 0) }))
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(6, 0, 0) }))
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(7, 0, 0) }))
 
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 6)
+        XCTAssertEqual(stages.count, 7)
+    }
+
+    // MARK: - SchemaV8: Katalog-Stil
+
+    func testUniverseDefaultsToNumberedStyleAfterUpgrade() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        context.insert(universe)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Universe>())
+        XCTAssertEqual(fetched.first?.style, .numbered)
+    }
+
+    func testUniverseStylePersistsRoundtrip() throws {
+        let url = temporaryStoreURL()
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        do {
+            let container = try makePersistentContainer(url: url)
+            let universe = Universe(name: "Teatr Polskiego Radia")
+            universe.style = .anthology
+            container.mainContext.insert(universe)
+            try container.mainContext.save()
+        }
+
+        let reopened = try makePersistentContainer(url: url)
+        let fetched = try reopened.mainContext.fetch(FetchDescriptor<Universe>())
+        XCTAssertEqual(fetched.first?.style, .anthology)
+    }
+
+    func testMigrationPlanIncludesV8Stage() {
+        XCTAssertEqual(EpisodeTrackerMigrationPlan.schemas.count, 8)
+        XCTAssertEqual(EpisodeTrackerMigrationPlan.stages.count, 7)
     }
 
     func testSchemaV5ReferencesHistoricalModels() {
