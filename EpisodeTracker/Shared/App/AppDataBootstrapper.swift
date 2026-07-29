@@ -83,6 +83,7 @@ enum AppDataBootstrapper {
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: containerSet.primary)
         reconcileSpecialEpisodes(container: containerSet.primary)
+        reconcileCatalogStyles(container: containerSet.primary)
         report.removedOrphanCovers = cleanupOrphanedCovers(container: containerSet.primary)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
@@ -112,6 +113,7 @@ enum AppDataBootstrapper {
         await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
         ensureBundledCollectionExists(container: container)
         reconcileSpecialEpisodes(container: container)
+        reconcileCatalogStyles(container: container)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -334,6 +336,22 @@ enum AppDataBootstrapper {
         SpecialEpisodeReconciler.reconcile(
             libraryEpisodes: specials,
             catalogEntries: EpisodeCatalog.shared.allEntries
+        )
+        try? context.save()
+    }
+
+    /// Gleicht den Katalog-Stil bestehender Sammlungen gegen das Manifest ab.
+    /// Nötig für Sammlungen, die vor SchemaV8 angelegt wurden oder deren
+    /// Manifest-Eintrag den Stil nachträglich deklariert.
+    @MainActor
+    static func reconcileCatalogStyles(container: ModelContainer) {
+        let context = container.mainContext
+        guard let universes = try? context.fetch(FetchDescriptor<Universe>()) else { return }
+        guard !universes.isEmpty else { return }
+
+        CatalogStyleReconciler.reconcile(
+            universes: universes,
+            sources: CatalogSourceRegistry.managedSources
         )
         try? context.save()
     }

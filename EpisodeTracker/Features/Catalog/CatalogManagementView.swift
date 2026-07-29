@@ -181,7 +181,9 @@ struct CatalogManagementView: View {
         if active {
             let key = source.name.lowercased()
             if !existingUniverseNameKeys.contains(key) {
-                modelContext.insert(Universe(name: source.name))
+                let universe = Universe(name: source.name)
+                universe.style = source.effectiveStyle
+                modelContext.insert(universe)
             }
         }
     }
