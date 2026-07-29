@@ -221,4 +221,32 @@ final class EpisodeEditSaveHandlerTests: XCTestCase {
         XCTAssertNotNil(episode.ratingUpdatedAt)
         XCTAssertNotNil(episode.streamingURLUpdatedAt)
     }
+
+    // MARK: - Anthologie-Kataloge
+
+    func testSaveInAnthologyUniverseForcesSpecialKindEvenWhenToggleIsOff() throws {
+        let context = try makeInMemoryContext()
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+        context.insert(universe)
+
+        var draft = EpisodeEditDraft()
+        draft.title = "Słuchowisko"
+        draft.releaseYearText = "2024"
+        draft.selectedUniverse = universe
+        draft.isSpecial = false
+
+        let outcome = EpisodeEditSaveHandler.save(
+            draft: draft,
+            existingEpisode: nil,
+            existingEpisodes: [],
+            coverChange: .keep,
+            in: context
+        )
+
+        XCTAssertEqual(outcome, .saved)
+        let stored = try context.fetch(FetchDescriptor<Episode>())
+        XCTAssertEqual(stored.first?.kind, .special)
+        XCTAssertNotNil(stored.first?.catalogSlug)
+    }
 }

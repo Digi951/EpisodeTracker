@@ -590,6 +590,10 @@ private struct EpisodeFormSection: View {
     let onApplyCatalogMatch: () -> Void
     let onSelectSuggestedEntry: (CatalogEntry) -> Void
 
+    private var usesEpisodeNumbers: Bool {
+        (selectedUniverse?.style ?? .numbered).usesEpisodeNumbers
+    }
+
     var body: some View {
         Section("Folge") {
             Picker("Katalog", selection: $selectedUniverse) {
@@ -601,12 +605,16 @@ private struct EpisodeFormSection: View {
                 }
             }
 
-            Toggle("Sonderfolge", isOn: $isSpecial)
+            if usesEpisodeNumbers {
+                Toggle("Sonderfolge", isOn: $isSpecial)
+            }
 
-            LabeledContent(isSpecial ? "Nummer (optional)" : "Nummer") {
-                TextField(isSpecial ? "Nummer (optional)" : "Nummer", text: $episodeNumberText)
-                    .multilineTextAlignment(.trailing)
-                    .keyboardType(.numberPad)
+            if usesEpisodeNumbers {
+                LabeledContent(isSpecial ? "Nummer (optional)" : "Nummer") {
+                    TextField(isSpecial ? "Nummer (optional)" : "Nummer", text: $episodeNumberText)
+                        .multilineTextAlignment(.trailing)
+                        .keyboardType(.numberPad)
+                }
             }
             if let catalogMatch, isNew {
                 Button(action: onApplyCatalogMatch) {

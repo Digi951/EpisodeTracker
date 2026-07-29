@@ -56,6 +56,19 @@ final class EpisodeEditDraftTests: XCTestCase {
         XCTAssertFalse(draft.isComplete)
     }
 
+    func testAnthologyUniverseDraftIsCompleteWithoutNumberOrSpecialToggle() {
+        let universe = Universe(name: "Teatr Polskiego Radia")
+        universe.style = .anthology
+        var draft = EpisodeEditDraft()
+        draft.title = "Słuchowisko"
+        draft.releaseYearText = "2024"
+        draft.selectedUniverse = universe
+        draft.episodeNumberText = ""
+        draft.isSpecial = false
+
+        XCTAssertTrue(draft.isComplete)
+    }
+
     func testInitFromEpisodeCopiesAllFields() {
         let universe = Universe(name: "TKKG")
         let mood = Mood(name: "spannend")

@@ -25,9 +25,13 @@ enum EpisodeEditSaveHandler {
             return .invalidInput
         }
 
-        let kind: EpisodeKind = draft.isSpecial ? .special : .regular
+        // Anthologie-Kataloge kennen keine Reihen-Nummer: jede Folge ist fachlich
+        // eine Sonderfolge (siehe CatalogStyle), auch wenn das Formular den Toggle
+        // dafür gar nicht erst zeigt.
+        let isSpecial = draft.isSpecial || !selectedUniverse.style.usesEpisodeNumbers
+        let kind: EpisodeKind = isSpecial ? .special : .regular
         let episodeNumber: Int
-        if draft.isSpecial {
+        if isSpecial {
             // Sonderfolgen: Nummer optional, dient nur Anzeige/Sortierung.
             episodeNumber = draft.parsedEpisodeNumber ?? 0
         } else {
@@ -101,7 +105,7 @@ enum EpisodeEditSaveHandler {
                 }
             }
         } else {
-            let slug: String? = draft.isSpecial
+            let slug: String? = isSpecial
                 ? SpecialEpisodeSlug.make(
                     title: draft.title,
                     releaseYear: releaseYear,
@@ -120,7 +124,7 @@ enum EpisodeEditSaveHandler {
                 universe: selectedUniverse,
                 moods: Array(draft.selectedMoods)
             )
-            if draft.isSpecial { newEpisode.specialUpdatedAt = .now }
+            if isSpecial { newEpisode.specialUpdatedAt = .now }
             newEpisode.streamingURL = draft.streamingURL.isEmpty ? nil : draft.streamingURL
             if !draft.selectedMoods.isEmpty {
                 newEpisode.moodsUpdatedAt = .now

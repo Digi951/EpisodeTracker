@@ -43,7 +43,9 @@ struct EpisodeEditDraft {
 
     var isComplete: Bool {
         guard !title.isEmpty, parsedReleaseYear != nil, selectedUniverse != nil else { return false }
-        if isSpecial { return true }
+        // Anthologie-Kataloge zeigen weder Sonderfolge-Toggle noch Nummernfeld,
+        // daher muss auch hier der Katalog-Stil und nicht nur `isSpecial` gelten.
+        if isSpecial || selectedUniverse?.style.usesEpisodeNumbers == false { return true }
         return parsedEpisodeNumber != nil
     }
 }

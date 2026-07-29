@@ -26,6 +26,14 @@ struct EpisodeRowView: View {
         return String(first).uppercased()
     }
 
+    /// Wortwahl für den Nummernslot: "Sonderfolge" ist nur in einer nummerierten
+    /// Reihe eine sinnvolle Ausnahme-Bezeichnung. In einem Anthologie-Katalog
+    /// (jede Folge ist `.special`, aber ohne Reihen-Nummer) fällt die Bezeichnung
+    /// auf den Folgentitel zurück statt eine bedeutungslose Nummer zu zeigen.
+    private var specialAccessibilityLabel: String {
+        episode.showsSpecialBadge ? "Sonderfolge" : episode.title
+    }
+
     @ViewBuilder
     private var numberSlotContent: some View {
         if episode.isSpecial {
@@ -60,13 +68,13 @@ struct EpisodeRowView: View {
                 }
                 .frame(width: slotWidth, alignment: .center)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(episode.isSpecial ? "Sonderfolge, Favorit" : "Folge \(episode.episodeNumber), Favorit"))
+                .accessibilityLabel(Text(episode.isSpecial ? "\(specialAccessibilityLabel), Favorit" : "Folge \(episode.episodeNumber), Favorit"))
         } else if episode.isSpecial {
             numberSlotContent
                 .font(.headline)
                 .foregroundStyle(appAccentColor.color)
                 .frame(width: slotWidth, alignment: .center)
-                .accessibilityLabel(Text("Sonderfolge"))
+                .accessibilityLabel(Text(specialAccessibilityLabel))
         } else {
             numberSlotContent
                 .font(.headline)
