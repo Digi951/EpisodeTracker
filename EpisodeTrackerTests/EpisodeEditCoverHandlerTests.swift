@@ -43,4 +43,34 @@ final class EpisodeEditCoverHandlerTests: XCTestCase {
         handler.applyPickedImage(UIImage(systemName: "star")!)
         XCTAssertTrue(handler.hasVisibleCover(for: nil))
     }
+
+    func testRequestEditOpensEditorWithCurrentImageWhenPending() {
+        let handler = EpisodeEditCoverHandler()
+        let image = UIImage(systemName: "star")!
+        handler.applyPickedImage(image)
+
+        handler.requestEdit(for: nil)
+
+        XCTAssertTrue(handler.imageToEdit?.image === image)
+    }
+
+    func testRequestEditDoesNothingWithoutAVisibleCover() {
+        let handler = EpisodeEditCoverHandler()
+
+        handler.requestEdit(for: nil)
+
+        XCTAssertNil(handler.imageToEdit)
+    }
+
+    func testConfirmingEditedImageReplacesCoverImage() {
+        let handler = EpisodeEditCoverHandler()
+        let original = UIImage(systemName: "star")!
+        let edited = UIImage(systemName: "star.fill")!
+        handler.applyPickedImage(original)
+        handler.requestEdit(for: nil)
+
+        handler.applyPickedImage(edited)
+
+        XCTAssertEqual(handler.coverChange, .replace(edited))
+    }
 }

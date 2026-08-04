@@ -200,6 +200,11 @@ struct EpisodeEditView: View {
                         }
                         .disabled(!coverHandler.clipboardHasImage)
                         if hasVisibleCover {
+                            Button {
+                                coverHandler.requestEdit(for: episode)
+                            } label: {
+                                Label("Bearbeiten", systemImage: "crop.rotate")
+                            }
                             Button(role: .destructive) {
                                 coverHandler.requestRemoval()
                             } label: {
@@ -349,6 +354,11 @@ struct EpisodeEditView: View {
         .onChange(of: coverHandler.selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
             Task { await coverHandler.loadPickedItem(newItem) }
+        }
+        .sheet(item: $coverHandler.imageToEdit) { editable in
+            ImageEditSheet(image: editable.image) { editedImage in
+                coverHandler.applyPickedImage(editedImage)
+            }
         }
     }
 

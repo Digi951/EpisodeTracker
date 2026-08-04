@@ -9,6 +9,7 @@ final class EpisodeEditCoverHandler {
     var removeCover = false
     var selectedPhotoItem: PhotosPickerItem?
     var clipboardHasImage = false
+    var imageToEdit: EditableCoverImage?
 
     var hasNewImage: Bool { coverImage != nil }
 
@@ -56,5 +57,19 @@ final class EpisodeEditCoverHandler {
         if coverImage != nil { return true }
         guard let name = episode?.coverImageName, !name.isEmpty else { return false }
         return CoverImageStore().exists(name: name)
+    }
+
+    /// Das aktuell angezeigte Cover (frisch gewählt oder bereits gespeichert), zum Bearbeiten.
+    func currentImage(for episode: Episode?) -> UIImage? {
+        if let coverImage { return coverImage }
+        if removeCover { return nil }
+        guard let name = episode?.coverImageName, !name.isEmpty else { return nil }
+        return CoverImageStore().load(name: name)
+    }
+
+    /// Öffnet den Bearbeiten-Editor (Drehen/Zuschneiden) für das aktuell sichtbare Cover.
+    func requestEdit(for episode: Episode?) {
+        guard let image = currentImage(for: episode) else { return }
+        imageToEdit = EditableCoverImage(image: image)
     }
 }
