@@ -935,7 +935,7 @@ enum EpisodeListOrganizer {
             groups.append(EpisodeListGroup(
                 id: "special",
                 title: String(localized: "EpisodeList.SpecialSection", defaultValue: "Sonderfolgen"),
-                episodes: specials.sorted(by: specialSort),
+                episodes: specials.sorted { specialSort($0, $1) },
                 progressTotalOverride: nil
             ))
         }
