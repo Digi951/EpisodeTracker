@@ -276,7 +276,7 @@
 				};
 			};
 			buildConfigurationList = FA49EC9A2F85085600521E9B /* Build configuration list for PBXProject "EpisodeTracker" */;
-			developmentRegion = de;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				de,
