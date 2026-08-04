@@ -25,27 +25,15 @@ struct EpisodeListView: View {
     }
 
     private var filteredEpisodes: [Episode] {
-        EpisodeListOrganizer.filteredAndSortedEpisodes(
-            episodes: episodes,
-            searchText: controls.searchText,
-            filterUniverse: controls.filterUniverse,
-            filterMood: controls.filterMood,
-            statusFilter: controls.statusFilter,
-            sortOrder: controls.sortOrder
-        )
+        EpisodeListOrganizer.filteredAndSortedEpisodes(episodes: episodes, controls: controls)
     }
 
     private var availableUniverseFilters: [Universe] {
-        let filterContextEpisodes = EpisodeListOrganizer.filteredAndSortedEpisodes(
+        EpisodeListOrganizer.availableUniverseFilters(
             episodes: episodes,
-            searchText: controls.searchText,
-            filterUniverse: nil,
-            filterMood: controls.filterMood,
-            statusFilter: controls.statusFilter,
-            sortOrder: controls.sortOrder
+            universes: universes,
+            controls: controls
         )
-        let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
-        return universes.filter { visibleUniverseIDs.contains($0.id) }
     }
 
     private var shouldShowUniverseSections: Bool {
@@ -55,8 +43,7 @@ struct EpisodeListView: View {
     private var episodeGroups: [EpisodeListGroup] {
         EpisodeListOrganizer.groups(
             for: filteredEpisodes,
-            sortOrder: controls.sortOrder,
-            filterUniverse: controls.filterUniverse,
+            controls: controls,
             universeCount: universes.count,
             catalogTotalsByUniverse: catalogTotalsByUniverse,
             preferCatalogTotals: prefersCatalogProgressTotals
@@ -64,28 +51,15 @@ struct EpisodeListView: View {
     }
 
     private var catalogTotalsByUniverse: [String: Int] {
-        Dictionary(
-            uniqueKeysWithValues: Dictionary(grouping: EpisodeCatalog.shared.allEntries) {
-                AppLocalization.displayName(forUniverseName: $0.collectionName).lowercased()
-            }.map { key, entries in
-                let uniqueNumbers = Set(entries.compactMap(\.number))
-                return (key, uniqueNumbers.count)
-            }
-        )
+        EpisodeListOrganizer.catalogTotalsByUniverse(entries: EpisodeCatalog.shared.allEntries)
     }
 
     private var availableMoodFilters: [Mood] {
-        moods.filter { mood in
-            episodes.contains { episode in
-                episode.moods.contains { $0.matches(mood) }
-            }
-        }
+        EpisodeListOrganizer.availableMoodFilters(episodes: episodes, moods: moods)
     }
 
     private var anyEpisodeHasCover: Bool {
-        episodes.contains { episode in
-            episode.coverImageName?.isEmpty == false
-        }
+        EpisodeListOrganizer.anyEpisodeHasCover(episodes: episodes)
     }
 
     private var groupCollapseScopeKey: String {
@@ -422,20 +396,6 @@ struct EpisodeListView: View {
                 scopeKey: groupCollapseScopeKey
             )
         }
-    }
-}
-
-private struct EpisodeLibrarySnapshot {
-    let episodeCount: Int
-    let listenedCount: Int
-    let openCount: Int
-    let totalListens: Int
-
-    init(episodes: [Episode]) {
-        episodeCount = episodes.count
-        listenedCount = episodes.filter(\.isListened).count
-        openCount = episodeCount - listenedCount
-        totalListens = episodes.reduce(0) { $0 + $1.listenCount }
     }
 }
 

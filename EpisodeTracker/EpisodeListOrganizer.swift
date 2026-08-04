@@ -268,6 +268,23 @@ struct EpisodeListGroup: Identifiable {
     }
 }
 
+/// Kennzahlen für die Bibliotheks-Übersichtskarte. Wird von der iPhone-Liste
+/// (`LibrarySnapshotView`) und der iPad-Sidebar (`CompactLibrarySnapshotView`)
+/// geteilt; die beiden Views unterscheiden sich nur im Layout.
+struct EpisodeLibrarySnapshot {
+    let episodeCount: Int
+    let listenedCount: Int
+    let openCount: Int
+    let totalListens: Int
+
+    init(episodes: [Episode]) {
+        episodeCount = episodes.count
+        listenedCount = episodes.filter(\.isListened).count
+        openCount = episodeCount - listenedCount
+        totalListens = episodes.reduce(0) { $0 + $1.listenCount }
+    }
+}
+
 struct CatalogUpdateBannerRecommendation: Equatable {
     let missingEpisodeCount: Int
     let universeCount: Int
@@ -696,6 +713,95 @@ enum EpisodeListOrganizer {
             firstEpisodeTitle: first.entry.title
         )
     }
+
+    // MARK: - Abgeleiteter Bibliothekszustand
+    //
+    // Diese Funktionen sind die eine Quelle der Wahrheit für iPhone-Liste
+    // (`EpisodeListView`) und iPad-Sidebar (`IPadEpisodeListView`). Vorher hatte
+    // jede View ihre eigene Kopie, die auseinandergelaufen ist — siehe
+    // `catalogTotalsByUniverse`.
+
+    static func filteredAndSortedEpisodes(
+        episodes: [Episode],
+        controls: EpisodeListControlsState
+    ) -> [Episode] {
+        filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: controls.searchText,
+            filterUniverse: controls.filterUniverse,
+            filterMood: controls.filterMood,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
+        )
+    }
+
+    static func groups(
+        for episodes: [Episode],
+        controls: EpisodeListControlsState,
+        universeCount: Int,
+        catalogTotalsByUniverse: [String: Int],
+        preferCatalogTotals: Bool
+    ) -> [EpisodeListGroup] {
+        groups(
+            for: episodes,
+            sortOrder: controls.sortOrder,
+            filterUniverse: controls.filterUniverse,
+            universeCount: universeCount,
+            catalogTotalsByUniverse: catalogTotalsByUniverse,
+            preferCatalogTotals: preferCatalogTotals
+        )
+    }
+
+    /// Anzahl bekannter Katalogfolgen je Sammlung, Basis für den Fortschrittsbalken.
+    ///
+    /// Sonderfolgen haben bewusst keine Nummer (`CatalogEntry.number` ist `Int?`)
+    /// und gehören nicht ins Nummernband — `compactMap` hält sie draußen. Die
+    /// frühere iPad-Kopie benutzte hier `map` und erzeugte damit ein `Set<Int?>`,
+    /// in dem alle Sonderfolgen zu einem `nil` kollabierten und den Gesamtwert
+    /// jeder Sammlung mit Sonderfolgen um genau 1 zu hoch machten.
+    static func catalogTotalsByUniverse(entries: [CatalogEntry]) -> [String: Int] {
+        Dictionary(
+            uniqueKeysWithValues: Dictionary(grouping: entries) {
+                AppLocalization.displayName(forUniverseName: $0.collectionName).lowercased()
+            }.map { key, entries in
+                (key, Set(entries.compactMap(\.number)).count)
+            }
+        )
+    }
+
+    /// Sammlungen, die unter den übrigen aktiven Filtern noch Treffer liefern.
+    /// Der Sammlungsfilter selbst bleibt dabei außen vor, damit die aktuell
+    /// gewählte Sammlung nicht aus ihrer eigenen Auswahlliste verschwindet.
+    static func availableUniverseFilters(
+        episodes: [Episode],
+        universes: [Universe],
+        controls: EpisodeListControlsState
+    ) -> [Universe] {
+        let filterContextEpisodes = filteredAndSortedEpisodes(
+            episodes: episodes,
+            searchText: controls.searchText,
+            filterUniverse: nil,
+            filterMood: controls.filterMood,
+            statusFilter: controls.statusFilter,
+            sortOrder: controls.sortOrder
+        )
+        let visibleUniverseIDs = Set(filterContextEpisodes.compactMap { $0.universe?.id })
+        return universes.filter { visibleUniverseIDs.contains($0.id) }
+    }
+
+    static func availableMoodFilters(episodes: [Episode], moods: [Mood]) -> [Mood] {
+        moods.filter { mood in
+            episodes.contains { episode in
+                episode.moods.contains { $0.matches(mood) }
+            }
+        }
+    }
+
+    static func anyEpisodeHasCover(episodes: [Episode]) -> Bool {
+        episodes.contains { $0.coverImageName?.isEmpty == false }
+    }
+
+    // MARK: - Filtern, Sortieren, Gruppieren
 
     static func filteredAndSortedEpisodes(
         episodes: [Episode],

@@ -6,6 +6,52 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
         (1...count).map { Episode(episodeNumber: $0, title: "Folge \($0)", releaseYear: 1979, universe: universe) }
     }
 
+    // MARK: - Katalog-Gesamtzahlen
+
+    /// Sonderfolgen haben keine Nummer und dürfen den Nummernband-Gesamtwert
+    /// nicht erhöhen. Die frühere iPad-Kopie nutzte `map` statt `compactMap` und
+    /// zählte alle Sonderfolgen als eine zusätzliche Nummer mit.
+    func testCatalogTotalsIgnoreSpecialsWithoutNumber() {
+        let entries = [
+            CatalogEntry(number: 1, title: "Folge 1", releaseYear: 1979, collectionName: "Die drei ???", links: [:]),
+            CatalogEntry(number: 2, title: "Folge 2", releaseYear: 1979, collectionName: "Die drei ???", links: [:]),
+            CatalogEntry(
+                number: nil,
+                kind: .special,
+                slug: "phantomsee-2024",
+                title: "Phantomsee",
+                releaseYear: 2024,
+                collectionName: "Die drei ???",
+                links: [:]
+            ),
+            CatalogEntry(
+                number: nil,
+                kind: .special,
+                slug: "toteninsel-2025",
+                title: "Toteninsel",
+                releaseYear: 2025,
+                collectionName: "Die drei ???",
+                links: [:]
+            )
+        ]
+
+        let totals = EpisodeListOrganizer.catalogTotalsByUniverse(entries: entries)
+
+        XCTAssertEqual(totals["die drei ???"], 2)
+    }
+
+    func testCatalogTotalsCountEachNumberOnce() {
+        let entries = [
+            CatalogEntry(number: 1, title: "Folge 1", releaseYear: 1979, collectionName: "TKKG", links: [:]),
+            CatalogEntry(number: 1, title: "Folge 1 (Neuauflage)", releaseYear: 1995, collectionName: "TKKG", links: [:]),
+            CatalogEntry(number: 2, title: "Folge 2", releaseYear: 1980, collectionName: "TKKG", links: [:])
+        ]
+
+        let totals = EpisodeListOrganizer.catalogTotalsByUniverse(entries: entries)
+
+        XCTAssertEqual(totals["tkkg"], 2)
+    }
+
     // MARK: - Single-Universe (Nummernbänder)
 
     func testSingleUniverseNumberBandsAppendSpecialSection() {
