@@ -41,11 +41,16 @@ struct EpisodeEditDraft {
         Int(releaseYearText.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
+    /// Anthologie-Kataloge kennen keine Reihen-Nummer: jede Folge ist fachlich eine
+    /// Sonderfolge (siehe `CatalogStyle`), auch wenn das Formular den Toggle dafür
+    /// gar nicht erst zeigt. Eine Quelle der Wahrheit für Formular und Speicherpfad.
+    var resolvedIsSpecial: Bool {
+        isSpecial || selectedUniverse?.style.usesEpisodeNumbers == false
+    }
+
     var isComplete: Bool {
         guard !title.isEmpty, parsedReleaseYear != nil, selectedUniverse != nil else { return false }
-        // Anthologie-Kataloge zeigen weder Sonderfolge-Toggle noch Nummernfeld,
-        // daher muss auch hier der Katalog-Stil und nicht nur `isSpecial` gelten.
-        if isSpecial || selectedUniverse?.style.usesEpisodeNumbers == false { return true }
+        if resolvedIsSpecial { return true }
         return parsedEpisodeNumber != nil
     }
 }

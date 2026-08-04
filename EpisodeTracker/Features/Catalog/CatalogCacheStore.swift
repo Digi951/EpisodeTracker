@@ -69,6 +69,7 @@ struct CatalogCacheStore {
     func saveManifest(_ manifest: CatalogManifest) throws {
         let data = try JSONEncoder().encode(manifest)
         try data.write(to: manifestURL, options: [.atomic])
+        CatalogSourceRegistry.invalidateManagedSourcesCache()
     }
 
     func loadRemoteCache(universeName: String, cacheKey: String? = nil) -> [CatalogEntry]? {

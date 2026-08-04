@@ -35,7 +35,7 @@ struct CatalogManagementView: View {
     }
 
     private var existingUniverseNameKeys: Set<String> {
-        Set(universes.map { $0.name.lowercased() })
+        Set(universes.map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) })
     }
 
     private var lastGlobalRefreshText: String? {
@@ -169,9 +169,10 @@ struct CatalogManagementView: View {
     }
 
     private func episodeCount(for universeName: String) -> Int {
-        universes.first(where: {
-            $0.name.caseInsensitiveCompare(universeName) == .orderedSame
-        })?.episodes.count ?? 0
+        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
+        return universes.first {
+            CatalogLibraryMatcher.normalizedCollectionKey($0.name) == key
+        }?.episodes.count ?? 0
     }
 
     private func toggleCatalog(_ source: ManagedCatalogSource, active: Bool) {
@@ -179,7 +180,7 @@ struct CatalogManagementView: View {
         activeCatalogIDs = activeCatalogStore.activeIDs
 
         if active {
-            let key = source.name.lowercased()
+            let key = CatalogLibraryMatcher.normalizedCollectionKey(source.name)
             if !existingUniverseNameKeys.contains(key) {
                 let universe = Universe(name: source.name)
                 universe.style = source.effectiveStyle
@@ -197,7 +198,7 @@ struct CatalogManagementView: View {
             return
         }
 
-        if universes.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+        if existingUniverseNameKeys.contains(CatalogLibraryMatcher.normalizedCollectionKey(trimmedName)) {
             validationMessage = "Dieser Katalog existiert bereits."
             return
         }
@@ -208,8 +209,9 @@ struct CatalogManagementView: View {
 
     private func deleteCustomUniverses(at offsets: IndexSet) {
         validationMessage = nil
+        let predefinedKeys = Set(predefinedCatalogSources.map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) })
         let customUniverses = universes.filter { universe in
-            !predefinedCatalogSources.contains { $0.name.caseInsensitiveCompare(universe.name) == .orderedSame }
+            !predefinedKeys.contains(CatalogLibraryMatcher.normalizedCollectionKey(universe.name))
         }
 
         for index in offsets {

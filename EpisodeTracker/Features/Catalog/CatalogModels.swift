@@ -340,9 +340,28 @@ enum CatalogSourceRegistry {
     static let manifestURL = URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/manifest.json")!
     static let manifestMetadataKey = "__catalog_manifest__"
 
+    // Wird aus View-Bodies, Bootstrap und Stores sehr häufig gelesen; ohne Cache
+    // bedeutet jeder Zugriff einen Manifest-Read von der Platte plus JSON-Decode.
+    // Einziger Schreibpfad ist `CatalogCacheStore.saveManifest`, das invalidiert.
+    private static let managedSourcesLock = NSLock()
+    private static var cachedManagedSources: [ManagedCatalogSource]?
+
     static var managedSources: [ManagedCatalogSource] {
-        deduplicatedManagedSources(CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources)
+        managedSourcesLock.lock()
+        defer { managedSourcesLock.unlock() }
+
+        if let cachedManagedSources { return cachedManagedSources }
+
+        let sources = deduplicatedManagedSources(CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources)
             .filter(\.matchesDeviceLanguage)
+        cachedManagedSources = sources
+        return sources
+    }
+
+    static func invalidateManagedSourcesCache() {
+        managedSourcesLock.lock()
+        defer { managedSourcesLock.unlock() }
+        cachedManagedSources = nil
     }
 
     static func managedSource(named universeName: String) -> ManagedCatalogSource? {

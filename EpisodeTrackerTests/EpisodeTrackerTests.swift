@@ -2630,6 +2630,20 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertTrue(orphaned.isEmpty)
     }
 
+    func testManagedSourcesCacheRebuildsAfterInvalidation() {
+        // Warmlauf, dann Cache-Treffer: beide müssen dasselbe liefern.
+        let first = CatalogSourceRegistry.managedSources
+        let cached = CatalogSourceRegistry.managedSources
+        XCTAssertEqual(first.map(\.id), cached.map(\.id))
+        XCTAssertFalse(first.isEmpty, "Fallback-Quellen dürfen nie zu einer leeren Liste führen")
+
+        // Nach dem Invalidieren muss der Neuaufbau dasselbe Ergebnis liefern —
+        // nicht leer und ohne Deadlock durch die Lock-Verschachtelung.
+        CatalogSourceRegistry.invalidateManagedSourcesCache()
+        let rebuilt = CatalogSourceRegistry.managedSources
+        XCTAssertEqual(rebuilt.map(\.id), first.map(\.id))
+    }
+
     func testRemovedCatalogsBannerShowsCorrectTextForSingleCatalog() {
         let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG"])
 

@@ -25,10 +25,7 @@ enum EpisodeEditSaveHandler {
             return .invalidInput
         }
 
-        // Anthologie-Kataloge kennen keine Reihen-Nummer: jede Folge ist fachlich
-        // eine Sonderfolge (siehe CatalogStyle), auch wenn das Formular den Toggle
-        // dafür gar nicht erst zeigt.
-        let isSpecial = draft.isSpecial || !selectedUniverse.style.usesEpisodeNumbers
+        let isSpecial = draft.resolvedIsSpecial
         let kind: EpisodeKind = isSpecial ? .special : .regular
         let episodeNumber: Int
         if isSpecial {
