@@ -223,3 +223,130 @@ enum BackupRestorer {
         }
     }
 }
+
+/// Besitzt Zustand und Ablauf für Backup-Export/-Import: Statusmeldung,
+/// Datei-Picker-Sichtbarkeit, Import-Bestätigung. Aus `SettingsView`
+/// herausgezogen, die davor vier unabhängige Einstellungs-Domänen (App-Icon,
+/// Backup, Anzeige-Reset, Sync-Diagnose) in einer View bündelte. Bleibt hier
+/// statt in einer eigenen Datei, weil `BackupDocument.swift` bereits alles
+/// hält, was zu "Backup" gehört.
+@Observable
+final class BackupExportImportController {
+    var statusMessage: String?
+    var statusIsError = false
+    var showingImporter = false
+    var showingExporter = false
+    var exportDocument: JSONBackupDocument?
+    var pendingImportURL: URL?
+
+    var backupFileName: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return "HoerspielLog-Backup-\(formatter.string(from: .now))"
+    }
+
+    func export(universes: [Universe], moods: [Mood], episodes: [Episode]) {
+        do {
+            let payload = Self.makePayload(universes: universes, moods: moods, episodes: episodes)
+            let data = try JSONEncoder.backupEncoder.encode(payload)
+            exportDocument = JSONBackupDocument(data: data)
+            showingExporter = true
+            statusMessage = nil
+        } catch {
+            statusIsError = true
+            statusMessage = "Export fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    func handleExportResult(_ result: Result<URL, Error>) {
+        switch result {
+        case .success:
+            statusIsError = false
+            statusMessage = "Backup wurde exportiert."
+        case .failure(let error):
+            statusIsError = true
+            statusMessage = "Export fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    func handleImportPick(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            pendingImportURL = url
+        case .failure(let error):
+            statusIsError = true
+            statusMessage = "Import fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    func cancelImport() {
+        pendingImportURL = nil
+    }
+
+    func confirmImport(
+        existingUniverses: [Universe],
+        existingMoods: [Mood],
+        existingEpisodes: [Episode],
+        context: ModelContext
+    ) {
+        guard let url = pendingImportURL else { return }
+        pendingImportURL = nil
+
+        do {
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let data = try Data(contentsOf: url)
+            let payload = try JSONDecoder.backupDecoder.decode(BackupPayload.self, from: data)
+            BackupRestorer.apply(
+                payload,
+                existingUniverses: existingUniverses,
+                existingMoods: existingMoods,
+                existingEpisodes: existingEpisodes,
+                context: context
+            )
+
+            statusIsError = false
+            statusMessage = "Backup importiert: \(payload.episodes.count) Folgen, \(payload.moods.count) Stimmungen."
+        } catch {
+            statusIsError = true
+            statusMessage = "Import fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    private static func makePayload(universes: [Universe], moods: [Mood], episodes: [Episode]) -> BackupPayload {
+        let universesData = universes.map { universe in
+            BackupCollection(name: universe.name)
+        }
+        let moodsData = moods.map { mood in
+            BackupMood(name: mood.name, iconName: mood.iconName)
+        }
+        let episodesData = episodes.map { episode in
+            BackupEpisode(
+                episodeNumber: episode.episodeNumber,
+                kind: episode.kind,
+                catalogSlug: episode.catalogSlug,
+                title: episode.title,
+                releaseYear: episode.releaseYear,
+                personalNote: episode.personalNote,
+                isListened: episode.isListened,
+                rating: episode.rating,
+                listenCount: episode.listenCount,
+                lastListenedAt: episode.lastListenedAt,
+                collectionName: episode.universe?.name,
+                moodNames: episode.moods.map(\.name)
+            )
+        }
+        return BackupPayload(
+            exportedAt: .now,
+            schemaVersion: 2,
+            collections: universesData,
+            moods: moodsData,
+            episodes: episodesData
+        )
+    }
+}

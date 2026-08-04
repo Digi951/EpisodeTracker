@@ -24,12 +24,7 @@ struct SettingsView: View {
     @Query(sort: \Episode.episodeNumber) private var episodes: [Episode]
 
     @State private var activeCatalogIDs = ActiveCatalogStore().activeIDs
-    @State private var backupStatusMessage: String?
-    @State private var backupStatusIsError = false
-    @State private var showingImporter = false
-    @State private var showingExporter = false
-    @State private var exportDocument: JSONBackupDocument?
-    @State private var pendingImportURL: URL?
+    @State private var backup = BackupExportImportController()
     @State private var showingResetConfirmation = false
     @State private var syncMigrationStatusMessage: String?
     @State private var syncMigrationStatusIsError = false
@@ -92,10 +87,10 @@ struct SettingsView: View {
             SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
             SettingsBackupSection(
                 episodeCount: episodes.count,
-                backupStatusMessage: backupStatusMessage,
-                backupStatusIsError: backupStatusIsError,
-                onExport: exportBackup,
-                onImport: { showingImporter = true }
+                backupStatusMessage: backup.statusMessage,
+                backupStatusIsError: backup.statusIsError,
+                onExport: { backup.export(universes: universes, moods: moods, episodes: episodes) },
+                onImport: { backup.showingImporter = true }
             )
 
             SettingsResetSection(
@@ -133,52 +128,41 @@ struct SettingsView: View {
         .contentMargins(.horizontal, horizontalSizeClass == .regular ? 104 : 0, for: .scrollContent)
         .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
         .fileExporter(
-            isPresented: $showingExporter,
-            document: exportDocument,
+            isPresented: $backup.showingExporter,
+            document: backup.exportDocument,
             contentType: .json,
-            defaultFilename: backupFileName
+            defaultFilename: backup.backupFileName
         ) { result in
-            switch result {
-            case .success:
-                backupStatusIsError = false
-                backupStatusMessage = "Backup wurde exportiert."
-            case .failure(let error):
-                backupStatusIsError = true
-                backupStatusMessage = "Export fehlgeschlagen: \(error.localizedDescription)"
-            }
+            backup.handleExportResult(result)
         }
         .fileImporter(
-            isPresented: $showingImporter,
+            isPresented: $backup.showingImporter,
             allowedContentTypes: [.json]
         ) { result in
-            switch result {
-            case .success(let url):
-                pendingImportURL = url
-            case .failure(let error):
-                backupStatusIsError = true
-                backupStatusMessage = "Import fehlgeschlagen: \(error.localizedDescription)"
-            }
+            backup.handleImportPick(result)
         }
         .confirmationDialog(
             "Backup importieren?",
             isPresented: Binding(
-                get: { pendingImportURL != nil },
+                get: { backup.pendingImportURL != nil },
                 set: { isPresented in
                     if !isPresented {
-                        pendingImportURL = nil
+                        backup.cancelImport()
                     }
                 }
             ),
             titleVisibility: .visible
         ) {
             Button("Import starten") {
-                if let pendingImportURL {
-                    importBackup(from: pendingImportURL)
-                }
-                self.pendingImportURL = nil
+                backup.confirmImport(
+                    existingUniverses: universes,
+                    existingMoods: moods,
+                    existingEpisodes: episodes,
+                    context: modelContext
+                )
             }
             Button("Abbrechen", role: .cancel) {
-                pendingImportURL = nil
+                backup.cancelImport()
             }
         } message: {
             Text("Bestehende Folgen mit gleicher Nummer werden aktualisiert, neue ergänzt.")
@@ -237,12 +221,6 @@ struct SettingsView: View {
     }
 #endif
 
-    private var backupFileName: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "HoerspielLog-Backup-\(formatter.string(from: .now))"
-    }
-
     private func resetDisplaySettings() {
         libraryTitle = "Meine Hörspiele"
         appearanceModeRawValue = AppearanceMode.system.rawValue
@@ -286,81 +264,6 @@ struct SettingsView: View {
 #endif
     }
 
-    private func exportBackup() {
-        do {
-            let payload = makeBackupPayload()
-            let data = try JSONEncoder.backupEncoder.encode(payload)
-            exportDocument = JSONBackupDocument(data: data)
-            showingExporter = true
-            backupStatusMessage = nil
-        } catch {
-            backupStatusIsError = true
-            backupStatusMessage = "Export fehlgeschlagen: \(error.localizedDescription)"
-        }
-    }
-
-    private func importBackup(from url: URL) {
-        do {
-            let didAccess = url.startAccessingSecurityScopedResource()
-            defer {
-                if didAccess {
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
-
-            let data = try Data(contentsOf: url)
-            let payload = try JSONDecoder.backupDecoder.decode(BackupPayload.self, from: data)
-            applyBackup(payload)
-
-            backupStatusIsError = false
-            backupStatusMessage = "Backup importiert: \(payload.episodes.count) Folgen, \(payload.moods.count) Stimmungen."
-        } catch {
-            backupStatusIsError = true
-            backupStatusMessage = "Import fehlgeschlagen: \(error.localizedDescription)"
-        }
-    }
-
-    private func makeBackupPayload() -> BackupPayload {
-        let universesData = universes.map { universe in
-            BackupCollection(name: universe.name)
-        }
-        let moodsData = moods.map { mood in
-            BackupMood(name: mood.name, iconName: mood.iconName)
-        }
-        let episodesData = episodes.map { episode in
-            BackupEpisode(
-                episodeNumber: episode.episodeNumber,
-                kind: episode.kind,
-                catalogSlug: episode.catalogSlug,
-                title: episode.title,
-                releaseYear: episode.releaseYear,
-                personalNote: episode.personalNote,
-                isListened: episode.isListened,
-                rating: episode.rating,
-                listenCount: episode.listenCount,
-                lastListenedAt: episode.lastListenedAt,
-                collectionName: episode.universe?.name,
-                moodNames: episode.moods.map(\.name)
-            )
-        }
-        return BackupPayload(
-            exportedAt: .now,
-            schemaVersion: 2,
-            collections: universesData,
-            moods: moodsData,
-            episodes: episodesData
-        )
-    }
-
-    private func applyBackup(_ payload: BackupPayload) {
-        BackupRestorer.apply(
-            payload,
-            existingUniverses: universes,
-            existingMoods: moods,
-            existingEpisodes: episodes,
-            context: modelContext
-        )
-    }
 }
 
 private struct SettingsLibrarySection: View {
