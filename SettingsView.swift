@@ -353,94 +353,13 @@ struct SettingsView: View {
     }
 
     private func applyBackup(_ payload: BackupPayload) {
-        var universesByKey = Dictionary(uniqueKeysWithValues: universes.map { ($0.name.lowercased(), $0) })
-        for universeData in payload.collections ?? [] {
-            let key = universeData.name.lowercased()
-            if universesByKey[key] == nil {
-                let newUniverse = Universe(name: universeData.name)
-                modelContext.insert(newUniverse)
-                universesByKey[key] = newUniverse
-            }
-        }
-
-        var moodsByKey = Dictionary(uniqueKeysWithValues: moods.map { ($0.name.lowercased(), $0) })
-
-        for moodData in payload.moods {
-            let key = moodData.name.lowercased()
-            if let existing = moodsByKey[key] {
-                existing.iconName = moodData.iconName
-            } else {
-                let newMood = Mood(name: moodData.name, iconName: moodData.iconName)
-                modelContext.insert(newMood)
-                moodsByKey[key] = newMood
-            }
-        }
-
-        var episodesByKey: [String: Episode] = [:]
-        for episode in episodes {
-            let universeNameKey = episode.universe?.name.lowercased() ?? "allgemein"
-            let identity: String
-            if episode.isSpecial, let slug = episode.catalogSlug, !slug.isEmpty {
-                identity = "special:\(slug)"
-            } else {
-                identity = String(episode.episodeNumber)
-            }
-            episodesByKey["\(universeNameKey)#\(identity)"] = episode
-        }
-
-        for episodeData in payload.episodes {
-            let assignedMoods = episodeData.moodNames.compactMap { moodsByKey[$0.lowercased()] }
-            let universeKey = (episodeData.collectionName ?? "Allgemein").lowercased()
-            let assignedUniverse: Universe
-            if let existingUniverse = universesByKey[universeKey] {
-                assignedUniverse = existingUniverse
-            } else {
-                let newUniverse = Universe(name: episodeData.collectionName ?? "Allgemein")
-                modelContext.insert(newUniverse)
-                universesByKey[universeKey] = newUniverse
-                assignedUniverse = newUniverse
-            }
-
-            let identity: String
-            if episodeData.kind == .special, let slug = episodeData.catalogSlug, !slug.isEmpty {
-                identity = "special:\(slug)"
-            } else {
-                identity = String(episodeData.episodeNumber)
-            }
-            let episodeKey = "\(universeKey)#\(identity)"
-
-            if let existingEpisode = episodesByKey[episodeKey] {
-                existingEpisode.title = episodeData.title
-                existingEpisode.releaseYear = episodeData.releaseYear
-                existingEpisode.personalNote = episodeData.personalNote
-                existingEpisode.isListened = episodeData.isListened
-                existingEpisode.rating = episodeData.rating
-                existingEpisode.listenCount = episodeData.listenCount
-                existingEpisode.lastListenedAt = episodeData.lastListenedAt
-                existingEpisode.universe = assignedUniverse
-                existingEpisode.moods = assignedMoods
-                existingEpisode.kind = episodeData.kind
-                if let slug = episodeData.catalogSlug { existingEpisode.catalogSlug = slug }
-                existingEpisode.refreshSyncKeyIfPossible()
-            } else {
-                let newEpisode = Episode(
-                    episodeNumber: episodeData.episodeNumber,
-                    title: episodeData.title,
-                    releaseYear: episodeData.releaseYear,
-                    kind: episodeData.kind,
-                    catalogSlug: episodeData.catalogSlug,
-                    personalNote: episodeData.personalNote,
-                    isListened: episodeData.isListened,
-                    rating: episodeData.rating,
-                    listenCount: episodeData.listenCount,
-                    lastListenedAt: episodeData.lastListenedAt,
-                    universe: assignedUniverse,
-                    moods: assignedMoods
-                )
-                modelContext.insert(newEpisode)
-                episodesByKey[episodeKey] = newEpisode
-            }
-        }
+        BackupRestorer.apply(
+            payload,
+            existingUniverses: universes,
+            existingMoods: moods,
+            existingEpisodes: episodes,
+            context: modelContext
+        )
     }
 }
 

@@ -1,6 +1,7 @@
 import Foundation
 import UniformTypeIdentifiers
 import SwiftUI
+import SwiftData
 
 struct JSONBackupDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
@@ -114,4 +115,111 @@ extension JSONDecoder {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+/// Merged ein importiertes Backup in die bestehende Bibliothek. Bewusst aus
+/// `SettingsView` herausgezogen: das war die einzige unmittelbare Datenmodell-
+/// Operation, die auf `@Query`/`@Environment` saß und dadurch nicht ohne echte
+/// UI testbar war — bei der riskantesten Operation der App (sie fasst die
+/// gesamte Bibliothek an) das teuerste denkbare Blindspot.
+enum BackupRestorer {
+    /// Identität beim Matching läuft über dieselbe Sync-Key-Logik wie beim
+    /// CloudKit-Merge (`Episode.makeSyncKey` / `EntityDeduplicator`), statt sie
+    /// hier ein zweites Mal von Hand nachzubauen.
+    static func apply(
+        _ payload: BackupPayload,
+        existingUniverses: [Universe],
+        existingMoods: [Mood],
+        existingEpisodes: [Episode],
+        context: ModelContext
+    ) {
+        var universesByKey = Dictionary(
+            existingUniverses.map { (CatalogLibraryMatcher.normalizedCollectionKey($0.name), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for universeData in payload.collections ?? [] {
+            let key = CatalogLibraryMatcher.normalizedCollectionKey(universeData.name)
+            guard universesByKey[key] == nil else { continue }
+            let newUniverse = Universe(name: universeData.name)
+            context.insert(newUniverse)
+            universesByKey[key] = newUniverse
+        }
+
+        var moodsByKey = Dictionary(
+            existingMoods.map { (CatalogLibraryMatcher.normalizedCollectionKey($0.name), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for moodData in payload.moods {
+            let key = CatalogLibraryMatcher.normalizedCollectionKey(moodData.name)
+            if let existing = moodsByKey[key] {
+                existing.iconName = moodData.iconName
+            } else {
+                let newMood = Mood(name: moodData.name, iconName: moodData.iconName)
+                context.insert(newMood)
+                moodsByKey[key] = newMood
+            }
+        }
+
+        var episodesByKey = Dictionary(
+            existingEpisodes.map { ($0.resolvedSyncKey, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        for episodeData in payload.episodes {
+            let assignedMoods = episodeData.moodNames.compactMap {
+                moodsByKey[CatalogLibraryMatcher.normalizedCollectionKey($0)]
+            }
+
+            let universeName = episodeData.collectionName ?? "Allgemein"
+            let universeKey = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
+            let assignedUniverse: Universe
+            if let existingUniverse = universesByKey[universeKey] {
+                assignedUniverse = existingUniverse
+            } else {
+                let newUniverse = Universe(name: universeName)
+                context.insert(newUniverse)
+                universesByKey[universeKey] = newUniverse
+                assignedUniverse = newUniverse
+            }
+
+            let episodeKey = Episode.makeSyncKey(
+                universeSyncKey: assignedUniverse.resolvedSyncKey,
+                kind: episodeData.kind,
+                episodeNumber: episodeData.episodeNumber,
+                catalogSlug: episodeData.catalogSlug
+            )
+
+            if let existingEpisode = episodesByKey[episodeKey] {
+                existingEpisode.title = episodeData.title
+                existingEpisode.releaseYear = episodeData.releaseYear
+                existingEpisode.personalNote = episodeData.personalNote
+                existingEpisode.isListened = episodeData.isListened
+                existingEpisode.rating = episodeData.rating
+                existingEpisode.listenCount = episodeData.listenCount
+                existingEpisode.lastListenedAt = episodeData.lastListenedAt
+                existingEpisode.universe = assignedUniverse
+                existingEpisode.moods = assignedMoods
+                existingEpisode.kind = episodeData.kind
+                if let slug = episodeData.catalogSlug { existingEpisode.catalogSlug = slug }
+                existingEpisode.refreshSyncKeyIfPossible()
+            } else {
+                let newEpisode = Episode(
+                    episodeNumber: episodeData.episodeNumber,
+                    title: episodeData.title,
+                    releaseYear: episodeData.releaseYear,
+                    kind: episodeData.kind,
+                    catalogSlug: episodeData.catalogSlug,
+                    personalNote: episodeData.personalNote,
+                    isListened: episodeData.isListened,
+                    rating: episodeData.rating,
+                    listenCount: episodeData.listenCount,
+                    lastListenedAt: episodeData.lastListenedAt,
+                    universe: assignedUniverse,
+                    moods: assignedMoods
+                )
+                context.insert(newEpisode)
+                episodesByKey[episodeKey] = newEpisode
+            }
+        }
+    }
 }
