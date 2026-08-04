@@ -14,6 +14,8 @@ Kernfeatures:
 
 – Personalisierung über Akzentfarben und Icons
 
+– Cover-Fotos direkt in der App zuschneiden und begradigen
+
 – Direkter Sprung von der App in deinen Streaming-Dienst
 
 – Umfangreiche Kategorisierung einzelner Folgen

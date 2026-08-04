@@ -1,1 +1,1 @@
- Audiodramas,Episodes,Widget,List,Collection,Series,Overview,Library,Status,Tags,Favorite,Tracker
+ Audiodramas,Episodes,Widget,List,Collection,Series,Overview,Library,Status,Crop,Favorite,Tracker
