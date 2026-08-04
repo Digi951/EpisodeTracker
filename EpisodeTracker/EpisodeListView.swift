@@ -477,8 +477,8 @@ private struct EmptyLibraryOnboardingView: View {
 
 private struct OnboardingStepRow: View {
     let systemImage: String
-    let title: String
-    let detail: String
+    let title: LocalizedStringKey
+    let detail: LocalizedStringKey
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {

@@ -569,6 +569,22 @@
         }
       }
     },
+    "Bewertung und Notiz kannst du direkt ergänzen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewertung und Notiz kannst du direkt ergänzen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a rating and note right away."
+          }
+        }
+      }
+    },
     "Bewertung" : {
       "localizations" : {
         "de" : {
@@ -2721,6 +2737,22 @@
         }
       }
     },
+    "Folgennummer eingeben" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folgennummer eingeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the episode number"
+          }
+        }
+      }
+    },
     "Gehört" : {
       "localizations" : {
         "de" : {
@@ -2733,6 +2765,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listened"
+          }
+        }
+      }
+    },
+    "Gehört markieren" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehört markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as listened"
           }
         }
       }
@@ -2930,6 +2978,22 @@
     },
     "Katalog suchen" : {
 
+    },
+    "Katalog wählen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katalog wählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a catalog"
+          }
+        }
+      }
     },
     "Kataloge" : {
       "localizations" : {
@@ -3587,6 +3651,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adjust search or filters."
+          }
+        }
+      }
+    },
+    "Passende Titel erscheinen als Vorschlag." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passende Titel erscheinen als Vorschlag."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matching titles appear as suggestions."
           }
         }
       }
@@ -5305,6 +5385,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose your accent color in Settings."
+          }
+        }
+      }
+    },
+    "Wähle die Reihe, zu der deine Folge gehört." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Reihe, zu der deine Folge gehört."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the series your episode belongs to."
           }
         }
       }
