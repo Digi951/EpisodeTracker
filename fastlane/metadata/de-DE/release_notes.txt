@@ -1,11 +1,5 @@
-Diese Version bringt dir mehr Kontrolle über deine Cover und ein paar kleine, aber spürbare Verbesserungen.
+Diese Version behebt einen Fehler, der einzelne Kataloge komplett unaktualisierbar machen konnte.
 
-• Cover bearbeiten: Drehe dein Folgencover oder schneide es mit automatischer Kantenerkennung passgenau zurecht. Den neuen Bearbeiten-Button findest du direkt neben deinem Cover im Bearbeitungsformular.
-
-• Personalisierung im Blick: Ein einmaliger Hinweis zeigt dir beim Start, dass du App-Icon und Akzentfarbe in den Einstellungen ganz nach deinem Geschmack anpassen kannst.
-
-• Zuverlässiger auf dem iPad: Der Katalog-Fortschritt zeigte bei Sammlungen mit Sonderfolgen bisher eine Folge zu viel an. Das ist jetzt korrigiert.
-
-Dazu kommen kleinere Verbesserungen unter der Haube, darunter ein besserer Sprachfallback für Systemsprachen, die HörspielLog noch nicht direkt unterstützt.
+• Katalog-Updates zuverlässiger: Enthielt ein Katalog Folgen ohne bekanntes Erscheinungsjahr, ließ er sich bisher gar nicht mehr aktualisieren. Das ist jetzt behoben — betroffene Folgen zeigen stattdessen „Unbekannt" statt eines falschen Jahres.
 
 Viel Freude beim Hören!

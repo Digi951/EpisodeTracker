@@ -1,11 +1,5 @@
-This version gives you more control over your covers, plus a few small but noticeable improvements.
+This version fixes a bug that could make individual catalogs completely unupdatable.
 
-• Edit your cover: Rotate your episode cover, or crop it precisely with automatic edge detection. You'll find the new Edit button right next to your cover in the edit form.
-
-• Personalization, front and center: A one-time hint on launch lets you know you can customize your app icon and accent color in Settings to match your taste.
-
-• More reliable on iPad: The catalog progress count used to show one episode too many for collections with special episodes. That's fixed now.
-
-There are also a few smaller improvements under the hood, including better language fallback for system languages AudioPlayLog doesn't directly support yet.
+• More reliable catalog updates: If a catalog contained episodes with no known release year, it would stop updating entirely. That's fixed now — affected episodes show "Unknown" instead of an incorrect year.
 
 Enjoy your listening!
