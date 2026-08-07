@@ -7,6 +7,17 @@ final class CatalogEntryLinksTests: XCTestCase {
         try JSONDecoder().decode(CatalogEntry.self, from: Data(json.utf8))
     }
 
+    func testMissingReleaseYearDefaultsToZero() throws {
+        let entry = try decode("""
+        {
+          "number": 3,
+          "title": "Ohne Jahresangabe"
+        }
+        """)
+
+        XCTAssertEqual(entry.releaseYear, 0)
+    }
+
     // MARK: - Legacy-Felder
 
     func testDecodesLegacyNamedFieldsIntoLinks() throws {

@@ -285,4 +285,24 @@ final class EpisodeListOrganizerSpecialTests: XCTestCase {
 
         XCTAssertEqual(filtered.map(\.title), ["Jubiläum"])
     }
+
+    // MARK: - Erscheinungsjahr-Gruppierung
+
+    func testReleaseYearGroupsLabelUnknownYearInsteadOfZero() {
+        let universe = Universe(name: "Geisterjäger John Sinclair (Tonstudio Braun)")
+        var episodes = (1...9).map {
+            Episode(episodeNumber: $0, title: "Folge \($0)", releaseYear: 1983, universe: universe)
+        }
+        episodes.append(Episode(episodeNumber: 10, title: "Folge 10", releaseYear: 0, universe: universe))
+
+        let groups = EpisodeListOrganizer.groups(
+            for: episodes,
+            sortOrder: .releaseYear,
+            filterUniverse: universe,
+            universeCount: 1
+        )
+
+        XCTAssertTrue(groups.contains { $0.title == "Unbekannt" })
+        XCTAssertFalse(groups.contains { $0.title == "0" })
+    }
 }

@@ -499,7 +499,8 @@ enum EpisodeListOrganizer {
             episode.releaseYear
         }
         return grouped.keys.sorted(by: >).map { year in
-            EpisodeListGroup(id: "year:\(year)", title: String(year), episodes: grouped[year] ?? [], progressTotalOverride: nil)
+            let title = year == 0 ? "Unbekannt" : String(year)
+            return EpisodeListGroup(id: "year:\(year)", title: title, episodes: grouped[year] ?? [], progressTotalOverride: nil)
         }
     }
 

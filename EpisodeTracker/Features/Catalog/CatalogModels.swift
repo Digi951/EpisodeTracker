@@ -81,7 +81,9 @@ struct CatalogEntry: Codable, Equatable {
         kind = try container.decodeIfPresent(EpisodeKind.self, forKey: .kind) ?? .regular
         slug = try container.decodeIfPresent(String.self, forKey: .slug)
         title = try container.decode(String.self, forKey: .title)
-        releaseYear = try container.decode(Int.self, forKey: .releaseYear)
+        // Manche Katalogquellen liefern kein releaseYear; 0 ist die etablierte
+        // "unbekannt"-Konvention (siehe Episode.releaseYear, SmartListDetailView).
+        releaseYear = try container.decodeIfPresent(Int.self, forKey: .releaseYear) ?? 0
         collectionName = try container.decodeIfPresent(String.self, forKey: .collectionName)
 
         var resolved = try container.decodeIfPresent([String: String].self, forKey: .links) ?? [:]
