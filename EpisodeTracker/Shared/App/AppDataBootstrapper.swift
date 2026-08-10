@@ -80,7 +80,7 @@ enum AppDataBootstrapper {
             bootstrapLogger.info("Bootstrap: post-migration sync repair applied (\(postMigrationSummary.logDescription, privacy: .public))")
         }
 
-        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
         ensureBundledCollectionExists(container: containerSet.primary)
         reconcileSpecialEpisodes(container: containerSet.primary)
         reconcileCatalogStyles(container: containerSet.primary)
@@ -110,7 +110,7 @@ enum AppDataBootstrapper {
         let syncSummary = SyncPreparation.prepare(context: container.mainContext)
         report.syncPreparationSummary = syncSummary
 
-        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
         ensureBundledCollectionExists(container: container)
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)

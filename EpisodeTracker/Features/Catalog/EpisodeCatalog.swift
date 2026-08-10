@@ -89,14 +89,25 @@ final class EpisodeCatalog {
         return try importCatalog(data: data, into: collectionName)
     }
 
-    func refreshManagedCatalogsIfNeeded(force: Bool = false) async {
+    /// `ignoringThrottle` bypasses the 6h `shouldRefresh` cooldown while still sending
+    /// conditional requests (ETag/If-Modified-Since), so a cold app launch can always
+    /// check for updates without losing the cheap 304-not-modified path that `force` skips.
+    func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
         lastRefreshError = nil
-        await refreshManifestIfNeeded(force: force)
+        await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
         pruneOrphanedCatalogs()
 
         let activeCatalogIDs = ActiveCatalogStore().activeIDs
-        for source in managedSources where activeCatalogIDs.contains(source.id) {
-            await refreshManagedCatalogIfNeeded(source: source, force: force)
+        let sourcesToRefresh = managedSources.filter { activeCatalogIDs.contains($0.id) }
+        // Child tasks stay MainActor-isolated, so the per-catalog disk writes (no
+        // await inside them) still run to completion one at a time. Only the
+        // network awaits overlap, which is the actual point of parallelizing.
+        await withTaskGroup(of: Void.self) { group in
+            for source in sourcesToRefresh {
+                group.addTask { @MainActor in
+                    await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle)
+                }
+            }
         }
         reload()
     }
@@ -114,9 +125,9 @@ final class EpisodeCatalog {
         reload()
     }
 
-    private func refreshManifestIfNeeded(force: Bool) async {
+    private func refreshManifestIfNeeded(force: Bool, ignoringThrottle: Bool = false) async {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: CatalogSourceRegistry.manifestMetadataKey)
-        guard force || shouldRefresh(previousMetadata) || cacheStore.loadManifest() == nil else { return }
+        guard force || ignoringThrottle || shouldRefresh(previousMetadata) || cacheStore.loadManifest() == nil else { return }
 
         do {
             let previousSources = cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
@@ -147,7 +158,7 @@ final class EpisodeCatalog {
         }
     }
 
-    func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool) async {
+    func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool, ignoringThrottle: Bool = false) async {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
@@ -164,7 +175,7 @@ final class EpisodeCatalog {
         }
         let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
         let needsMarketLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasAllMarketLinks
-        guard force || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return }
+        guard force || ignoringThrottle || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return }
 
         do {
             let requestMetadata = force || needsStreamingLinkRefresh || needsMarketLinkRefresh ? nil : previousMetadata

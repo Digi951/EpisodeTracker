@@ -265,6 +265,32 @@ final class EpisodeCatalogTests: XCTestCase {
         )
     }
 
+    func testIgnoringThrottleRefetchesEvenWhenRecentlyChecked() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        try store.saveRemoteCache(
+            entries: [CatalogEntry(number: 1, title: "Alt", releaseYear: 1979, collectionName: source.name)],
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        // A cooldown that just started must normally block a re-fetch (see
+        // testUnforcedRefreshSkipsBackfillOnceEveryMarketServiceHasAtLeastOneLink).
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"old\"", lastModified: nil, lastCheckedAt: .now),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let fetcher = MockCatalogFetcher(sourceResult: .skipped)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+
+        XCTAssertFalse(
+            fetcher.sourceMetadataRequests.isEmpty,
+            "ignoringThrottle must bypass the 6h cooldown so a cold app launch can pick up server-side catalog updates"
+        )
+    }
+
     func testCatalogEntryDecodesSpecialKindAndSlug() throws {
         let json = """
         {"title":"Phantomsee","releaseYear":2024,"kind":"special","slug":"phantomsee-2024"}
