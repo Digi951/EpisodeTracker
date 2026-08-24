@@ -19,6 +19,8 @@ struct EpisodeListView: View {
     @State private var showingAddEpisode = false
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
+    @State private var showingUpcomingReleases = false
+    @AppStorage("seenUpcomingReleaseIDs") private var seenUpcomingReleaseIDsRaw = ""
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -82,6 +84,19 @@ struct EpisodeListView: View {
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
+    private var upcomingReleasesFeed: UpcomingReleasesFeed {
+        UpcomingReleasesFeed.make(
+            releases: EpisodeCatalog.shared.upcomingReleases,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs,
+            namesByCatalogID: Dictionary(
+                CatalogSourceRegistry.managedSources.map { ($0.id, $0.name) },
+                uniquingKeysWith: { first, _ in first }
+            ),
+            seenReleaseIDs: Set(seenUpcomingReleaseIDsRaw.split(separator: ",").map(String.init)),
+            today: .now
+        )
+    }
+
     var body: some View {
         Group {
             if isEditing {
@@ -124,6 +139,22 @@ struct EpisodeListView: View {
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingUpcomingReleases = true
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                    .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    .overlay(alignment: .topTrailing) {
+                        if upcomingReleasesFeed.hasUnseen {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 4, y: -4)
+                        }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: availableUniverseFilters,
@@ -152,6 +183,18 @@ struct EpisodeListView: View {
             NavigationStack {
                 EpisodeEditView()
             }
+        }
+        .sheet(isPresented: $showingUpcomingReleases) {
+            UpcomingReleasesSheet(feed: upcomingReleasesFeed)
+        }
+        .onChange(of: showingUpcomingReleases) { _, isShowing in
+            guard isShowing else { return }
+            // Nur die aktuell sichtbaren IDs merken - erschienene Folgen fallen
+            // damit automatisch wieder aus der gespeicherten Menge heraus.
+            seenUpcomingReleaseIDsRaw = upcomingReleasesFeed.visibleReleaseIDs.sorted().joined(separator: ",")
+        }
+        .task {
+            await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()
         }
         .confirmationDialog(
             deleteState.title,
