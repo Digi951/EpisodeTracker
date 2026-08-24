@@ -82,6 +82,24 @@ final class UpcomingReleasesFeedTests: XCTestCase {
         XCTAssertEqual(feed.rows.first?.seriesName, "TKKG")
     }
 
+    func testDeduplicatesRepeatedEntriesAndKeepsTheEarlierDate() {
+        // Eine verschobene Folge kann in der generierten JSON zweimal auftauchen.
+        // Doppelte IDs würden ForEach durcheinanderbringen.
+        let feed = UpcomingReleasesFeed.make(
+            releases: [release("tkkg", 243, daysFromToday: 20), release("tkkg", 243, daysFromToday: 3)],
+            activeCatalogIDs: ["tkkg"],
+            namesByCatalogID: ["tkkg": "TKKG"],
+            seenReleaseIDs: [],
+            today: today
+        )
+
+        XCTAssertEqual(feed.rows.count, 1)
+        XCTAssertEqual(
+            feed.rows.first?.release.releaseDate,
+            Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: today))
+        )
+    }
+
     func testHasUnseenIsTrueWhenAVisibleReleaseWasNotSeenYet() {
         let feed = UpcomingReleasesFeed.make(
             releases: [release("tkkg", 243, daysFromToday: 3)],

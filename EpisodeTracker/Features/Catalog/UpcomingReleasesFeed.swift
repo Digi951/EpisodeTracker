@@ -26,13 +26,23 @@ struct UpcomingReleasesFeed {
     ) -> UpcomingReleasesFeed {
         let startOfToday = Calendar.current.startOfDay(for: today)
 
+        // upcoming_releases.json wird automatisch erzeugt und garantiert keine
+        // eindeutigen Einträge - eine verschobene Folge kann doppelt auftauchen.
+        // Doppelte IDs würden ForEach durcheinanderbringen, deshalb wird hier
+        // dedupliziert und der frühere Termin behalten.
+        var seenIDs: Set<String> = []
+
         let rows = releases
             .filter { activeCatalogIDs.contains($0.catalogID) && $0.releaseDate >= startOfToday }
+            .sorted { ($0.releaseDate, $0.number) < ($1.releaseDate, $1.number) }
             .compactMap { release -> Row? in
-                guard let name = namesByCatalogID[release.catalogID] else { return nil }
+                guard let name = namesByCatalogID[release.catalogID],
+                      seenIDs.insert(release.id).inserted
+                else {
+                    return nil
+                }
                 return Row(release: release, seriesName: name)
             }
-            .sorted { ($0.release.releaseDate, $0.release.number) < ($1.release.releaseDate, $1.release.number) }
 
         return UpcomingReleasesFeed(
             rows: rows,

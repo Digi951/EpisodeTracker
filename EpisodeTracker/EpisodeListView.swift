@@ -142,15 +142,22 @@ struct EpisodeListView: View {
                     Button {
                         showingUpcomingReleases = true
                     } label: {
+                        // Eingebautes Symbol-Badge statt eines eigenen Overlays: das
+                        // sitzt immer am Glyph, egal wie groß der Button-Rahmen ist,
+                        // und skaliert mit Dynamic Type mit.
                         Image(systemName: "calendar")
                     }
                     .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    // Das Overlay hängt außen am Button - innerhalb des label-Closures
+                    // verschluckt die Toolbar es. Der Versatz ist knapp gehalten,
+                    // damit der Punkt am Symbol klebt und nicht frei zwischen den
+                    // Toolbar-Symbolen schwebt.
                     .overlay(alignment: .topTrailing) {
                         if upcomingReleasesFeed.hasUnseen {
                             Circle()
                                 .fill(.red)
-                                .frame(width: 8, height: 8)
-                                .offset(x: 4, y: -4)
+                                .frame(width: 7, height: 7)
+                                .offset(x: -1, y: 1)
                         }
                     }
                 }
