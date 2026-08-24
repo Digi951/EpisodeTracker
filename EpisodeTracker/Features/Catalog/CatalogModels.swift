@@ -341,6 +341,8 @@ enum CatalogSourceRegistry {
     static let bundledCollectionName = "Die drei ???"
     static let manifestURL = URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/manifest.json")!
     static let manifestMetadataKey = "__catalog_manifest__"
+    static let upcomingReleasesURL = URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/upcoming_releases.json")!
+    static let upcomingReleasesMetadataKey = "__upcoming_releases__"
 
     // Wird aus View-Bodies, Bootstrap und Stores sehr häufig gelesen; ohne Cache
     // bedeutet jeder Zugriff einen Manifest-Read von der Platte plus JSON-Decode.

@@ -14,6 +14,7 @@ struct CatalogCacheStore {
     private let manifestURL: URL
     private let catalogEpisodeDeltasURL: URL
     private let newCatalogAvailabilityURL: URL
+    private let upcomingReleasesURL: URL
     private let remoteCatalogDirectoryURL: URL
     private let fileManager: FileManager
 
@@ -33,6 +34,7 @@ struct CatalogCacheStore {
         manifestURL = directoryURL.appendingPathComponent("CatalogManifest.json")
         catalogEpisodeDeltasURL = directoryURL.appendingPathComponent("CatalogEpisodeDeltas.json")
         newCatalogAvailabilityURL = directoryURL.appendingPathComponent("NewCatalogAvailability.json")
+        upcomingReleasesURL = directoryURL.appendingPathComponent("UpcomingReleases.json")
 
         remoteCatalogDirectoryURL = directoryURL.appendingPathComponent("RemoteCatalogs", isDirectory: true)
         try? fileManager.createDirectory(at: remoteCatalogDirectoryURL, withIntermediateDirectories: true)
@@ -70,6 +72,20 @@ struct CatalogCacheStore {
         let data = try JSONEncoder().encode(manifest)
         try data.write(to: manifestURL, options: [.atomic])
         CatalogSourceRegistry.invalidateManagedSourcesCache()
+    }
+
+    func loadUpcomingReleases() -> [UpcomingRelease] {
+        guard let data = try? Data(contentsOf: upcomingReleasesURL),
+              let decoded = try? JSONDecoder().decode([UpcomingRelease].self, from: data)
+        else {
+            return []
+        }
+        return decoded
+    }
+
+    func saveUpcomingReleases(_ releases: [UpcomingRelease]) throws {
+        let data = try JSONEncoder().encode(releases)
+        try data.write(to: upcomingReleasesURL, options: [.atomic])
     }
 
     func loadRemoteCache(universeName: String, cacheKey: String? = nil) -> [CatalogEntry]? {
