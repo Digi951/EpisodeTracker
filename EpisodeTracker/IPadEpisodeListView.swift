@@ -56,6 +56,12 @@ private struct IPadEpisodeListView: View {
     @State private var isEditing = false
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
+    @State private var showingUpcomingReleases = false
+    @AppStorage("seenUpcomingReleaseIDs") private var seenUpcomingReleaseIDsRaw = ""
+
+    private var upcomingReleasesFeed: UpcomingReleasesFeed {
+        .current(seenReleaseIDsRaw: seenUpcomingReleaseIDsRaw)
+    }
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -166,6 +172,20 @@ private struct IPadEpisodeListView: View {
                         Text(selectionController.selectAllButtonTitle(visibleEpisodes: filteredEpisodes))
                     }
                 } else {
+                    Button {
+                        showingUpcomingReleases = true
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                    .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    .overlay(alignment: .topTrailing) {
+                        if upcomingReleasesFeed.hasUnseen {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 7, height: 7)
+                                .offset(x: -1, y: 1)
+                        }
+                    }
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: availableUniverseFilters,
@@ -203,6 +223,18 @@ private struct IPadEpisodeListView: View {
             NavigationStack {
                 EpisodeEditView()
             }
+        }
+        .sheet(isPresented: $showingUpcomingReleases) {
+            UpcomingReleasesSheet(feed: upcomingReleasesFeed)
+        }
+        .onChange(of: showingUpcomingReleases) { _, isShowing in
+            guard isShowing else { return }
+            // Nur die aktuell sichtbaren IDs merken - erschienene Folgen fallen
+            // damit automatisch wieder aus der gespeicherten Menge heraus.
+            seenUpcomingReleaseIDsRaw = upcomingReleasesFeed.visibleReleaseIDs.sorted().joined(separator: ",")
+        }
+        .task {
+            await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()
         }
         .confirmationDialog(
             deleteState.title,

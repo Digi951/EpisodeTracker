@@ -49,4 +49,20 @@ struct UpcomingReleasesFeed {
             hasUnseen: rows.contains { !seenReleaseIDs.contains($0.id) }
         )
     }
+
+    /// Verdrahtung mit dem aktuellen App-Zustand an einer Stelle, damit iPhone-
+    /// und iPad-Liste nicht auseinanderlaufen. `make` bleibt rein und testbar.
+    @MainActor
+    static func current(seenReleaseIDsRaw: String) -> UpcomingReleasesFeed {
+        make(
+            releases: EpisodeCatalog.shared.upcomingReleases,
+            activeCatalogIDs: ActiveCatalogStore().activeIDs,
+            namesByCatalogID: Dictionary(
+                CatalogSourceRegistry.managedSources.map { ($0.id, $0.name) },
+                uniquingKeysWith: { first, _ in first }
+            ),
+            seenReleaseIDs: Set(seenReleaseIDsRaw.split(separator: ",").map(String.init)),
+            today: .now
+        )
+    }
 }

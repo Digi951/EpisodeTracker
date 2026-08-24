@@ -85,16 +85,7 @@ struct EpisodeListView: View {
     }
 
     private var upcomingReleasesFeed: UpcomingReleasesFeed {
-        UpcomingReleasesFeed.make(
-            releases: EpisodeCatalog.shared.upcomingReleases,
-            activeCatalogIDs: ActiveCatalogStore().activeIDs,
-            namesByCatalogID: Dictionary(
-                CatalogSourceRegistry.managedSources.map { ($0.id, $0.name) },
-                uniquingKeysWith: { first, _ in first }
-            ),
-            seenReleaseIDs: Set(seenUpcomingReleaseIDsRaw.split(separator: ",").map(String.init)),
-            today: .now
-        )
+        .current(seenReleaseIDsRaw: seenUpcomingReleaseIDsRaw)
     }
 
     var body: some View {
