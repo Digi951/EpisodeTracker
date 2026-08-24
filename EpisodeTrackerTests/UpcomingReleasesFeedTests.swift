@@ -6,11 +6,18 @@ final class UpcomingReleasesFeedTests: XCTestCase {
     private let today = Date(timeIntervalSince1970: 1_756_000_000)
 
     private func release(_ catalogID: String, _ number: Int, daysFromToday: Int) -> UpcomingRelease {
-        UpcomingRelease(
+        // Wie die echten Daten: auf lokale Mitternacht verankert, nicht auf eine
+        // beliebige Uhrzeit - sonst testet der Tagesgrenzfall am Problem vorbei.
+        let day = Calendar.current.date(
+            byAdding: .day,
+            value: daysFromToday,
+            to: Calendar.current.startOfDay(for: today)
+        )!
+        return UpcomingRelease(
             catalogID: catalogID,
             number: number,
             title: "Folge \(number)",
-            releaseDate: today.addingTimeInterval(Double(daysFromToday) * 86_400)
+            releaseDate: day
         )
     }
 

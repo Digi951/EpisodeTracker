@@ -3,7 +3,11 @@ import XCTest
 
 final class UpcomingReleaseTests: XCTestCase {
 
-    func testDecodesReleaseDateFromISODateString() throws {
+    private func decode(_ json: String) throws -> UpcomingReleasesDocument {
+        try JSONDecoder().decode(UpcomingReleasesDocument.self, from: Data(json.utf8))
+    }
+
+    func testDecodesReleaseDateAsLocalMidnight() throws {
         let json = """
         {
           "updatedAt": "2026-08-24",
@@ -17,10 +21,7 @@ final class UpcomingReleaseTests: XCTestCase {
           ]
         }
         """
-        let document = try UpcomingReleasesDocument.decoder.decode(
-            UpcomingReleasesDocument.self,
-            from: Data(json.utf8)
-        )
+        let document = try decode(json)
 
         XCTAssertEqual(document.releases.count, 1)
         let release = document.releases[0]
@@ -28,30 +29,49 @@ final class UpcomingReleaseTests: XCTestCase {
         XCTAssertEqual(release.number, 241)
         XCTAssertEqual(release.title, "Meister des Lichts")
 
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        let components = calendar.dateComponents([.year, .month, .day], from: release.releaseDate)
+        // Der Tag muss im lokalen Kalender der 18.09. sein - sonst zeigt die UI
+        // westlich von UTC den Vortag an und blendet die Folge zu früh aus.
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: release.releaseDate)
         XCTAssertEqual(components.year, 2026)
         XCTAssertEqual(components.month, 9)
         XCTAssertEqual(components.day, 18)
+        XCTAssertEqual(release.releaseDate, Calendar.current.startOfDay(for: release.releaseDate))
     }
 
-    func testDecodingFailsForMalformedDate() {
+    func testSkipsMalformedEntryButKeepsTheRest() throws {
         let json = """
         {
           "updatedAt": "2026-08-24",
           "releases": [
-            {
-              "catalogID": "tkkg",
-              "number": 243,
-              "title": "Die Fährte des Hehlers",
-              "releaseDate": "18.09.2026"
-            }
+            { "catalogID": "tkkg", "number": 243, "title": "Die Fährte des Hehlers", "releaseDate": "18.09.2026" },
+            { "catalogID": "die-drei-fragezeichen", "number": 241, "title": "Meister des Lichts", "releaseDate": "2026-09-18" },
+            { "catalogID": "bibi-blocksberg", "number": 1 }
           ]
         }
         """
-        XCTAssertThrowsError(
-            try UpcomingReleasesDocument.decoder.decode(UpcomingReleasesDocument.self, from: Data(json.utf8))
-        )
+        let document = try decode(json)
+
+        XCTAssertEqual(document.releases.map(\.catalogID), ["die-drei-fragezeichen"])
+    }
+
+    func testRoundTripsThroughEncoderWithoutDriftingByADay() throws {
+        let json = """
+        {
+          "updatedAt": "2026-08-24",
+          "releases": [
+            { "catalogID": "tkkg", "number": 243, "title": "Die Fährte des Hehlers", "releaseDate": "2026-09-11" }
+          ]
+        }
+        """
+        let original = try decode(json).releases
+
+        let encoded = try JSONEncoder().encode(original)
+        let restored = try JSONDecoder().decode([UpcomingRelease].self, from: encoded)
+
+        XCTAssertEqual(restored, original)
+    }
+
+    func testDecodingFailsForCompletelyMalformedPayload() {
+        XCTAssertThrowsError(try decode("nicht json"))
     }
 }
