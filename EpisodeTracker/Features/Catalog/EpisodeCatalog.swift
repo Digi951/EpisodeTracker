@@ -11,6 +11,7 @@ final class EpisodeCatalog {
     private(set) var lastRefreshError: String?
     private(set) var newCatalogAvailability: NewCatalogAvailability?
     private(set) var removedCatalogBanner: CatalogUpdateBannerRecommendation?
+    private(set) var upcomingReleases: [UpcomingRelease] = []
 
     init() {
         parser = CatalogParser()
@@ -30,6 +31,7 @@ final class EpisodeCatalog {
 
     func reload() {
         entries = loadManagedEntriesFromCacheOrFallback() + cacheStore.loadCustomEntries()
+        upcomingReleases = cacheStore.loadUpcomingReleases()
     }
 
     var allEntries: [CatalogEntry] {
@@ -95,6 +97,7 @@ final class EpisodeCatalog {
     func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
         lastRefreshError = nil
         await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
+        await refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
         pruneOrphanedCatalogs()
 
         let activeCatalogIDs = ActiveCatalogStore().activeIDs
@@ -155,6 +158,37 @@ final class EpisodeCatalog {
             }
         } catch {
             lastRefreshError = "Katalogverzeichnis nicht erreichbar."
+        }
+    }
+
+    func refreshUpcomingReleasesIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
+        let previousMetadata = cacheStore.loadRemoteMetadata(universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+        guard force || ignoringThrottle || shouldRefresh(previousMetadata) else { return }
+
+        do {
+            let result = try await remoteDataSource.fetch(
+                from: CatalogSourceRegistry.upcomingReleasesURL,
+                metadata: previousMetadata
+            )
+            var metadata = previousMetadata ?? RemoteCatalogMetadata()
+
+            switch result {
+            case .updated(let data, let eTag, let lastModified):
+                let document = try UpcomingReleasesDocument.decoder.decode(UpcomingReleasesDocument.self, from: data)
+                try cacheStore.saveUpcomingReleases(document.releases)
+                upcomingReleases = document.releases
+                metadata.eTag = eTag
+                metadata.lastModified = lastModified
+                metadata.lastCheckedAt = .now
+                try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+
+            case .notModified, .skipped:
+                metadata.lastCheckedAt = .now
+                try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+            }
+        } catch {
+            // Bewusst kein lastRefreshError: "Bald verfügbar" ist ein Zusatzfeature,
+            // ein Fehlschlag darf nicht wie ein fehlgeschlagener Katalog-Refresh wirken.
         }
     }
 
