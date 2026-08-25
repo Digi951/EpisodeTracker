@@ -1,5 +1,7 @@
-Diese Version behebt einen Fehler, der einzelne Kataloge komplett unaktualisierbar machen konnte.
+Diese Version zeigt dir, welche Folgen als Nächstes erscheinen, schon bevor sie da sind.
 
-• Katalog-Updates zuverlässiger: Enthielt ein Katalog Folgen ohne bekanntes Erscheinungsjahr, ließ er sich bisher gar nicht mehr aktualisieren. Das ist jetzt behoben — betroffene Folgen zeigen stattdessen „Unbekannt" statt eines falschen Jahres.
+• Bald verfügbar: Tippe oben rechts auf das Kalender-Symbol und du siehst alle angekündigten Folgen mit ihrem Erscheinungstermin, übersichtlich nach Datum sortiert. Angezeigt wird dabei nur, was zu deinen aktivierten Katalogen passt. Ein kleiner roter Punkt weist dich auf neue Ankündigungen hin, und sobald eine Folge erschienen ist, verschwindet sie wieder aus der Liste.
+
+• Neue Folgen schneller im Blick: Deine Kataloge werden jetzt bei jedem Start auf Nachschub geprüft. Der Hinweis auf neue Folgen erreicht dich dadurch zuverlässiger als bisher.
 
 Viel Freude beim Hören!

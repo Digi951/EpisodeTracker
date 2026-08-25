@@ -1,5 +1,7 @@
-This version fixes a bug that could make individual catalogs completely unupdatable.
+This version shows you which episodes are coming next, before they're even out.
 
-• More reliable catalog updates: If a catalog contained episodes with no known release year, it would stop updating entirely. That's fixed now — affected episodes show "Unknown" instead of an incorrect year.
+• Coming soon: Tap the calendar icon in the top right and you'll see every announced episode with its release date, neatly sorted by day. You'll only see what matches the catalogs you've enabled. A small red dot points you to new announcements, and once an episode is out, it drops off the list again.
+
+• New episodes, spotted sooner: Your catalogs are now checked for new episodes on every launch. That makes the hint about fresh episodes reach you more reliably than before.
 
 Enjoy your listening!
