@@ -2468,7 +2468,6 @@
       }
     },
     "EpisodeList.SortAndFilter" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3082,7 +3081,6 @@
       }
     },
     "General.Cancel" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4120,7 +4118,6 @@
       }
     },
     "SavedFilter.Action.Delete" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4137,7 +4134,6 @@
       }
     },
     "SavedFilter.Action.Rename" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5219,7 +5215,6 @@
       }
     },
     "Statistics.Overview.Bookmarked" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5317,7 +5312,6 @@
       }
     },
     "Statistics.Section.Chart" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5755,7 +5749,6 @@
       }
     },
     "UpNext.MyLists.Header" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
