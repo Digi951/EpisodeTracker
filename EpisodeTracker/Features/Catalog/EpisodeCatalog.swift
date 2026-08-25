@@ -11,6 +11,7 @@ final class EpisodeCatalog {
     private(set) var lastRefreshError: String?
     private(set) var newCatalogAvailability: NewCatalogAvailability?
     private(set) var removedCatalogBanner: CatalogUpdateBannerRecommendation?
+    private(set) var upcomingReleases: [UpcomingRelease] = []
 
     init() {
         parser = CatalogParser()
@@ -30,6 +31,7 @@ final class EpisodeCatalog {
 
     func reload() {
         entries = loadManagedEntriesFromCacheOrFallback() + cacheStore.loadCustomEntries()
+        upcomingReleases = cacheStore.loadUpcomingReleases()
     }
 
     var allEntries: [CatalogEntry] {
@@ -103,6 +105,11 @@ final class EpisodeCatalog {
         // await inside them) still run to completion one at a time. Only the
         // network awaits overlap, which is the actual point of parallelizing.
         await withTaskGroup(of: Void.self) { group in
+            // Hängt an keiner Manifest-Information, darf also parallel zu den
+            // Katalogen laufen statt den Start der Gruppe zu verzögern.
+            group.addTask { @MainActor in
+                await self.refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
+            }
             for source in sourcesToRefresh {
                 group.addTask { @MainActor in
                     await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle)
@@ -155,6 +162,41 @@ final class EpisodeCatalog {
             }
         } catch {
             lastRefreshError = "Katalogverzeichnis nicht erreichbar."
+        }
+    }
+
+    func refreshUpcomingReleasesIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
+        let previousMetadata = cacheStore.loadRemoteMetadata(universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+        let hasCachedReleases = !cacheStore.loadUpcomingReleases().isEmpty
+        guard force || ignoringThrottle || !hasCachedReleases || shouldRefresh(previousMetadata) else { return }
+
+        do {
+            // Ohne verwertbare Daten im Cache darf kein 304 zurückkommen: sonst
+            // bliebe die Liste dauerhaft leer, sobald die Cache-Datei einmal nicht
+            // lesbar ist (beschädigt oder in einem älteren Format geschrieben).
+            let result = try await remoteDataSource.fetch(
+                from: CatalogSourceRegistry.upcomingReleasesURL,
+                metadata: hasCachedReleases ? previousMetadata : nil
+            )
+            var metadata = previousMetadata ?? RemoteCatalogMetadata()
+
+            switch result {
+            case .updated(let data, let eTag, let lastModified):
+                let document = try JSONDecoder().decode(UpcomingReleasesDocument.self, from: data)
+                try cacheStore.saveUpcomingReleases(document.releases)
+                upcomingReleases = document.releases
+                metadata.eTag = eTag
+                metadata.lastModified = lastModified
+                metadata.lastCheckedAt = .now
+                try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+
+            case .notModified, .skipped:
+                metadata.lastCheckedAt = .now
+                try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+            }
+        } catch {
+            // Bewusst kein lastRefreshError: "Bald verfügbar" ist ein Zusatzfeature,
+            // ein Fehlschlag darf nicht wie ein fehlgeschlagener Katalog-Refresh wirken.
         }
     }
 

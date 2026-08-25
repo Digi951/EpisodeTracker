@@ -19,6 +19,8 @@ struct EpisodeListView: View {
     @State private var showingAddEpisode = false
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
+    @State private var showingUpcomingReleases = false
+    @AppStorage("seenUpcomingReleaseIDs") private var seenUpcomingReleaseIDsRaw = ""
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -82,6 +84,10 @@ struct EpisodeListView: View {
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
+    private var upcomingReleasesFeed: UpcomingReleasesFeed {
+        .current(seenReleaseIDsRaw: seenUpcomingReleaseIDsRaw)
+    }
+
     var body: some View {
         Group {
             if isEditing {
@@ -124,6 +130,29 @@ struct EpisodeListView: View {
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingUpcomingReleases = true
+                    } label: {
+                        // Eingebautes Symbol-Badge statt eines eigenen Overlays: das
+                        // sitzt immer am Glyph, egal wie groß der Button-Rahmen ist,
+                        // und skaliert mit Dynamic Type mit.
+                        Image(systemName: "calendar")
+                    }
+                    .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    // Das Overlay hängt außen am Button - innerhalb des label-Closures
+                    // verschluckt die Toolbar es. Der Versatz ist knapp gehalten,
+                    // damit der Punkt am Symbol klebt und nicht frei zwischen den
+                    // Toolbar-Symbolen schwebt.
+                    .overlay(alignment: .topTrailing) {
+                        if upcomingReleasesFeed.hasUnseen {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 7, height: 7)
+                                .offset(x: -1, y: 1)
+                        }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     EpisodeListSortFilterMenu(
                         controls: $controls,
                         universes: availableUniverseFilters,
@@ -152,6 +181,18 @@ struct EpisodeListView: View {
             NavigationStack {
                 EpisodeEditView()
             }
+        }
+        .sheet(isPresented: $showingUpcomingReleases) {
+            UpcomingReleasesSheet(feed: upcomingReleasesFeed)
+        }
+        .onChange(of: showingUpcomingReleases) { _, isShowing in
+            guard isShowing else { return }
+            // Nur die aktuell sichtbaren IDs merken - erschienene Folgen fallen
+            // damit automatisch wieder aus der gespeicherten Menge heraus.
+            seenUpcomingReleaseIDsRaw = upcomingReleasesFeed.visibleReleaseIDs.sorted().joined(separator: ",")
+        }
+        .task {
+            await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()
         }
         .confirmationDialog(
             deleteState.title,
