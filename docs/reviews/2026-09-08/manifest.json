@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-06-21",
+  "catalogs": [
+    {
+      "id": "die-drei-fragezeichen",
+      "name": "Die drei ???",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_investigators.json"
+    },
+    {
+      "id": "die-drei-fragezeichen-kids",
+      "name": "Die drei ??? Kids",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_investigators_kids.json"
+    },
+    {
+      "id": "die-drei-ausrufezeichen",
+      "name": "Die drei !!!",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/the_three_exclamation_marks.json"
+    },
+    {
+      "id": "bibi-blocksberg",
+      "name": "Bibi Blocksberg",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/bibi_blocksberg.json"
+    },
+    {
+      "id": "tkkg",
+      "name": "TKKG",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/tkkg.json"
+    },
+    {
+      "id": "bibi-und-tina",
+      "name": "Bibi und Tina",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/bibi_und_tina.json"
+    },
+    {
+      "id": "die-schule-der-magischen-tiere",
+      "name": "Die Schule der magischen Tiere",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/die_schule_der_magischen_tiere.json"
+    },
+    {
+      "id": "benjamin-bluemchen",
+      "name": "Benjamin Blümchen",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/benjamin_bluemchen.json"
+    },
+    {
+      "id": "fuenf-freunde",
+      "name": "Fünf Freunde",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/fuenf_freunde.json"
+    },
+    {
+      "id": "die-playmos",
+      "name": "Die Playmos",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/die_playmos.json"
+    },
+    {
+      "id": "die-schule-der-magischen-tiere-endlich-ferien",
+      "name": "Die Schule der magischen Tiere - Endlich Ferien",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/die_schule_der_magischen_tiere_endlich_ferien.json"
+    },
+    {
+      "id": "famous-five",
+      "name": "Famous Five",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/famous_five.json"
+    },
+    {
+      "id": "sherlock-holmes-bbc",
+      "name": "Sherlock Holmes",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/sherlock_holmes.json"
+    },
+    {
+      "id": "hitchhikers-guide-bbc",
+      "name": "The Hitchhiker's Guide to the Galaxy",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/hitchhikers_guide.json"
+    },
+    {
+      "id": "narnia-bbc",
+      "name": "The Chronicles of Narnia",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/narnia.json"
+    },
+    {
+      "id": "secret-seven",
+      "name": "Secret Seven",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/secret_seven.json"
+    },
+    {
+      "id": "cabin-pressure",
+      "name": "Cabin Pressure",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/cabin_pressure.json"
+    },
+    {
+      "id": "paddington-bear",
+      "name": "Paddington Bear",
+      "language": "en",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/en/paddington_bear.json"
+    },
+    {
+      "id": "irene-adler",
+      "name": "Irene Adler - Sonderermittlerin der Krone",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/irene_adler.json"
+    },
+    {
+      "id": "sherlock-holmes-sonderermittler-der-krone",
+      "name": "Sherlock Holmes - Sonderermittler der Krone",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/sherlock_holmes_sonderermittler_der_krone.json"
+    },
+    {
+      "id": "oscar-wilde-mycroft-holmes",
+      "name": "Oscar Wilde & Mycroft Holmes - Sonderermittler der Krone",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/oscar_wilde_mycroft_holmes.json"
+    },
+    {
+      "id": "john-sinclair-classics",
+      "name": "Geisterjäger John Sinclair - Classics",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/john_sinclair_classics.json"
+    },
+    {
+      "id": "john-sinclair-tonstudio-braun",
+      "name": "Geisterjäger John Sinclair (Tonstudio Braun)",
+      "language": "de",
+      "url": "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/catalogs/de/john_sinclair_tonstudio_braun.json"
+    }
+  ]
+}
