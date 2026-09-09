@@ -498,4 +498,111 @@ final class EpisodeCatalogTests: XCTestCase {
         let snapshot = try JSONDecoder().decode(CatalogSnapshot.self, from: json)
         XCTAssertEqual(snapshot.specialSlugs, [])
     }
+
+    // MARK: - Commit F: anthology rule enforced on import
+
+    private func saveManifest(with source: ManagedCatalogSource, to store: CatalogCacheStore) throws {
+        try store.saveManifest(CatalogManifest(schemaVersion: 1, updatedAt: nil, catalogs: [source]))
+    }
+
+    func testAnthologyManifestImportForcesEveryEntryToSpecialWithSlug() async throws {
+        let store = makeTempCacheStore()
+        let source = ManagedCatalogSource(
+            id: "france-culture",
+            name: "France Culture",
+            language: "fr",
+            style: "anthology",
+            url: URL(string: "https://example.com/france-culture.json")!
+        )
+        try saveManifest(with: source, to: store)
+        let json = """
+        {
+          "collectionName": "France Culture",
+          "entries": [
+            { "number": 1, "title": "Le Horla", "releaseYear": 2019 },
+            { "number": 2, "title": "La Peau de chagrin", "releaseYear": 2020 }
+          ]
+        }
+        """
+        let fetcher = MockCatalogFetcher(
+            sourceResult: .updated(data: Data(json.utf8), eTag: "\"new\"", lastModified: nil)
+        )
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalog(universeName: "France Culture", force: true)
+
+        let entries = catalog.allEntries.filter { $0.collectionName == "France Culture" }
+        XCTAssertEqual(entries.count, 2)
+        XCTAssertTrue(entries.allSatisfy { $0.kind == .special })
+        XCTAssertFalse(entries.contains { ($0.slug ?? "").isEmpty })
+        XCTAssertEqual(Set(entries.compactMap(\.slug)).count, 2)
+        // Anthologie-Einträge ohne Nummernbezug erscheinen nicht in der Nummernsuche.
+        XCTAssertNil(catalog.entry(for: 1, in: "France Culture"))
+    }
+
+    func testAnthologyImportTwiceInARowProducesNoSpuriousDelta() async throws {
+        let store = makeTempCacheStore()
+        let source = ManagedCatalogSource(
+            id: "france-culture",
+            name: "France Culture",
+            language: "fr",
+            style: "anthology",
+            url: URL(string: "https://example.com/france-culture.json")!
+        )
+        try saveManifest(with: source, to: store)
+        let json = """
+        {
+          "collectionName": "France Culture",
+          "version": 3,
+          "entries": [
+            { "number": 1, "title": "Le Horla", "releaseYear": 2019 },
+            { "number": 2, "title": "La Peau de chagrin", "releaseYear": 2020 }
+          ]
+        }
+        """
+        let fetcher = MockCatalogFetcher(
+            sourceResult: .updated(data: Data(json.utf8), eTag: "\"new\"", lastModified: nil)
+        )
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalog(universeName: "France Culture", force: true)
+        await catalog.refreshManagedCatalog(universeName: "France Culture", force: true)
+
+        XCTAssertTrue(
+            catalog.catalogEpisodeDeltas.filter { $0.catalogID == "france-culture" }.isEmpty,
+            "identische Rohdaten → identische synthetisierte Slugs → kein Schein-Delta"
+        )
+    }
+
+    func testNumberedManifestImportKeepsRegularEntriesAndNumbers() async throws {
+        let store = makeTempCacheStore()
+        let source = ManagedCatalogSource(
+            id: "numbered-cat",
+            name: "Nummernkatalog",
+            language: "de",
+            style: "numbered",
+            url: URL(string: "https://example.com/numbered.json")!
+        )
+        try saveManifest(with: source, to: store)
+        let json = """
+        {
+          "collectionName": "Nummernkatalog",
+          "entries": [
+            { "number": 1, "title": "Folge Eins", "releaseYear": 2019 },
+            { "number": 2, "title": "Folge Zwei", "releaseYear": 2020 }
+          ]
+        }
+        """
+        let fetcher = MockCatalogFetcher(
+            sourceResult: .updated(data: Data(json.utf8), eTag: "\"new\"", lastModified: nil)
+        )
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalog(universeName: "Nummernkatalog", force: true)
+
+        let entries = catalog.allEntries.filter { $0.collectionName == "Nummernkatalog" }
+        XCTAssertEqual(entries.count, 2)
+        XCTAssertTrue(entries.allSatisfy { $0.kind == .regular })
+        XCTAssertEqual(catalog.entry(for: 2, in: "Nummernkatalog")?.title, "Folge Zwei")
+    }
 }

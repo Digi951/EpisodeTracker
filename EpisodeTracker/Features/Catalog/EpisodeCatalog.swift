@@ -78,17 +78,24 @@ final class EpisodeCatalog {
     @discardableResult
     func importCatalog(data: Data, into collectionName: String) throws -> Int {
         let parsedEntries = try parser.parseCatalogEntries(from: data, fallbackCollectionName: collectionName)
-        let normalizedEntries = parsedEntries.map {
-            CatalogEntry(
-                number: $0.number,
-                kind: $0.kind,
-                slug: $0.slug,
-                title: $0.title,
-                releaseYear: $0.releaseYear,
-                collectionName: collectionName,
-                links: $0.links
-            )
-        }
+        // Eigene/manuelle Kataloge haben keinen Manifest-Stil und bleiben
+        // `.numbered` — der Normalizer ist hier ein No-Op, hält aber die
+        // Invariante an einer Stelle, falls je ein custom-anthology-Weg entsteht.
+        let normalizedEntries = CatalogStyleNormalizer.normalize(
+            parsedEntries.map {
+                CatalogEntry(
+                    number: $0.number,
+                    kind: $0.kind,
+                    slug: $0.slug,
+                    title: $0.title,
+                    releaseYear: $0.releaseYear,
+                    collectionName: collectionName,
+                    links: $0.links
+                )
+            },
+            style: .numbered,
+            collectionName: collectionName
+        )
         try cacheStore.replaceCustomCatalog(collectionName: collectionName, entries: normalizedEntries)
         reload()
         return normalizedEntries.count
@@ -366,17 +373,23 @@ final class EpisodeCatalog {
             switch result {
             case .updated(let data, let eTag, let lastModified):
                 let document = try parser.parseNormalizedCatalogDocument(from: data, fallbackCollectionName: source.name)
-                let normalizedEntries = document.entries.map {
-                    CatalogEntry(
-                        number: $0.number,
-                        kind: $0.kind,
-                        slug: $0.slug,
-                        title: $0.title,
-                        releaseYear: $0.releaseYear,
-                        collectionName: source.name,
-                        links: $0.links
-                    )
-                }
+                // Anthologie-Regel auf Eintragsebene erzwingen, bevor Snapshot und
+                // Delta gebildet werden — sonst stimmen `specialSlugs`/Delta nicht.
+                let normalizedEntries = CatalogStyleNormalizer.normalize(
+                    document.entries.map {
+                        CatalogEntry(
+                            number: $0.number,
+                            kind: $0.kind,
+                            slug: $0.slug,
+                            title: $0.title,
+                            releaseYear: $0.releaseYear,
+                            collectionName: source.name,
+                            links: $0.links
+                        )
+                    },
+                    style: source.effectiveStyle,
+                    collectionName: source.name
+                )
                 let previousSnapshot = cacheStore.loadCatalogSnapshot(universeName: source.name, cacheKey: source.id)
                 let currentSnapshot = CatalogSnapshot(
                     catalogID: source.id,
