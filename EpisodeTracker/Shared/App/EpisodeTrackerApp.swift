@@ -51,7 +51,17 @@ struct EpisodeTrackerApp: App {
                     containerSet: containerSet
                 )
                 syncCoordinator.handleBootstrapComplete()
+
+                // Der Katalog-Refresh ist vom Bootstrap entkoppelt: die UI ist
+                // sofort nutzbar, der Abruf läuft daneben und stößt danach die
+                // Reconciler an, damit ein neu geladener Anthologie-Katalog ohne
+                // Neustart wirkt. `didRunInitialCatalogRefresh` schützt die erste
+                // Vordergrund-Rückkehr vor einem doppelten Abruf.
                 didRunInitialCatalogRefresh = true
+                Task { @MainActor in
+                    _ = await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+                    AppDataBootstrapper.reconcileAfterCatalogRefresh(container: containerSet.primary)
+                }
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {

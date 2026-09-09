@@ -80,7 +80,9 @@ enum AppDataBootstrapper {
             bootstrapLogger.info("Bootstrap: post-migration sync repair applied (\(postMigrationSummary.logDescription, privacy: .public))")
         }
 
-        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+        // Der Katalog-Refresh läuft nicht mehr hier (kein Netz-I/O auf dem
+        // Startpfad). Diese Reconciler laufen gegen den vorhandenen Cache; nach
+        // dem entkoppelten Refresh ruft die App `reconcileAfterCatalogRefresh`.
         ensureBundledCollectionExists(container: containerSet.primary)
         reconcileSpecialEpisodes(container: containerSet.primary)
         reconcileCatalogStyles(container: containerSet.primary)
@@ -110,7 +112,7 @@ enum AppDataBootstrapper {
         let syncSummary = SyncPreparation.prepare(context: container.mainContext)
         report.syncPreparationSummary = syncSummary
 
-        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+        // Katalog-Refresh entkoppelt — siehe andere bootstrap-Überladung.
         ensureBundledCollectionExists(container: container)
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)
@@ -354,6 +356,16 @@ enum AppDataBootstrapper {
             sources: CatalogSourceRegistry.managedSources
         )
         try? context.save()
+    }
+
+    /// Läuft, nachdem der vom Bootstrap entkoppelte Katalog-Refresh frische
+    /// Manifest-/Katalogdaten geschrieben hat: gleicht Sonderfolgen-Slugs und
+    /// Katalog-Stil erneut ab, damit ein neu geladener Anthologie-Katalog ohne
+    /// App-Neustart wirkt. Beide Reconciler sind idempotent.
+    @MainActor
+    static func reconcileAfterCatalogRefresh(container: ModelContainer) {
+        reconcileSpecialEpisodes(container: container)
+        reconcileCatalogStyles(container: container)
     }
 
     @MainActor
