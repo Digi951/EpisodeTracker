@@ -20,7 +20,7 @@ struct EpisodeDetailView: View {
         return service
     }
 
-    private var resolvedStreamingLink: (url: URL, label: String)? {
+    private var resolvedExternalLink: (url: URL, label: String, systemImage: String)? {
         StreamingLinkResolver(service: streamingService, catalog: catalog)
             .resolve(for: episode)
     }
@@ -129,9 +129,9 @@ struct EpisodeDetailView: View {
                 moodsBlock
             }
 
-            if let streamingLink = resolvedStreamingLink {
+            if let externalLink = resolvedExternalLink {
                 panelDivider
-                streamingBlock(streamingLink)
+                streamingBlock(externalLink)
             }
 
             if let note = episode.personalNote, !note.isEmpty {
@@ -302,9 +302,9 @@ struct EpisodeDetailView: View {
         .padding(DetailMetrics.blockPadding)
     }
 
-    private func streamingBlock(_ link: (url: URL, label: String)) -> some View {
+    private func streamingBlock(_ link: (url: URL, label: String, systemImage: String)) -> some View {
         Link(destination: link.url) {
-            Label(link.label, systemImage: streamingService.iconName)
+            Label(link.label, systemImage: link.systemImage)
                 .font(.body)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(DetailMetrics.blockPadding)

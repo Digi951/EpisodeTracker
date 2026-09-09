@@ -189,4 +189,53 @@ final class CatalogEntryLinksTests: XCTestCase {
 
         XCTAssertNil(entry.preferredLink(for: [.spotify, .apple]))
     }
+
+    // MARK: - Generische Quell-URL
+
+    func testSourceURLReadsTheReservedSourceKey() {
+        let entry = CatalogEntry(
+            number: nil,
+            kind: .special,
+            slug: "le-horla-2019",
+            title: "Le Horla",
+            releaseYear: 2019,
+            links: ["source": "https://www.radiofrance.fr/franceculture/podcasts/le-horla"]
+        )
+
+        XCTAssertEqual(
+            entry.sourceURL?.absoluteString,
+            "https://www.radiofrance.fr/franceculture/podcasts/le-horla"
+        )
+    }
+
+    func testSourceURLIsNilWithoutTheKey() {
+        let entry = CatalogEntry(
+            number: 1,
+            title: "Test",
+            releaseYear: 2000,
+            links: ["spotify": "https://open.spotify.com/album/2"]
+        )
+
+        XCTAssertNil(entry.sourceURL)
+    }
+
+    func testSourceKeyIsNeverAStreamingService() {
+        XCTAssertNil(StreamingService(rawValue: CatalogEntry.sourceLinkKey))
+    }
+
+    func testSourceKeySurvivesDecodeAndSanitize() throws {
+        let entry = try decode("""
+        {
+          "number": null,
+          "kind": "special",
+          "slug": "le-horla-2019",
+          "title": "Le Horla",
+          "releaseYear": 2019,
+          "links": { "source": "https://www.radiofrance.fr/x" }
+        }
+        """)
+
+        XCTAssertEqual(entry.links["source"], "https://www.radiofrance.fr/x")
+        XCTAssertEqual(entry.sourceURL?.absoluteString, "https://www.radiofrance.fr/x")
+    }
 }

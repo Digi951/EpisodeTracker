@@ -141,6 +141,20 @@ struct CatalogEntry: Codable, Equatable {
 }
 
 extension CatalogEntry {
+    /// Reservierter Link-Key für eine generische Quell-URL (Sender-Mediathek,
+    /// Studio-Seite …). Kein `StreamingService`-Case — `StreamingService(rawValue:
+    /// "source")` bleibt `nil`, die Quelle wird also nie als Dienst-Zeile
+    /// gerendert, sondern nur als „Originalquelle öffnen"-Fallback.
+    static let sourceLinkKey = "source"
+
+    var sourceURL: URL? {
+        guard let raw = links[Self.sourceLinkKey]?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty
+        else { return nil }
+        return URL(string: raw)
+    }
+
     /// Erster verfügbarer Link entlang der übergebenen Dienst-Priorität.
     /// Ersetzt dienstspezifische Fallbacks wie `spotifyURL ?? appleMusicURL`.
     func preferredLink(for services: [StreamingService]) -> String? {

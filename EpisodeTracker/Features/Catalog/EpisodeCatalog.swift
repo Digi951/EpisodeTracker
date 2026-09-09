@@ -75,6 +75,19 @@ final class EpisodeCatalog {
         })
     }
 
+    /// Slug-Suche für Sonderfolgen (u. a. Anthologie-Einträge ohne belastbare
+    /// `episodeNumber`). Gegenstück zu `entry(for:in:)` für die reguläre Nummer.
+    func entry(forSlug slug: String, in collectionName: String?) -> CatalogEntry? {
+        guard let key = collectionName?.lowercased(), !key.isEmpty else { return nil }
+        let trimmed = slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return nil }
+        return entries.reversed().first(where: {
+            $0.kind == .special
+                && $0.slug?.lowercased() == trimmed
+                && $0.collectionName?.lowercased() == key
+        })
+    }
+
     @discardableResult
     func importCatalog(data: Data, into collectionName: String) throws -> Int {
         let parsedEntries = try parser.parseCatalogEntries(from: data, fallbackCollectionName: collectionName)
