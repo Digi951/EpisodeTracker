@@ -13,7 +13,7 @@ final class EpisodeCatalogTests: XCTestCase {
         }
 
         func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
-            .skipped
+            .notModified
         }
 
         func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
@@ -254,7 +254,7 @@ final class EpisodeCatalogTests: XCTestCase {
             universeName: source.name,
             cacheKey: source.id
         )
-        let fetcher = MockCatalogFetcher(sourceResult: .skipped)
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
         let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
 
         await catalog.refreshManagedCatalog(universeName: source.name, force: false)
@@ -280,7 +280,7 @@ final class EpisodeCatalogTests: XCTestCase {
             universeName: source.name,
             cacheKey: source.id
         )
-        let fetcher = MockCatalogFetcher(sourceResult: .skipped)
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
         let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
 
         await catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)

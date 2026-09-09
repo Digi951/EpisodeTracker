@@ -156,7 +156,8 @@ final class EpisodeCatalog {
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
 
-            case .notModified, .skipped:
+            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
+            case .notModified, .failed:
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
             }
@@ -190,7 +191,8 @@ final class EpisodeCatalog {
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
 
-            case .notModified, .skipped:
+            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
+            case .notModified, .failed:
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
             }
@@ -265,7 +267,8 @@ final class EpisodeCatalog {
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
 
-            case .notModified, .skipped:
+            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
+            case .notModified, .failed:
                 metadata.lastCheckedAt = .now
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
             }

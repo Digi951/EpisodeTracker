@@ -3,7 +3,25 @@ import Foundation
 enum RemoteCatalogFetchResult {
     case updated(data: Data, eTag: String?, lastModified: String?)
     case notModified
-    case skipped
+    case failed(CatalogFetchError)
+}
+
+/// Ein fehlgeschlagener Abruf bekommt einen eigenen Fall, statt wie bisher als
+/// `.skipped` mit `.notModified` zusammenzufallen: der Aufrufer muss einen
+/// 404/500/Timeout von einem echten „nichts geändert" unterscheiden können, um
+/// den 6-h-Cooldown nicht nach einem Fehlschlag zu starten (siehe
+/// docs/plans/v1.18-paket-2+2b-plan.md, Commit B).
+enum CatalogFetchError: Error, Equatable, Sendable {
+    /// HTTP-Antwort mit einem anderen Status als 200/304 (z. B. 404, 429, 500).
+    case http(status: Int)
+    /// Transportfehler vor einer HTTP-Antwort; `code` ist `URLError.Code.rawValue`
+    /// (Timeout, offline, DNS …).
+    case transport(code: Int)
+    /// Antwort war keine `HTTPURLResponse`.
+    case notHTTP
+    /// Nutzlast kam an, ließ sich aber nicht parsen. Wird vom Aufrufer gesetzt,
+    /// nicht vom Data-Source — der parst nicht.
+    case decoding(String)
 }
 
 protocol CatalogFetching: Sendable {
@@ -44,9 +62,16 @@ struct CatalogRemoteDataSource: CatalogFetching {
             request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch let urlError as URLError {
+            return .failed(.transport(code: urlError.code.rawValue))
+        }
+
         guard let httpResponse = response as? HTTPURLResponse else {
-            return .skipped
+            return .failed(.notHTTP)
         }
 
         switch httpResponse.statusCode {
@@ -59,7 +84,7 @@ struct CatalogRemoteDataSource: CatalogFetching {
         case 304:
             return .notModified
         default:
-            return .skipped
+            return .failed(.http(status: httpResponse.statusCode))
         }
     }
 }

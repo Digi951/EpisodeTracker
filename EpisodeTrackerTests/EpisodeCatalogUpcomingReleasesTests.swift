@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class EpisodeCatalogUpcomingReleasesTests: XCTestCase {
     private final class MockURLFetcher: CatalogFetching, @unchecked Sendable {
-        var urlResult: RemoteCatalogFetchResult = .skipped
+        var urlResult: RemoteCatalogFetchResult = .notModified
         private(set) var lastMetadata: RemoteCatalogMetadata??
 
         func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
@@ -13,7 +13,7 @@ final class EpisodeCatalogUpcomingReleasesTests: XCTestCase {
         }
 
         func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
-            .skipped
+            .notModified
         }
     }
 
