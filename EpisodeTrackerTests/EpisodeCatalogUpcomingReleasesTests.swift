@@ -7,12 +7,12 @@ final class EpisodeCatalogUpcomingReleasesTests: XCTestCase {
         var urlResult: RemoteCatalogFetchResult = .notModified
         private(set) var lastMetadata: RemoteCatalogMetadata??
 
-        func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
+        func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
             lastMetadata = .some(metadata)
             return urlResult
         }
 
-        func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
+        func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
             .notModified
         }
     }

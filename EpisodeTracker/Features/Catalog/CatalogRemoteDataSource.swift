@@ -25,8 +25,8 @@ enum CatalogFetchError: Error, Equatable, Sendable {
 }
 
 protocol CatalogFetching: Sendable {
-    func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult
-    func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult
+    func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult
+    func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult
 }
 
 struct CatalogRemoteDataSource: CatalogFetching {
@@ -35,23 +35,23 @@ struct CatalogRemoteDataSource: CatalogFetching {
     func fetch(
         from url: URL,
         metadata: RemoteCatalogMetadata?
-    ) async throws -> RemoteCatalogFetchResult {
+    ) async -> RemoteCatalogFetchResult {
         var request = URLRequest(url: url)
-        return try await fetch(request: &request, metadata: metadata)
+        return await fetch(request: &request, metadata: metadata)
     }
 
     func fetch(
         from source: ManagedCatalogSource,
         metadata: RemoteCatalogMetadata?
-    ) async throws -> RemoteCatalogFetchResult {
+    ) async -> RemoteCatalogFetchResult {
         var request = URLRequest(url: source.url)
-        return try await fetch(request: &request, metadata: metadata)
+        return await fetch(request: &request, metadata: metadata)
     }
 
     private func fetch(
         request: inout URLRequest,
         metadata: RemoteCatalogMetadata?
-    ) async throws -> RemoteCatalogFetchResult {
+    ) async -> RemoteCatalogFetchResult {
         request.timeoutInterval = 20
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
@@ -68,6 +68,10 @@ struct CatalogRemoteDataSource: CatalogFetching {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch let urlError as URLError {
             return .failed(.transport(code: urlError.code.rawValue))
+        } catch {
+            // z. B. CancellationError bei abgebrochenem Task — kein URLError, aber
+            // ebenso ein Transportabbruch vor einer HTTP-Antwort.
+            return .failed(.transport(code: URLError.Code.unknown.rawValue))
         }
 
         guard let httpResponse = response as? HTTPURLResponse else {

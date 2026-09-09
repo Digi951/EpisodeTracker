@@ -8,7 +8,12 @@ final class EpisodeCatalog {
     private let parser: CatalogParser
     private let cacheStore: CatalogCacheStore
     private let remoteDataSource: any CatalogFetching
+    /// Abgeleiteter Anzeige-String für den bestehenden Katalog-Banner. Quelle der
+    /// Wahrheit ist `lastRefreshOutcome`; dieser Wert wird daraus berechnet.
     private(set) var lastRefreshError: String?
+    /// Strukturiertes Ergebnis des letzten Refresh-Laufs (Teil-Erfolg, Fehler pro
+    /// Quelle). Für Settings-/Neuigkeiten-Statusanzeigen.
+    private(set) var lastRefreshOutcome: CatalogRefreshOutcome?
     private(set) var newCatalogAvailability: NewCatalogAvailability?
     private(set) var removedCatalogBanner: CatalogUpdateBannerRecommendation?
     private(set) var upcomingReleases: [UpcomingRelease] = []
@@ -91,61 +96,103 @@ final class EpisodeCatalog {
         return try importCatalog(data: data, into: collectionName)
     }
 
+    private static let manifestSourceName = "Katalogverzeichnis"
+    private static let upcomingSourceName = "Bald verfügbar"
+
     /// `ignoringThrottle` bypasses the 6h `shouldRefresh` cooldown while still sending
     /// conditional requests (ETag/If-Modified-Since), so a cold app launch can always
     /// check for updates without losing the cheap 304-not-modified path that `force` skips.
-    func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
-        lastRefreshError = nil
-        await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
+    @discardableResult
+    func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome {
+        let manifestResult = await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
         pruneOrphanedCatalogs()
 
         let activeCatalogIDs = ActiveCatalogStore().activeIDs
         let sourcesToRefresh = managedSources.filter { activeCatalogIDs.contains($0.id) }
+
+        var sourceResults: [CatalogRefreshOutcome.SourceResult] = []
+        var upcomingResult: CatalogRefreshOutcome.SourceResult?
+
         // Child tasks stay MainActor-isolated, so the per-catalog disk writes (no
         // await inside them) still run to completion one at a time. Only the
         // network awaits overlap, which is the actual point of parallelizing.
-        await withTaskGroup(of: Void.self) { group in
+        await withTaskGroup(of: RefreshSlot.self) { group in
             // Hängt an keiner Manifest-Information, darf also parallel zu den
             // Katalogen laufen statt den Start der Gruppe zu verzögern.
             group.addTask { @MainActor in
-                await self.refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
+                .upcoming(await self.refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle))
             }
             for source in sourcesToRefresh {
                 group.addTask { @MainActor in
-                    await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle)
+                    .source(await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle))
+                }
+            }
+            for await slot in group {
+                switch slot {
+                case .upcoming(let result): upcomingResult = result
+                case .source(let result): if let result { sourceResults.append(result) }
                 }
             }
         }
         reload()
+
+        let outcome = CatalogRefreshOutcome(
+            manifest: manifestResult,
+            upcoming: upcomingResult,
+            sources: sourceResults
+        )
+        lastRefreshOutcome = outcome
+        lastRefreshError = Self.derivedRefreshError(from: outcome)
+        return outcome
     }
 
-    func refreshManagedCatalog(universeName: String, force: Bool = true) async {
-        await refreshManifestIfNeeded(force: force)
+    private enum RefreshSlot {
+        case source(CatalogRefreshOutcome.SourceResult?)
+        case upcoming(CatalogRefreshOutcome.SourceResult?)
+    }
+
+    @discardableResult
+    func refreshManagedCatalog(universeName: String, force: Bool = true) async -> CatalogRefreshOutcome {
+        let manifestResult = await refreshManifestIfNeeded(force: force)
 
         guard let source = managedSources.first(where: {
             $0.name.caseInsensitiveCompare(universeName) == .orderedSame
         }) else {
-            return
+            let outcome = CatalogRefreshOutcome(manifest: manifestResult)
+            lastRefreshOutcome = outcome
+            lastRefreshError = Self.derivedRefreshError(from: outcome)
+            return outcome
         }
 
-        await refreshManagedCatalogIfNeeded(source: source, force: force)
+        let sourceResult = await refreshManagedCatalogIfNeeded(source: source, force: force)
         reload()
+
+        let outcome = CatalogRefreshOutcome(
+            manifest: manifestResult,
+            sources: sourceResult.map { [$0] } ?? []
+        )
+        lastRefreshOutcome = outcome
+        lastRefreshError = Self.derivedRefreshError(from: outcome)
+        return outcome
     }
 
-    private func refreshManifestIfNeeded(force: Bool, ignoringThrottle: Bool = false) async {
+    /// `nil` bedeutet: in diesem Lauf nicht angefasst (gedrosselt).
+    @discardableResult
+    private func refreshManifestIfNeeded(force: Bool, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome.SourceResult? {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: CatalogSourceRegistry.manifestMetadataKey)
-        guard force || ignoringThrottle || shouldRefresh(previousMetadata) || cacheStore.loadManifest() == nil else { return }
+        guard force || ignoringThrottle || shouldRefresh(previousMetadata) || cacheStore.loadManifest() == nil else { return nil }
+
+        let attemptAt = Date()
+        let result = await remoteDataSource.fetch(
+            from: CatalogSourceRegistry.manifestURL,
+            metadata: previousMetadata
+        )
+        var metadata = previousMetadata ?? RemoteCatalogMetadata()
 
         do {
-            let previousSources = cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
-            let result = try await remoteDataSource.fetch(
-                from: CatalogSourceRegistry.manifestURL,
-                metadata: previousMetadata
-            )
-            var metadata = previousMetadata ?? RemoteCatalogMetadata()
-
             switch result {
             case .updated(let data, let eTag, let lastModified):
+                let previousSources = cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
                 let manifest = try parser.parseManifest(from: data)
                 let filteredCatalogs = manifest.catalogs.filter(\.matchesDeviceLanguage)
                 let newSources = newCatalogSources(in: filteredCatalogs, previousSources: previousSources)
@@ -154,33 +201,83 @@ final class EpisodeCatalog {
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
+                return manifestSourceResult(status: .updated, attemptAt: attemptAt, previousMetadata: previousMetadata, savedMetadata: metadata)
 
-            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
-            case .notModified, .failed:
+            case .notModified:
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
+                return manifestSourceResult(status: .notModified, attemptAt: attemptAt, previousMetadata: previousMetadata, savedMetadata: metadata)
+
+            case .failed(let error):
+                // Fehlschlag: eTag/lastModified/lastCheckedAt unangetastet lassen,
+                // nur den Versuch protokollieren. Der Cooldown startet damit nicht.
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = error.kindLabel
+                try? cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
+                return manifestSourceResult(status: .failed(error), attemptAt: attemptAt, previousMetadata: previousMetadata, savedMetadata: metadata)
             }
         } catch {
-            lastRefreshError = "Katalogverzeichnis nicht erreichbar."
+            // Antwort kam an, ließ sich aber nicht verarbeiten (Parsen oder
+            // Persistieren). Wie ein Fehlschlag behandeln: Bestand bleibt gültig.
+            metadata.lastAttemptAt = attemptAt
+            metadata.lastFailureKind = CatalogFetchError.decoding(String(describing: error)).kindLabel
+            try? cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.manifestMetadataKey)
+            return manifestSourceResult(
+                status: .failed(.decoding(String(describing: error))),
+                attemptAt: attemptAt,
+                previousMetadata: previousMetadata,
+                savedMetadata: metadata
+            )
         }
     }
 
-    func refreshUpcomingReleasesIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async {
+    private func manifestSourceResult(
+        status: CatalogRefreshOutcome.Status,
+        attemptAt: Date,
+        previousMetadata: RemoteCatalogMetadata?,
+        savedMetadata: RemoteCatalogMetadata
+    ) -> CatalogRefreshOutcome.SourceResult {
+        CatalogRefreshOutcome.SourceResult(
+            id: CatalogSourceRegistry.manifestMetadataKey,
+            name: Self.manifestSourceName,
+            status: status,
+            lastAttemptAt: attemptAt,
+            lastSuccessAt: status.isSuccess ? savedMetadata.lastCheckedAt : previousMetadata?.lastCheckedAt
+        )
+    }
+
+    @discardableResult
+    func refreshUpcomingReleasesIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome.SourceResult? {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
         let hasCachedReleases = !cacheStore.loadUpcomingReleases().isEmpty
-        guard force || ignoringThrottle || !hasCachedReleases || shouldRefresh(previousMetadata) else { return }
+        guard force || ignoringThrottle || !hasCachedReleases || shouldRefresh(previousMetadata) else { return nil }
+
+        let attemptAt = Date()
+        // Ohne verwertbare Daten im Cache darf kein 304 zurückkommen: sonst bliebe
+        // die Liste dauerhaft leer, sobald die Cache-Datei einmal nicht lesbar ist
+        // (beschädigt oder in einem älteren Format geschrieben).
+        let result = await remoteDataSource.fetch(
+            from: CatalogSourceRegistry.upcomingReleasesURL,
+            metadata: hasCachedReleases ? previousMetadata : nil
+        )
+        var metadata = previousMetadata ?? RemoteCatalogMetadata()
+
+        func upcomingResult(_ status: CatalogRefreshOutcome.Status) -> CatalogRefreshOutcome.SourceResult {
+            CatalogRefreshOutcome.SourceResult(
+                id: CatalogSourceRegistry.upcomingReleasesMetadataKey,
+                name: Self.upcomingSourceName,
+                status: status,
+                lastAttemptAt: attemptAt,
+                lastSuccessAt: status.isSuccess ? metadata.lastCheckedAt : previousMetadata?.lastCheckedAt
+            )
+        }
 
         do {
-            // Ohne verwertbare Daten im Cache darf kein 304 zurückkommen: sonst
-            // bliebe die Liste dauerhaft leer, sobald die Cache-Datei einmal nicht
-            // lesbar ist (beschädigt oder in einem älteren Format geschrieben).
-            let result = try await remoteDataSource.fetch(
-                from: CatalogSourceRegistry.upcomingReleasesURL,
-                metadata: hasCachedReleases ? previousMetadata : nil
-            )
-            var metadata = previousMetadata ?? RemoteCatalogMetadata()
-
             switch result {
             case .updated(let data, let eTag, let lastModified):
                 let document = try JSONDecoder().decode(UpcomingReleasesDocument.self, from: data)
@@ -189,20 +286,34 @@ final class EpisodeCatalog {
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+                return upcomingResult(.updated)
 
-            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
-            case .notModified, .failed:
+            case .notModified:
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+                return upcomingResult(.notModified)
+
+            case .failed(let error):
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = error.kindLabel
+                try? cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+                return upcomingResult(.failed(error))
             }
         } catch {
-            // Bewusst kein lastRefreshError: "Bald verfügbar" ist ein Zusatzfeature,
-            // ein Fehlschlag darf nicht wie ein fehlgeschlagener Katalog-Refresh wirken.
+            metadata.lastAttemptAt = attemptAt
+            metadata.lastFailureKind = CatalogFetchError.decoding(String(describing: error)).kindLabel
+            try? cacheStore.saveRemoteMetadata(metadata, universeName: CatalogSourceRegistry.upcomingReleasesMetadataKey)
+            return upcomingResult(.failed(.decoding(String(describing: error))))
         }
     }
 
-    func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool, ignoringThrottle: Bool = false) async {
+    @discardableResult
+    func refreshManagedCatalogIfNeeded(source: ManagedCatalogSource, force: Bool, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome.SourceResult? {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
@@ -219,13 +330,24 @@ final class EpisodeCatalog {
         }
         let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
         let needsMarketLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasAllMarketLinks
-        guard force || ignoringThrottle || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return }
+        guard force || ignoringThrottle || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return nil }
+
+        let attemptAt = Date()
+        let requestMetadata = force || needsStreamingLinkRefresh || needsMarketLinkRefresh ? nil : previousMetadata
+        let result = await remoteDataSource.fetch(from: source, metadata: requestMetadata)
+        var metadata = previousMetadata ?? RemoteCatalogMetadata()
+
+        func sourceResult(_ status: CatalogRefreshOutcome.Status) -> CatalogRefreshOutcome.SourceResult {
+            CatalogRefreshOutcome.SourceResult(
+                id: source.id,
+                name: source.name,
+                status: status,
+                lastAttemptAt: attemptAt,
+                lastSuccessAt: status.isSuccess ? metadata.lastCheckedAt : previousMetadata?.lastCheckedAt
+            )
+        }
 
         do {
-            let requestMetadata = force || needsStreamingLinkRefresh || needsMarketLinkRefresh ? nil : previousMetadata
-            let result = try await remoteDataSource.fetch(from: source, metadata: requestMetadata)
-            var metadata = previousMetadata ?? RemoteCatalogMetadata()
-
             switch result {
             case .updated(let data, let eTag, let lastModified):
                 let document = try parser.parseNormalizedCatalogDocument(from: data, fallbackCollectionName: source.name)
@@ -265,16 +387,58 @@ final class EpisodeCatalog {
                 metadata.eTag = eTag
                 metadata.lastModified = lastModified
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
+                return sourceResult(.updated)
 
-            // `.failed` läuft hier noch wie `.notModified` — Commit B trennt die Fälle.
-            case .notModified, .failed:
+            case .notModified:
                 metadata.lastCheckedAt = .now
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = nil
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
+                return sourceResult(.notModified)
+
+            case .failed(let error):
+                // eTag/lastModified/lastCheckedAt und die Cache-Einträge bleiben
+                // unangetastet; nur der Versuch wird protokolliert.
+                metadata.lastAttemptAt = attemptAt
+                metadata.lastFailureKind = error.kindLabel
+                try? cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
+                return sourceResult(.failed(error))
             }
         } catch {
-            lastRefreshError = "Katalog \(source.name) nicht aktualisierbar."
+            metadata.lastAttemptAt = attemptAt
+            metadata.lastFailureKind = CatalogFetchError.decoding(String(describing: error)).kindLabel
+            try? cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
+            return sourceResult(.failed(.decoding(String(describing: error))))
         }
+    }
+
+    /// Baut den Anzeige-String für den bestehenden Katalog-Banner. Ein Fehlschlag
+    /// des Bald-verfügbar-Feeds zählt bewusst nicht mit.
+    private static func derivedRefreshError(from outcome: CatalogRefreshOutcome) -> String? {
+        if outcome.manifestFailed {
+            return AppLocalization.format(
+                "Catalog.DirectoryUnreachable",
+                defaultValue: "Katalogverzeichnis nicht erreichbar."
+            )
+        }
+        let failedNames = outcome.failedCatalogNames
+        guard !failedNames.isEmpty else { return nil }
+        if failedNames.count == 1 {
+            return AppLocalization.format(
+                "Catalog.RefreshSingleFailure",
+                defaultValue: "Katalog „%@“ nicht aktualisierbar.",
+                failedNames[0]
+            )
+        }
+        return AppLocalization.format(
+            "Catalog.RefreshPartialFailure",
+            defaultValue: "%1$@ von %2$@ Katalogen nicht aktualisierbar.",
+            String(failedNames.count),
+            String(outcome.attemptedCatalogCount)
+        )
     }
 
     private func loadManagedEntriesFromCacheOrFallback() -> [CatalogEntry] {

@@ -211,7 +211,17 @@ extension ManagedCatalogSource {
 struct RemoteCatalogMetadata: Codable {
     var eTag: String?
     var lastModified: String?
+    /// Zeitpunkt des letzten *erfolgreichen* Abrufs (HTTP 200 oder 304). Steuert
+    /// den 6-h-Cooldown in `EpisodeCatalog.shouldRefresh`. Wird bei einem
+    /// Fehlschlag bewusst nicht geschrieben, damit ein 404/500/Timeout den
+    /// Refresh nicht für sechs Stunden einfriert.
     var lastCheckedAt: Date?
+    /// Zeitpunkt des letzten Abrufversuchs, unabhängig vom Ausgang. Optional →
+    /// Bestandsdateien ohne den Schlüssel lesen weiter (fehlender Key → nil).
+    var lastAttemptAt: Date?
+    /// Kennung des letzten Fehlschlags (`CatalogFetchError.kindLabel`), z. B.
+    /// `"http:404"`. `nil` nach einem erfolgreichen Abruf.
+    var lastFailureKind: String?
 }
 
 struct CatalogCacheStatus {

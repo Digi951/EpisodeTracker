@@ -6,19 +6,23 @@ import Observation
 final class EpisodeCatalogTests: XCTestCase {
     private final class MockCatalogFetcher: CatalogFetching, @unchecked Sendable {
         private(set) var sourceMetadataRequests: [RemoteCatalogMetadata?] = []
+        private(set) var requestedSourceIDs: [String] = []
         var sourceResult: RemoteCatalogFetchResult
+        /// Per-Quelle-Ergebnis; überschreibt `sourceResult` für die passende ID.
+        var resultsBySourceID: [String: RemoteCatalogFetchResult] = [:]
 
         init(sourceResult: RemoteCatalogFetchResult) {
             self.sourceResult = sourceResult
         }
 
-        func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
+        func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
             .notModified
         }
 
-        func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async throws -> RemoteCatalogFetchResult {
+        func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
             sourceMetadataRequests.append(metadata)
-            return sourceResult
+            requestedSourceIDs.append(source.id)
+            return resultsBySourceID[source.id] ?? sourceResult
         }
     }
 
@@ -289,6 +293,124 @@ final class EpisodeCatalogTests: XCTestCase {
             fetcher.sourceMetadataRequests.isEmpty,
             "ignoringThrottle must bypass the 6h cooldown so a cold app launch can pick up server-side catalog updates"
         )
+    }
+
+    // MARK: - Commit B: typed outcome, failed fetch does not freeze the cooldown
+
+    func testFailedSourceFetchKeepsCacheAndMetadataAndDoesNotStartCooldown() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        let staleCheck = Date().addingTimeInterval(-7 * 60 * 60) // älter als 6h → shouldRefresh == true
+        try store.saveRemoteCache(
+            entries: [CatalogEntry(number: 1, title: "Bestand", releaseYear: 1979, collectionName: source.name,
+                                   links: ["spotify": "https://open.spotify.com/album/keep", "apple": "https://music.apple.com/keep", "deezer": "https://deezer.com/keep", "audible": "https://audible.de/keep"])],
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"keep\"", lastModified: "keep-date", lastCheckedAt: staleCheck),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        fetcher.resultsBySourceID[source.id] = .failed(.http(status: 503))
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        let outcome = await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        // Ergebnis meldet den Fehlschlag, nicht Erfolg.
+        XCTAssertEqual(outcome.failedCatalogNames, [source.name])
+        XCTAssertTrue(outcome.hadAnyFailure)
+        XCTAssertNotNil(catalog.lastRefreshError)
+
+        // Cache-Einträge bleiben erhalten.
+        XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.links["spotify"], "https://open.spotify.com/album/keep")
+
+        // eTag / lastModified / lastCheckedAt unangetastet; nur der Versuch protokolliert.
+        let saved = try XCTUnwrap(store.loadRemoteMetadata(universeName: source.name, cacheKey: source.id))
+        XCTAssertEqual(saved.eTag, "\"keep\"")
+        XCTAssertEqual(saved.lastModified, "keep-date")
+        XCTAssertEqual(saved.lastCheckedAt?.timeIntervalSince1970 ?? 0, staleCheck.timeIntervalSince1970, accuracy: 0.001)
+        XCTAssertEqual(saved.lastFailureKind, "http:503")
+        XCTAssertNotNil(saved.lastAttemptAt)
+
+        // Cooldown nicht gestartet: ein zweiter Lauf versucht erneut zu fetchen.
+        let requestsBefore = fetcher.requestedSourceIDs.count
+        await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+        XCTAssertGreaterThan(fetcher.requestedSourceIDs.count, requestsBefore)
+    }
+
+    func testSuccessfulFetchClearsFailureKindAndSetsAttempt() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"old\"", lastModified: nil, lastCheckedAt: Date().addingTimeInterval(-7 * 60 * 60),
+                                  lastAttemptAt: Date().addingTimeInterval(-7 * 60 * 60), lastFailureKind: "http:500"),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let json = """
+        { "collectionName": "\(source.name)", "entries": [ { "number": 1, "title": "Neu", "releaseYear": 1979 } ] }
+        """
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        fetcher.resultsBySourceID[source.id] = .updated(data: Data(json.utf8), eTag: "\"fresh\"", lastModified: nil)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        let outcome = await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        XCTAssertTrue(outcome.hadAnySuccess)
+        XCTAssertFalse(outcome.hadAnyFailure)
+        XCTAssertNil(catalog.lastRefreshError)
+        let saved = try XCTUnwrap(store.loadRemoteMetadata(universeName: source.name, cacheKey: source.id))
+        XCTAssertNil(saved.lastFailureKind)
+        XCTAssertEqual(saved.eTag, "\"fresh\"")
+        XCTAssertNotNil(saved.lastAttemptAt)
+        XCTAssertNotNil(saved.lastCheckedAt)
+    }
+
+    func testInvalidJSONOnUpdatedIsReportedAsFailureAndKeepsCache() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        try store.saveRemoteCache(
+            entries: [CatalogEntry(number: 1, title: "Bestand", releaseYear: 1979, collectionName: source.name,
+                                   links: ["spotify": "https://open.spotify.com/album/keep", "apple": "https://music.apple.com/keep", "deezer": "https://deezer.com/keep", "audible": "https://audible.de/keep"])],
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"keep\"", lastModified: nil, lastCheckedAt: Date().addingTimeInterval(-7 * 60 * 60)),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        fetcher.resultsBySourceID[source.id] = .updated(data: Data("kein json".utf8), eTag: "\"broken\"", lastModified: nil)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        let outcome = await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        XCTAssertTrue(outcome.hadAnyFailure)
+        XCTAssertEqual(outcome.failedCatalogNames, [source.name])
+        XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.links["spotify"], "https://open.spotify.com/album/keep")
+        let saved = try XCTUnwrap(store.loadRemoteMetadata(universeName: source.name, cacheKey: source.id))
+        XCTAssertEqual(saved.eTag, "\"keep\"", "ein kaputter Payload darf den bestätigten ETag nicht überschreiben")
+        XCTAssertEqual(saved.lastFailureKind, "decoding")
+    }
+
+    func testPartialSuccessAggregatesPerSource() async throws {
+        let store = makeTempCacheStore()
+        let failing = CatalogSourceRegistry.fallbackManagedSources[0]
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        fetcher.resultsBySourceID[failing.id] = .failed(.http(status: 500))
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        let outcome = await catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+
+        XCTAssertTrue(outcome.hadAnySuccess)
+        XCTAssertTrue(outcome.hadAnyFailure)
+        XCTAssertEqual(outcome.failedCatalogNames, [failing.name])
+        XCTAssertGreaterThan(outcome.attemptedCatalogCount, 1)
+        XCTAssertEqual(catalog.lastRefreshOutcome, outcome)
+        XCTAssertNotNil(catalog.lastRefreshError)
     }
 
     func testCatalogEntryDecodesSpecialKindAndSlug() throws {
