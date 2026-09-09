@@ -181,20 +181,16 @@ final class EpisodeCatalogTests: XCTestCase {
         XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.links["deezer"], "https://www.deezer.com/album/12761822")
     }
 
-    func testUnforcedRefreshBackfillsWhenAMarketServiceLinkIsMissingEverywhere() async throws {
+    // MARK: - Commit E: cache-format version replaces the market-link bypass
+
+    func testOutdatedCacheFormatForcesOneUnconditionalRefetch() async throws {
         let store = makeTempCacheStore()
         let source = CatalogSourceRegistry.fallbackManagedSources[0]
-        // Cache predates the links-Umstellung: only an Apple link, no Spotify/Deezer/Audible anywhere.
+        // Cache aus altem Format: cacheFormatVersion fehlt, obwohl der Abruf gerade
+        // erst lief (lastCheckedAt == jetzt).
         try store.saveRemoteCache(
-            entries: [
-                CatalogEntry(
-                    number: 1,
-                    title: "und der Super-Papagei",
-                    releaseYear: 1979,
-                    collectionName: source.name,
-                    links: ["apple": "https://music.apple.com/album/123"]
-                )
-            ],
+            entries: [CatalogEntry(number: 1, title: "Alt", releaseYear: 1979, collectionName: source.name,
+                                   links: ["apple": "https://music.apple.com/album/123"])],
             universeName: source.name,
             cacheKey: source.id
         )
@@ -204,61 +200,34 @@ final class EpisodeCatalogTests: XCTestCase {
             cacheKey: source.id
         )
         let json = """
-        {
-          "collectionName": "\(source.name)",
-          "entries": [
-            {
-              "number": 1,
-              "title": "und der Super-Papagei",
-              "releaseYear": 1979,
-              "links": {
-                "apple": "https://music.apple.com/album/123",
-                "spotify": "https://open.spotify.com/album/456",
-                "deezer": "https://www.deezer.com/album/789",
-                "audible": "https://www.audible.de/pd/999"
-              }
-            }
-          ]
-        }
+        { "collectionName": "\(source.name)", "entries": [ { "number": 1, "title": "Neu", "releaseYear": 1979,
+          "links": { "apple": "https://music.apple.com/album/123", "spotify": "https://open.spotify.com/album/456" } } ] }
         """
-        let fetcher = MockCatalogFetcher(
-            sourceResult: .updated(data: Data(json.utf8), eTag: "\"new\"", lastModified: nil)
-        )
+        let fetcher = MockCatalogFetcher(sourceResult: .updated(data: Data(json.utf8), eTag: "\"new\"", lastModified: nil))
         let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
 
         await catalog.refreshManagedCatalog(universeName: source.name, force: false)
 
         XCTAssertEqual(fetcher.sourceMetadataRequests.count, 1)
-        XCTAssertNil(
-            fetcher.sourceMetadataRequests[0],
-            "a market service missing from every cached entry must force an unconditional refetch even without force:true"
-        )
-        XCTAssertEqual(catalog.entry(for: 1, in: source.name)?.links["spotify"], "https://open.spotify.com/album/456")
+        XCTAssertNil(fetcher.sourceMetadataRequests[0], "ein veraltetes Cache-Format erzwingt einen ETag-losen Voll-Refresh")
+        let saved = try XCTUnwrap(store.loadRemoteMetadata(universeName: source.name, cacheKey: source.id))
+        XCTAssertEqual(saved.cacheFormatVersion, CatalogSourceRegistry.currentCacheFormatVersion)
     }
 
-    func testUnforcedRefreshSkipsBackfillOnceEveryMarketServiceHasAtLeastOneLink() async throws {
+    func testCurrentCacheFormatWithMissingMarketLinkDoesNotForceRefreshWithinCooldown() async throws {
         let store = makeTempCacheStore()
         let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        // Nur ein Link, drei DE-Marktdienste fehlen — früher hätte das bei jedem
+        // Refresh den ETag verworfen. Jetzt: Format aktuell + Cooldown aktiv → nichts.
         try store.saveRemoteCache(
-            entries: [
-                CatalogEntry(
-                    number: 1,
-                    title: "und der Super-Papagei",
-                    releaseYear: 1979,
-                    collectionName: source.name,
-                    links: [
-                        "apple": "https://music.apple.com/album/123",
-                        "spotify": "https://open.spotify.com/album/456",
-                        "deezer": "https://www.deezer.com/album/789",
-                        "audible": "https://www.audible.de/pd/999"
-                    ]
-                )
-            ],
+            entries: [CatalogEntry(number: 1, title: "Sparsam", releaseYear: 1979, collectionName: source.name,
+                                   links: ["spotify": "https://open.spotify.com/album/456"])],
             universeName: source.name,
             cacheKey: source.id
         )
         try store.saveRemoteMetadata(
-            RemoteCatalogMetadata(eTag: "\"current\"", lastModified: nil, lastCheckedAt: .now),
+            RemoteCatalogMetadata(eTag: "\"current\"", lastModified: nil, lastCheckedAt: .now,
+                                  cacheFormatVersion: CatalogSourceRegistry.currentCacheFormatVersion),
             universeName: source.name,
             cacheKey: source.id
         )
@@ -267,10 +236,33 @@ final class EpisodeCatalogTests: XCTestCase {
 
         await catalog.refreshManagedCatalog(universeName: source.name, force: false)
 
-        XCTAssertTrue(
-            fetcher.sourceMetadataRequests.isEmpty,
-            "no refresh should be triggered once every market service already has a link somewhere in the cache"
+        XCTAssertTrue(fetcher.sourceMetadataRequests.isEmpty, "aktuelles Format + Cooldown → kein Abruf, auch bei fehlendem Marktdienst-Link")
+    }
+
+    func testCurrentCacheFormatSendsETagWhenTheCooldownHasElapsed() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        try store.saveRemoteCache(
+            entries: [CatalogEntry(number: 1, title: "Sparsam", releaseYear: 1979, collectionName: source.name,
+                                   links: ["spotify": "https://open.spotify.com/album/456"])],
+            universeName: source.name,
+            cacheKey: source.id
         )
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"keep\"", lastModified: nil,
+                                  lastCheckedAt: Date().addingTimeInterval(-7 * 60 * 60),
+                                  cacheFormatVersion: CatalogSourceRegistry.currentCacheFormatVersion),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        XCTAssertEqual(fetcher.sourceMetadataRequests.count, 1)
+        XCTAssertEqual(fetcher.sourceMetadataRequests[0]?.eTag, "\"keep\"",
+                       "bei aktuellem Format wird der ETag mitgeschickt statt verworfen")
     }
 
     func testIgnoringThrottleRefetchesEvenWhenRecentlyChecked() async throws {
@@ -281,10 +273,11 @@ final class EpisodeCatalogTests: XCTestCase {
             universeName: source.name,
             cacheKey: source.id
         )
-        // A cooldown that just started must normally block a re-fetch (see
-        // testUnforcedRefreshSkipsBackfillOnceEveryMarketServiceHasAtLeastOneLink).
+        // Cache-Format aktuell + Cooldown gerade gestartet → ein normaler Refresh
+        // würde blocken. Nur `ignoringThrottle` darf hier durchkommen.
         try store.saveRemoteMetadata(
-            RemoteCatalogMetadata(eTag: "\"old\"", lastModified: nil, lastCheckedAt: .now),
+            RemoteCatalogMetadata(eTag: "\"old\"", lastModified: nil, lastCheckedAt: .now,
+                                  cacheFormatVersion: CatalogSourceRegistry.currentCacheFormatVersion),
             universeName: source.name,
             cacheKey: source.id
         )

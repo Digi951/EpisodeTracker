@@ -222,6 +222,12 @@ struct RemoteCatalogMetadata: Codable {
     /// Kennung des letzten Fehlschlags (`CatalogFetchError.kindLabel`), z. B.
     /// `"http:404"`. `nil` nach einem erfolgreichen Abruf.
     var lastFailureKind: String?
+    /// Format der zuletzt geschriebenen Cache-Einträge
+    /// (`CatalogSourceRegistry.currentCacheFormatVersion`). Ein niedrigerer Wert
+    /// (oder `nil` bei Altbestand) löst genau einen unbedingten Voll-Refresh aus;
+    /// danach wird der ETag wieder respektiert, auch wenn nicht jeder Marktdienst
+    /// einen Link hat.
+    var cacheFormatVersion: Int?
 }
 
 struct CatalogCacheStatus {
@@ -353,6 +359,12 @@ enum CatalogSourceRegistry {
     static let manifestMetadataKey = "__catalog_manifest__"
     static let upcomingReleasesURL = URL(string: "https://raw.githubusercontent.com/Digi951/hoerspiel-kataloge/main/upcoming_releases.json")!
     static let upcomingReleasesMetadataKey = "__upcoming_releases__"
+
+    /// Format der gecachten Katalog-Einträge. 1 = `links`-Dictionary über alle
+    /// Marktdienste (ersetzt die vier festen URL-Felder). Erhöhen, wenn sich die
+    /// Struktur eines Cache-Eintrags ändert und ein einmaliger Voll-Refresh nötig
+    /// wird; `RemoteCatalogMetadata.cacheFormatVersion` steuert das pro Quelle.
+    static let currentCacheFormatVersion = 1
 
     // Wird aus View-Bodies, Bootstrap und Stores sehr häufig gelesen; ohne Cache
     // bedeutet jeder Zugriff einen Manifest-Read von der Platte plus JSON-Decode.

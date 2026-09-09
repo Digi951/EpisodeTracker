@@ -338,23 +338,17 @@ final class EpisodeCatalog {
         let previousMetadata = cacheStore.loadRemoteMetadata(universeName: source.name, cacheKey: source.id)
         let cachedEntries = cacheStore.loadRemoteCache(universeName: source.name, cacheKey: source.id)
         let hasCachedEntries = cachedEntries?.isEmpty == false
-        let hasStreamingLinks = cachedEntries?.contains(where: \.hasStreamingLink) == true
-        // Ein Cache, der vor der links-Umstellung geschrieben wurde, kennt nur die
-        // vier historischen Dienste. Ein einmaliger Refresh holt die vollständigen
-        // Links nach, sobald ein Dienst des Markts dieser Quelle im gesamten Cache
-        // fehlt. Das Marktprofil richtet sich nach der Katalogsprache, nicht nach
-        // der Geräte-UI-Sprache — sonst würde ein PL-Katalog auf einem DE-Gerät nie
-        // als vollständig gelten und bei jedem Refresh den ETag-Cache verwerfen.
-        let marketServices = StreamingMarketProfile.profile(forLanguageCode: source.effectiveLanguage).services
-        let hasAllMarketLinks = marketServices.allSatisfy { service in
-            cachedEntries?.contains { entry in entry.links[service.rawValue] != nil } == true
-        }
-        let needsStreamingLinkRefresh = hasCachedEntries && !hasStreamingLinks
-        let needsMarketLinkRefresh = hasCachedEntries && hasStreamingLinks && !hasAllMarketLinks
-        guard force || ignoringThrottle || !hasCachedEntries || needsStreamingLinkRefresh || needsMarketLinkRefresh || shouldRefresh(previousMetadata) else { return nil }
+        // Ein Cache aus einem älteren Format (vor der `links`-Umstellung) wird über
+        // die gespeicherte Formatversion erkannt, nicht mehr daran, ob jeder
+        // Marktdienst irgendwo einen Link hat. Ein Nischenkatalog muss nicht auf
+        // allen Diensten vertreten sein — sonst hätte er bei jedem Refresh den
+        // ETag verworfen und voll geladen.
+        let needsFormatBackfill = hasCachedEntries
+            && (previousMetadata?.cacheFormatVersion ?? 0) < CatalogSourceRegistry.currentCacheFormatVersion
+        guard force || ignoringThrottle || !hasCachedEntries || needsFormatBackfill || shouldRefresh(previousMetadata) else { return nil }
 
         let attemptAt = Date()
-        let requestMetadata = force || needsStreamingLinkRefresh || needsMarketLinkRefresh ? nil : previousMetadata
+        let requestMetadata = force || needsFormatBackfill ? nil : previousMetadata
         let result = await remoteDataSource.fetch(from: source, metadata: requestMetadata)
         var metadata = previousMetadata ?? RemoteCatalogMetadata()
 
@@ -410,6 +404,7 @@ final class EpisodeCatalog {
                 metadata.lastCheckedAt = .now
                 metadata.lastAttemptAt = attemptAt
                 metadata.lastFailureKind = nil
+                metadata.cacheFormatVersion = CatalogSourceRegistry.currentCacheFormatVersion
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
                 return sourceResult(.updated)
 
