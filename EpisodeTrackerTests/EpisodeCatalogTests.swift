@@ -16,10 +16,14 @@ final class EpisodeCatalogTests: XCTestCase {
         }
 
         func fetch(from url: URL, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
-            .notModified
+            // Echter Suspension-Punkt: nur so können nebenläufige Refreshes
+            // interleaven und der In-Flight-Guard greift beobachtbar.
+            await Task.yield()
+            return .notModified
         }
 
         func fetch(from source: ManagedCatalogSource, metadata: RemoteCatalogMetadata?) async -> RemoteCatalogFetchResult {
+            await Task.yield()
             sourceMetadataRequests.append(metadata)
             requestedSourceIDs.append(source.id)
             return resultsBySourceID[source.id] ?? sourceResult
@@ -411,6 +415,56 @@ final class EpisodeCatalogTests: XCTestCase {
         XCTAssertGreaterThan(outcome.attemptedCatalogCount, 1)
         XCTAssertEqual(catalog.lastRefreshOutcome, outcome)
         XCTAssertNotNil(catalog.lastRefreshError)
+    }
+
+    // MARK: - Commit C: concurrent refreshes coalesce, force bypasses
+
+    func testConcurrentUnforcedRefreshesShareOneFetchPass() async {
+        let store = makeTempCacheStore()
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+        let activeCount = CatalogSourceRegistry.fallbackManagedSources.count
+
+        async let first = catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+        async let second = catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+        let (a, b) = await (first, second)
+
+        XCTAssertEqual(a, b, "der zweite Aufruf hängt sich an den laufenden Refresh")
+        XCTAssertEqual(
+            fetcher.requestedSourceIDs.count, activeCount,
+            "nur ein Fetch-Satz, nicht doppelt"
+        )
+    }
+
+    func testConcurrentForcedRefreshesEachRunTheirOwnPass() async {
+        let store = makeTempCacheStore()
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+        let activeCount = CatalogSourceRegistry.fallbackManagedSources.count
+
+        async let first = catalog.refreshManagedCatalogsIfNeeded(force: true)
+        async let second = catalog.refreshManagedCatalogsIfNeeded(force: true)
+        _ = await (first, second)
+
+        XCTAssertEqual(
+            fetcher.requestedSourceIDs.count, activeCount * 2,
+            "force umgeht das Coalescing: beide Läufe fetchen"
+        )
+    }
+
+    func testRefreshIsAvailableAgainAfterInFlightCompletes() async {
+        let store = makeTempCacheStore()
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+        let activeCount = CatalogSourceRegistry.fallbackManagedSources.count
+
+        await catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+        await catalog.refreshManagedCatalogsIfNeeded(ignoringThrottle: true)
+
+        XCTAssertEqual(
+            fetcher.requestedSourceIDs.count, activeCount * 2,
+            "nach Abschluss des ersten Laufs ist der In-Flight-Guard wieder frei"
+        )
     }
 
     func testCatalogEntryDecodesSpecialKindAndSlug() throws {

@@ -10,6 +10,10 @@ struct EpisodeTrackerApp: App {
     @State private var savedFilterStore = SavedFilterStore()
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
     @Environment(\.scenePhase) private var scenePhase
+    /// Der Katalog-Refresh beim Start läuft im Bootstrap. Erst danach darf die
+    /// Vordergrund-Rückkehr einen (gedrosselten) Refresh anstoßen — sonst würde
+    /// die erste `.active`-Phase beim Kaltstart doppelt abrufen.
+    @State private var didRunInitialCatalogRefresh = false
 
     private var usesCloudSync: Bool {
         containerSet.runtimeMode.usesCloudSync
@@ -47,10 +51,16 @@ struct EpisodeTrackerApp: App {
                     containerSet: containerSet
                 )
                 syncCoordinator.handleBootstrapComplete()
+                didRunInitialCatalogRefresh = true
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     syncCoordinator.handleSceneActivation()
+                    if didRunInitialCatalogRefresh {
+                        // Gedrosselt: kein ignoringThrottle, `shouldRefresh` (6h)
+                        // entscheidet. Nebenläufige Aufrufe teilen sich den Lauf.
+                        Task { await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded() }
+                    }
                 }
             }
             .onChange(of: appAccentColorRawValue) { _, newValue in

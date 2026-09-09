@@ -17,6 +17,10 @@ final class EpisodeCatalog {
     private(set) var newCatalogAvailability: NewCatalogAvailability?
     private(set) var removedCatalogBanner: CatalogUpdateBannerRecommendation?
     private(set) var upcomingReleases: [UpcomingRelease] = []
+    /// Laufender Voll-Refresh. Ein zweiter nebenläufiger Aufruf (Vordergrund +
+    /// manuell) hängt sich an dieses Ergebnis, statt einen zweiten Fetch-Satz
+    /// auszulösen. `force: true` umgeht das bewusst.
+    private var inFlightRefresh: Task<CatalogRefreshOutcome, Never>?
 
     init() {
         parser = CatalogParser()
@@ -102,8 +106,25 @@ final class EpisodeCatalog {
     /// `ignoringThrottle` bypasses the 6h `shouldRefresh` cooldown while still sending
     /// conditional requests (ETag/If-Modified-Since), so a cold app launch can always
     /// check for updates without losing the cheap 304-not-modified path that `force` skips.
+    ///
+    /// Nebenläufige Aufrufe ohne `force` teilen sich einen laufenden Refresh
+    /// (`inFlightRefresh`), damit Vordergrund-Rückkehr und ein manueller Aufruf
+    /// nicht denselben Fetch-Satz doppelt auslösen.
     @discardableResult
     func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome {
+        if !force, let inFlightRefresh {
+            return await inFlightRefresh.value
+        }
+
+        let task = Task { await self.performManagedCatalogsRefresh(force: force, ignoringThrottle: ignoringThrottle) }
+        let didRegister = !force
+        if didRegister { inFlightRefresh = task }
+        let outcome = await task.value
+        if didRegister { inFlightRefresh = nil }
+        return outcome
+    }
+
+    private func performManagedCatalogsRefresh(force: Bool, ignoringThrottle: Bool) async -> CatalogRefreshOutcome {
         let manifestResult = await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
         pruneOrphanedCatalogs()
 
