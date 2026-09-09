@@ -438,6 +438,10 @@ final class EpisodeCatalog {
                 metadata.lastCheckedAt = .now
                 metadata.lastAttemptAt = attemptAt
                 metadata.lastFailureKind = nil
+                // Falls der Backfill-Abruf (ETag verworfen) doch mit 304 beantwortet
+                // wurde, gilt der Bestand als aktuell — Version stempeln, sonst
+                // löst `needsFormatBackfill` bei jedem Refresh erneut aus.
+                metadata.cacheFormatVersion = CatalogSourceRegistry.currentCacheFormatVersion
                 try cacheStore.saveRemoteMetadata(metadata, universeName: source.name, cacheKey: source.id)
                 return sourceResult(.notModified)
 

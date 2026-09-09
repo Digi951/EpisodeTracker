@@ -265,6 +265,52 @@ final class EpisodeCatalogTests: XCTestCase {
                        "bei aktuellem Format wird der ETag mitgeschickt statt verworfen")
     }
 
+    func testBackfillAnsweredWith304StampsTheFormatVersionAndStopsRefetching() async throws {
+        let store = makeTempCacheStore()
+        let source = CatalogSourceRegistry.fallbackManagedSources[0]
+        // Altbestand ohne cacheFormatVersion, Cooldown abgelaufen → ein Voll-Refresh
+        // ohne ETag. Der (fehlkonfigurierte) Server antwortet trotzdem mit 304.
+        try store.saveRemoteCache(
+            entries: [CatalogEntry(number: 1, title: "Alt", releaseYear: 1979, collectionName: source.name,
+                                   links: ["spotify": "https://open.spotify.com/album/456"])],
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        try store.saveRemoteMetadata(
+            RemoteCatalogMetadata(eTag: "\"keep\"", lastModified: nil,
+                                  lastCheckedAt: Date().addingTimeInterval(-7 * 60 * 60)),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        let fetcher = MockCatalogFetcher(sourceResult: .notModified)
+        let catalog = EpisodeCatalog(cacheStore: store, remoteDataSource: fetcher)
+
+        await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        XCTAssertEqual(fetcher.sourceMetadataRequests.count, 1)
+        XCTAssertNil(fetcher.sourceMetadataRequests[0], "der Backfill-Abruf verwirft den ETag")
+        let saved = try XCTUnwrap(store.loadRemoteMetadata(universeName: source.name, cacheKey: source.id))
+        XCTAssertEqual(saved.cacheFormatVersion, CatalogSourceRegistry.currentCacheFormatVersion,
+                       "auch ein 304 auf den Backfill muss die Formatversion stempeln")
+
+        // Zweiter Lauf: Format aktuell, Cooldown abgelaufen → ETag wird gesendet,
+        // kein weiterer unbedingter Voll-Refresh.
+        try store.saveRemoteMetadata(
+            {
+                var m = saved
+                m.lastCheckedAt = Date().addingTimeInterval(-7 * 60 * 60)
+                return m
+            }(),
+            universeName: source.name,
+            cacheKey: source.id
+        )
+        await catalog.refreshManagedCatalog(universeName: source.name, force: false)
+
+        XCTAssertEqual(fetcher.sourceMetadataRequests.count, 2)
+        XCTAssertEqual(fetcher.sourceMetadataRequests[1]?.eTag, "\"keep\"",
+                       "nach dem Stempeln respektiert der Refresh den ETag wieder")
+    }
+
     func testIgnoringThrottleRefetchesEvenWhenRecentlyChecked() async throws {
         let store = makeTempCacheStore()
         let source = CatalogSourceRegistry.fallbackManagedSources[0]
