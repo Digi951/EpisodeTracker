@@ -246,6 +246,67 @@ final class CatalogDataContractTests: XCTestCase {
         )
     }
 
+    // MARK: - 10. V1.17-Decoder-Gegenbeweis (eingefrorene Structs)
+
+    /// Ein 1.17-Client dekodiert einen V2-Katalog ohne Throw: die neuen
+    /// optionalen Keys (`releaseDate`, `releaseStatus`, `sourceCheckedAt`,
+    /// `changedAt`, `catalogFormat`) hat sein `CodingKeys`-Enum nicht, also
+    /// werden sie schlicht ignoriert. Bekannte Felder kommen unverändert an.
+    func testFrozen117CatalogDecoderReadsV2FixtureUnchanged() throws {
+        let doc = try JSONDecoder().decode(
+            LegacyCatalogDoc17.self,
+            from: fixtureData("catalog_v2_numbered.json")
+        )
+
+        XCTAssertEqual(doc.entries.count, 3)
+
+        let first = doc.entries[0]
+        XCTAssertEqual(first.number, 1)
+        XCTAssertEqual(first.title, "Der erste Fall")
+        XCTAssertEqual(first.releaseYear, 2001)
+        XCTAssertEqual(first.links["spotify"], "https://open.spotify.com/album/aaa")
+        XCTAssertEqual(first.links["apple"], "https://music.apple.com/de/album/aaa")
+        XCTAssertEqual(
+            first.links["source"],
+            "https://www.example-sender.de/mediathek/der-erste-fall"
+        )
+
+        let special = doc.entries[2]
+        XCTAssertEqual(special.kind, .special)
+        XCTAssertEqual(special.slug, "live-hoerspiel-2019")
+        XCTAssertEqual(special.number, 1)
+    }
+
+    /// Ein 1.17-Client liest den erweiterten Terminfeed: `number`-Zeilen kommen
+    /// unverändert durch, die Anthologie-Zeile (nur `slug`, kein `number`) lässt
+    /// seinen `try container.decode(Int.self, forKey: .number)` werfen — die
+    /// `LenientRow17`-Kapsel verwirft genau diese eine Zeile, kein Crash, der
+    /// Rest der Liste bleibt.
+    func testFrozen117FeedDecoderKeepsNumberedRowsDropsSlugOnly() throws {
+        let doc = try JSONDecoder().decode(
+            LegacyUpcomingDoc17.self,
+            from: fixtureData("upcoming_feed_v2.json")
+        )
+
+        XCTAssertEqual(doc.releases.count, 2)
+        XCTAssertEqual(doc.releases.map(\.number), [241, 243])
+        XCTAssertEqual(doc.releases.map(\.catalogID), ["die-drei-fragezeichen", "tkkg"])
+        XCTAssertFalse(doc.releases.contains { $0.catalogID == "fr-anthologie-pilot" })
+        XCTAssertEqual(doc.releases[0].releaseDate, day("2026-09-18"))
+    }
+
+    /// Dieselbe Kapsel darf auch an einer komplett id-losen Zeile nicht scheitern:
+    /// nur die `number`-Zeile überlebt, die id-lose und die slug-only Zeile
+    /// fallen beide weg.
+    func testFrozen117FeedDecoderSurvivesFullyBrokenRow() throws {
+        let doc = try JSONDecoder().decode(
+            LegacyUpcomingDoc17.self,
+            from: fixtureData("upcoming_feed_v2_idless.json")
+        )
+
+        XCTAssertEqual(doc.releases.map(\.number), [241])
+    }
+
     // MARK: - Sortierung mit gemischten number/slug-Zeilen bleibt stabil
 
     func testFeedSortOrdersMixedRowsDeterministically() throws {
@@ -274,5 +335,119 @@ final class CatalogDataContractTests: XCTestCase {
                 "fr-anthologie-pilot-le-secret-de-la-tour"
             ]
         )
+    }
+}
+
+// MARK: - Eingefrorene V1.17-Decoder-Doubles
+//
+// Wortgetreue Kopie der `CatalogEntry`- bzw. `UpcomingRelease`-Dekodierung, wie
+// sie in 1.17 (Commit b97eef7, vor Paket 1) ausgeliefert wurde. Der Zweck ist,
+// diesen Stand einzufrieren: solange diese Structs die Paket-1-Fixtures ohne
+// Throw/Crash lesen, kann ein 1.17-Client die V2-Daten verarbeiten. Nicht
+// anfassen, wenn sich die Produktions-Structs ändern — das ist der Punkt.
+//
+// `kind` wird bewusst über `EpisodeKind(rawValue:)` (nonisolated) statt über die
+// synthetisierte, main-actor-isolierte `Decodable`-Conformance gelesen, damit die
+// Doubles nonisolated bleiben können.
+
+private struct LegacyCatalogDoc17: Decodable {
+    let entries: [LegacyCatalogEntry17]
+}
+
+private struct LegacyCatalogEntry17: Decodable {
+    let number: Int?
+    let kind: EpisodeKind
+    let slug: String?
+    let title: String
+    let releaseYear: Int
+    let collectionName: String?
+    let links: [String: String]
+
+    private enum CodingKeys: String, CodingKey {
+        case number, kind, slug, title, releaseYear, collectionName, links
+        case spotifyURL, appleMusicURL, deezerURL, audibleURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        number = try container.decodeIfPresent(Int.self, forKey: .number)
+        kind = EpisodeKind(rawValue: try container.decodeIfPresent(String.self, forKey: .kind) ?? "") ?? .regular
+        slug = try container.decodeIfPresent(String.self, forKey: .slug)
+        title = try container.decode(String.self, forKey: .title)
+        releaseYear = try container.decodeIfPresent(Int.self, forKey: .releaseYear) ?? 0
+        collectionName = try container.decodeIfPresent(String.self, forKey: .collectionName)
+
+        var resolved = try container.decodeIfPresent([String: String].self, forKey: .links) ?? [:]
+        let legacy: [String: String?] = [
+            "spotify": try container.decodeIfPresent(String.self, forKey: .spotifyURL),
+            "apple": try container.decodeIfPresent(String.self, forKey: .appleMusicURL),
+            "deezer": try container.decodeIfPresent(String.self, forKey: .deezerURL),
+            "audible": try container.decodeIfPresent(String.self, forKey: .audibleURL)
+        ]
+        for (key, value) in legacy {
+            guard let value, resolved[key] == nil else { continue }
+            resolved[key] = value
+        }
+        links = resolved.reduce(into: [String: String]()) { result, pair in
+            let trimmed = pair.value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            result[pair.key] = trimmed
+        }
+    }
+}
+
+private struct LegacyUpcomingDoc17: Decodable {
+    let releases: [LegacyUpcomingRelease17]
+
+    private enum CodingKeys: String, CodingKey {
+        case updatedAt, releases
+    }
+
+    private struct LenientRow17: Decodable {
+        let release: LegacyUpcomingRelease17?
+        init(from decoder: Decoder) throws {
+            release = try? LegacyUpcomingRelease17(from: decoder)
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        releases = try container.decode([LenientRow17].self, forKey: .releases).compactMap(\.release)
+    }
+}
+
+private struct LegacyUpcomingRelease17: Decodable {
+    let catalogID: String
+    let number: Int
+    let title: String
+    let releaseDate: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case catalogID, number, title, releaseDate
+    }
+
+    private static func dayFormatter() -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        return formatter
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        catalogID = try container.decode(String.self, forKey: .catalogID)
+        number = try container.decode(Int.self, forKey: .number)
+        title = try container.decode(String.self, forKey: .title)
+        let rawDate = try container.decode(String.self, forKey: .releaseDate)
+        guard let date = Self.dayFormatter().date(from: rawDate) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .releaseDate,
+                in: container,
+                debugDescription: "Erwartet wurde yyyy-MM-dd, gelesen wurde \"\(rawDate)\""
+            )
+        }
+        releaseDate = date
     }
 }
