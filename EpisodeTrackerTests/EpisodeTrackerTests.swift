@@ -2644,6 +2644,71 @@ final class EpisodeTrackerTests: XCTestCase {
         XCTAssertEqual(rebuilt.map(\.id), first.map(\.id))
     }
 
+    // MARK: - P3-C: full registry vs. visible sources
+
+    func testNarrowedToLanguagesDropsForeignSources() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let sources = [
+            ManagedCatalogSource(id: "de-catalog", name: "Die drei ???", language: "de", url: url),
+            ManagedCatalogSource(id: "en-catalog", name: "Famous Five", language: "en", url: url),
+            ManagedCatalogSource(id: "fr-catalog", name: "Oui-Oui", language: "fr", url: url),
+            ManagedCatalogSource(id: "nil-catalog", name: "Fallback", language: nil, url: url),
+        ]
+
+        let deOnly = CatalogSourceRegistry.narrowed(sources, toLanguages: ["de"])
+        XCTAssertEqual(deOnly.map(\.id), ["de-catalog", "nil-catalog"], "nil language counts as de")
+
+        let deAndFr = CatalogSourceRegistry.narrowed(sources, toLanguages: ["de", "fr"])
+        XCTAssertEqual(deAndFr.map(\.id), ["de-catalog", "fr-catalog", "nil-catalog"])
+
+        let none = CatalogSourceRegistry.narrowed(sources, toLanguages: [])
+        XCTAssertTrue(none.isEmpty)
+    }
+
+    func testVisibleSourcesIsALanguageSubsetOfAllKnownSources() {
+        let allKnown = CatalogSourceRegistry.allKnownSources
+        let visible = CatalogSourceRegistry.visibleSources
+
+        XCTAssertFalse(allKnown.isEmpty, "Fallback sources must never yield an empty registry")
+        let allKnownIDs = Set(allKnown.map(\.id))
+        XCTAssertTrue(
+            Set(visible.map(\.id)).isSubset(of: allKnownIDs),
+            "Every visible source must also be in the full registry"
+        )
+        for source in visible {
+            XCTAssertEqual(
+                source.effectiveLanguage,
+                ManagedCatalogSource.deviceLanguage,
+                "visibleSources must only contain device-language catalogs before P3-D"
+            )
+        }
+        XCTAssertEqual(
+            CatalogSourceRegistry.managedSources.map(\.id),
+            visible.map(\.id),
+            "managedSources is a pure alias of visibleSources"
+        )
+    }
+
+    func testPruneKeepsIDsPresentInFullRegistryAndRemovesTrulyGoneOnes() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        // "fr-hidden" stands in for a catalog that exists in the manifest but is
+        // filtered out of the visible list by the catalog-language selection.
+        let knownIDs: Set<String> = ["die-drei-fragezeichen", "fr-hidden"]
+        let store = ActiveCatalogStore(userDefaults: defaults)
+        store.activeIDs = ["die-drei-fragezeichen", "fr-hidden", "was-removed"]
+
+        let orphaned = store.pruneOrphanedIDs(knownIDs: knownIDs)
+
+        XCTAssertEqual(orphaned, ["was-removed"], "only the catalog missing from the full registry is pruned")
+        XCTAssertEqual(
+            store.activeIDs,
+            ["die-drei-fragezeichen", "fr-hidden"],
+            "a language-hidden but still-known catalog keeps its active state"
+        )
+    }
+
     func testRemovedCatalogsBannerShowsCorrectTextForSingleCatalog() {
         let banner = CatalogUpdateBannerRecommendation.removedCatalogs(["TKKG"])
 

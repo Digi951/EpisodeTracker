@@ -497,28 +497,72 @@ enum CatalogSourceRegistry {
     // bedeutet jeder Zugriff einen Manifest-Read von der Platte plus JSON-Decode.
     // Einziger Schreibpfad ist `CatalogCacheStore.saveManifest`, das invalidiert.
     private static let managedSourcesLock = NSLock()
-    private static var cachedManagedSources: [ManagedCatalogSource]?
+    private static var cachedAllKnownSources: [ManagedCatalogSource]?
+    private static var cachedVisibleSources: [ManagedCatalogSource]?
 
-    static var managedSources: [ManagedCatalogSource] {
+    /// Every catalog source the app knows about — from a successfully validated
+    /// manifest, or the bundled fallback — with **no** language filter. This is
+    /// the "full registry": `ActiveCatalogStore` keys orphan-pruning and the
+    /// removed-catalog check off this list, so a source that is only hidden by
+    /// the catalog-language filter is never mistaken for a removed catalog.
+    static var allKnownSources: [ManagedCatalogSource] {
+        managedSourcesLock.lock()
+        defer { managedSourcesLock.unlock() }
+        return allKnownSourcesLocked()
+    }
+
+    /// The sources shown in "Reihen auswählen": `allKnownSources` narrowed to the
+    /// active catalog languages. Until P3-D wires `CatalogLanguageFilterStore`
+    /// this is the device language, so the visible set is identical to the
+    /// pre-split `managedSources`.
+    static var visibleSources: [ManagedCatalogSource] {
         managedSourcesLock.lock()
         defer { managedSourcesLock.unlock() }
 
-        if let cachedManagedSources { return cachedManagedSources }
+        if let cachedVisibleSources { return cachedVisibleSources }
 
-        let sources = deduplicatedManagedSources(CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources)
-            .filter(\.matchesDeviceLanguage)
-        cachedManagedSources = sources
+        let sources = narrowed(
+            allKnownSourcesLocked(),
+            toLanguages: [ManagedCatalogSource.deviceLanguage]
+        )
+        cachedVisibleSources = sources
         return sources
+    }
+
+    /// Deprecated alias for `visibleSources` — the sources visible in the UI.
+    /// Retained so existing call sites stay correct while later Paket-3 commits
+    /// migrate them deliberately. New code that means "every known source" must
+    /// call `allKnownSources`.
+    static var managedSources: [ManagedCatalogSource] { visibleSources }
+
+    private static func allKnownSourcesLocked() -> [ManagedCatalogSource] {
+        if let cachedAllKnownSources { return cachedAllKnownSources }
+
+        let sources = deduplicatedManagedSources(
+            CatalogCacheStore().loadManifest()?.catalogs ?? fallbackManagedSources
+        )
+        cachedAllKnownSources = sources
+        return sources
+    }
+
+    /// Pure language projection — the core of `visibleSources`, covered directly
+    /// by tests. Keeps only sources whose `effectiveLanguage` is in `languages`.
+    static func narrowed(
+        _ sources: [ManagedCatalogSource],
+        toLanguages languages: Set<String>
+    ) -> [ManagedCatalogSource] {
+        sources.filter { languages.contains($0.effectiveLanguage) }
     }
 
     static func invalidateManagedSourcesCache() {
         managedSourcesLock.lock()
         defer { managedSourcesLock.unlock() }
-        cachedManagedSources = nil
+        cachedAllKnownSources = nil
+        cachedVisibleSources = nil
     }
 
     static func managedSource(named universeName: String) -> ManagedCatalogSource? {
-        managedSources.first {
+        visibleSources.first {
             $0.name.caseInsensitiveCompare(universeName) == .orderedSame
         }
     }

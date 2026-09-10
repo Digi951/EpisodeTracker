@@ -34,15 +34,24 @@ struct ActiveCatalogStore {
     }
 
     func pruneOrphanedIDs() -> [String] {
-        let visibleIDs = Set(CatalogSourceRegistry.managedSources.map(\.id))
+        pruneOrphanedIDs(knownIDs: Set(CatalogSourceRegistry.allKnownSources.map(\.id)))
+    }
+
+    /// Testable seam. `knownIDs` is the **full registry** (`allKnownSources`),
+    /// not the language-filtered visible set: a catalog that is only hidden by
+    /// the catalog-language filter must survive here, and only a catalog that is
+    /// genuinely gone from the manifest gets pruned.
+    func pruneOrphanedIDs(knownIDs: Set<String>) -> [String] {
         let currentIDs = activeIDs
-        let orphaned = currentIDs.subtracting(visibleIDs)
+        let orphaned = currentIDs.subtracting(knownIDs)
         guard !orphaned.isEmpty else { return [] }
-        activeIDs = currentIDs.intersection(visibleIDs)
+        activeIDs = currentIDs.intersection(knownIDs)
         return orphaned.sorted()
     }
 
+    /// Fresh-install default: activate the sources the user can currently see,
+    /// i.e. their catalog languages — not every language in the registry.
     private func defaultActiveIDs() -> Set<String> {
-        Set(CatalogSourceRegistry.managedSources.map(\.id))
+        Set(CatalogSourceRegistry.visibleSources.map(\.id))
     }
 }
