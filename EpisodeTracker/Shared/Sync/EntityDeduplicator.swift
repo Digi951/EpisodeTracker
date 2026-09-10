@@ -140,6 +140,23 @@ enum EntityDeduplicator {
             let keeper = duplicates.sorted(by: preferUniverseForDeduplication)[0]
 
             for duplicate in duplicates where duplicate.id != keeper.id {
+                // Binding-aware merge (Paket 3, §5). Two devices can tie the same
+                // same-named collection to different catalog sources; that is a
+                // real disagreement, not a duplicate — keep both, merge neither.
+                if let keeperBinding = keeper.managedCatalogID,
+                   let duplicateBinding = duplicate.managedCatalogID,
+                   keeperBinding != duplicateBinding {
+                    logger.info("Dedup: keeping both universes — conflicting catalog bindings")
+                    summary.skippedConflictingBindingMerges += 1
+                    continue
+                }
+
+                // Exactly one side bound → the survivor adopts that binding.
+                if keeper.managedCatalogID == nil, let duplicateBinding = duplicate.managedCatalogID {
+                    keeper.managedCatalogID = duplicateBinding
+                    didChange = true
+                }
+
                 for episode in duplicate.episodes {
                     episode.universe = keeper
                     episode.refreshSyncKeyIfPossible()

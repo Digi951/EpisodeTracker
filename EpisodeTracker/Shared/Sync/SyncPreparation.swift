@@ -110,6 +110,10 @@ enum SyncPreparation {
         var repairedUniverseIDs = 0
         var mergedMoods = 0
         var mergedUniverses = 0
+        /// Universe pairs left unmerged because each carried a different
+        /// `managedCatalogID` (Paket 3, §5). Diagnostic only — a skip mutates
+        /// nothing, so it deliberately does not count towards `hasChanges`.
+        var skippedConflictingBindingMerges = 0
         var deduplicatedEpisodes = 0
         var refreshedEpisodeSyncKeys = 0
         var deduplicatedEpisodeMoods = 0
@@ -126,7 +130,7 @@ enum SyncPreparation {
         }
 
         var logDescription: String {
-            "episodeIDs=\(repairedEpisodeIDs), moodIDs=\(repairedMoodIDs), universeIDs=\(repairedUniverseIDs), mergedMoods=\(mergedMoods), mergedUniverses=\(mergedUniverses), deduplicatedEpisodes=\(deduplicatedEpisodes), refreshedEpisodeSyncKeys=\(refreshedEpisodeSyncKeys), deduplicatedEpisodeMoods=\(deduplicatedEpisodeMoods)"
+            "episodeIDs=\(repairedEpisodeIDs), moodIDs=\(repairedMoodIDs), universeIDs=\(repairedUniverseIDs), mergedMoods=\(mergedMoods), mergedUniverses=\(mergedUniverses), skippedConflictingBindingMerges=\(skippedConflictingBindingMerges), deduplicatedEpisodes=\(deduplicatedEpisodes), refreshedEpisodeSyncKeys=\(refreshedEpisodeSyncKeys), deduplicatedEpisodeMoods=\(deduplicatedEpisodeMoods)"
         }
 
         mutating func merge(_ other: ChangeSummary) {
@@ -135,6 +139,7 @@ enum SyncPreparation {
             repairedUniverseIDs += other.repairedUniverseIDs
             mergedMoods += other.mergedMoods
             mergedUniverses += other.mergedUniverses
+            skippedConflictingBindingMerges += other.skippedConflictingBindingMerges
             deduplicatedEpisodes += other.deduplicatedEpisodes
             refreshedEpisodeSyncKeys += other.refreshedEpisodeSyncKeys
             deduplicatedEpisodeMoods += other.deduplicatedEpisodeMoods
