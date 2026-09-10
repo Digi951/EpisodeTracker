@@ -34,6 +34,29 @@ struct BackupPayload: Codable {
 
 struct BackupCollection: Codable {
     let name: String
+    /// Bindung an eine verwaltete Katalogquelle (`Universe.managedCatalogID`,
+    /// SchemaV9 / Paket 3). `nil` in Backups vor `schemaVersion` 3 und für
+    /// handgemachte Sammlungen.
+    let managedCatalogID: String?
+    /// Persistierter Sammlungsstil (`CatalogStyle.rawValue`). `nil` in Backups
+    /// vor `schemaVersion` 3 → Restore lässt den bestehenden Stil unangetastet.
+    let style: String?
+
+    init(name: String, managedCatalogID: String? = nil, style: String? = nil) {
+        self.name = name
+        self.managedCatalogID = managedCatalogID
+        self.style = style
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        // decodeIfPresent (nicht try?): ein vorhandener, aber falsch getypter
+        // Wert soll den Import scheitern lassen, nicht still verschluckt werden
+        // (Playbook „decodeIfPresent statt try?").
+        managedCatalogID = try c.decodeIfPresent(String.self, forKey: .managedCatalogID)
+        style = try c.decodeIfPresent(String.self, forKey: .style)
+    }
 }
 
 struct BackupMood: Codable {
@@ -139,8 +162,21 @@ enum BackupRestorer {
         )
         for universeData in payload.collections ?? [] {
             let key = CatalogLibraryMatcher.normalizedCollectionKey(universeData.name)
-            guard universesByKey[key] == nil else { continue }
+            if let existing = universesByKey[key] {
+                // No-Clobber: eine Bindung aus dem Backup nur übernehmen, wenn
+                // die lokale Sammlung noch keine hat (eine abweichende lokale
+                // Bindung X bleibt X). Stil einer bestehenden Sammlung wie bisher
+                // unangetastet.
+                if existing.managedCatalogID == nil, let id = universeData.managedCatalogID {
+                    existing.managedCatalogID = id
+                }
+                continue
+            }
             let newUniverse = Universe(name: universeData.name)
+            newUniverse.managedCatalogID = universeData.managedCatalogID
+            if let style = universeData.style {
+                newUniverse.styleRaw = CatalogStyle.resolve(style).rawValue
+            }
             context.insert(newUniverse)
             universesByKey[key] = newUniverse
         }
@@ -320,7 +356,11 @@ final class BackupExportImportController {
 
     private static func makePayload(universes: [Universe], moods: [Mood], episodes: [Episode]) -> BackupPayload {
         let universesData = universes.map { universe in
-            BackupCollection(name: universe.name)
+            BackupCollection(
+                name: universe.name,
+                managedCatalogID: universe.managedCatalogID,
+                style: universe.styleRaw
+            )
         }
         let moodsData = moods.map { mood in
             BackupMood(name: mood.name, iconName: mood.iconName)
@@ -343,7 +383,10 @@ final class BackupExportImportController {
         }
         return BackupPayload(
             exportedAt: .now,
-            schemaVersion: 2,
+            // 3: BackupCollection trägt managedCatalogID + style (Paket 3).
+            // Reader akzeptiert 1 und 2 weiterhin — die neuen Felder fehlen dort
+            // schlicht und bleiben nil.
+            schemaVersion: 3,
             collections: universesData,
             moods: moodsData,
             episodes: episodesData
