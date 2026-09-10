@@ -401,8 +401,87 @@ enum SchemaV7: VersionedSchema {
     }
 }
 
+/// Frozen snapshot of the models as they shipped in 1.17 (build 40, tag `v1.17`).
+///
+/// Up to and including 1.17 this enum returned the *live* model types, so the
+/// on-disk 1.17 store carries a V8 fingerprint computed from "the live models as
+/// of 1.17". V1.18 Paket 3 adds `Universe.managedCatalogID` to the live model,
+/// which would silently shift that fingerprint and break the staged migration
+/// ("unknown model version"). The snapshot below is transcribed property-for-
+/// property from `git show v1.17` so the V8 checksum stays stable, and the new
+/// field lives only in `SchemaV9` (live models) with a lightweight V8→V9 stage.
 enum SchemaV8: VersionedSchema {
     static var versionIdentifier = Schema.Version(8, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [Episode.self, Mood.self, Universe.self]
+    }
+
+    @Model
+    final class Episode {
+        var id: UUID = UUID()
+        var syncKey: String?
+        var episodeNumber: Int = 0
+        var title: String = ""
+        var releaseYear: Int = 0
+        var personalNote: String?
+        var isListened: Bool = false
+        var rating: Int?
+        var listenCount: Int = 0
+        var lastListenedAt: Date?
+        var streamingURL: String?
+        var coverImageName: String?
+        var coverUpdatedAt: Date?
+        var moodsUpdatedAt: Date?
+        var isFavorite: Bool = false
+        var isBookmarked: Bool = false
+        var isHidden: Bool = false
+        var ratingUpdatedAt: Date?
+        var noteUpdatedAt: Date?
+        var favoriteUpdatedAt: Date?
+        var bookmarkedUpdatedAt: Date?
+        var hiddenUpdatedAt: Date?
+        var streamingURLUpdatedAt: Date?
+        var listenStatusUpdatedAt: Date?
+        var kindRaw: String = "regular"
+        var catalogSlug: String?
+        var specialUpdatedAt: Date?
+        @Relationship(inverse: \Universe.episodeRelationships) var universe: Universe?
+        @Relationship(originalName: "moods", inverse: \Mood.episodeRelationships) var moodRelationships: [Mood]? = []
+
+        init() {}
+    }
+
+    @Model
+    final class Mood {
+        var id: UUID = UUID()
+        var name: String = ""
+        var iconName: String?
+        var syncKey: String?
+        @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
+
+        init() {}
+    }
+
+    @Model
+    final class Universe {
+        var id: UUID = UUID()
+        var name: String = ""
+        var syncKey: String?
+        var coverImageName: String?
+        var styleRaw: String = "numbered"
+        @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
+
+        init() {}
+    }
+}
+
+/// Live schema for V1.18 Paket 3. Same three models as V8 plus
+/// `Universe.managedCatalogID` (optional String, no default — lightweight- and
+/// CloudKit-safe). The binding backfill runs as an app-level migration in
+/// `AppDataBootstrapper`, never as a custom migration stage.
+enum SchemaV9: VersionedSchema {
+    static var versionIdentifier = Schema.Version(9, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [Episode.self, Mood.self, Universe.self]

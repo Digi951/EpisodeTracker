@@ -722,7 +722,7 @@ final class MigrationSafetyTests: XCTestCase {
 
     func testMigrationPlanContainsAllSchemas() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 8)
+        XCTAssertEqual(schemas.count, 9)
         XCTAssertTrue(schemas[0] == SchemaV1.self)
         XCTAssertTrue(schemas[1] == SchemaV2.self)
         XCTAssertTrue(schemas[2] == SchemaV3.self)
@@ -731,22 +731,23 @@ final class MigrationSafetyTests: XCTestCase {
         XCTAssertTrue(schemas[5] == SchemaV6.self)
         XCTAssertTrue(schemas[6] == SchemaV7.self)
         XCTAssertTrue(schemas[7] == SchemaV8.self)
+        XCTAssertTrue(schemas[8] == SchemaV9.self)
     }
 
     func testMigrationPlanHasCorrectStages() {
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 7, "Should have V1→V2, V2→V3, V3→V4, V4→V5, V5→V6, V6→V7, and V7→V8 stages")
+        XCTAssertEqual(stages.count, 8, "Should have V1→V2 … V7→V8 and V8→V9 stages")
     }
 
     func testMigrationPlanIncludesV6() {
         let schemas = EpisodeTrackerMigrationPlan.schemas
-        XCTAssertEqual(schemas.count, 8)
+        XCTAssertEqual(schemas.count, 9)
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(5, 0, 0) }))
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(6, 0, 0) }))
         XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(7, 0, 0) }))
 
         let stages = EpisodeTrackerMigrationPlan.stages
-        XCTAssertEqual(stages.count, 7)
+        XCTAssertEqual(stages.count, 8)
     }
 
     // MARK: - SchemaV8: Katalog-Stil
@@ -785,8 +786,51 @@ final class MigrationSafetyTests: XCTestCase {
     }
 
     func testMigrationPlanIncludesV8Stage() {
-        XCTAssertEqual(EpisodeTrackerMigrationPlan.schemas.count, 8)
-        XCTAssertEqual(EpisodeTrackerMigrationPlan.stages.count, 7)
+        XCTAssertEqual(EpisodeTrackerMigrationPlan.schemas.count, 9)
+        XCTAssertEqual(EpisodeTrackerMigrationPlan.stages.count, 8)
+    }
+
+    // MARK: - SchemaV9: Katalogbindung
+
+    func testMigrationPlanIncludesV9Stage() {
+        let schemas = EpisodeTrackerMigrationPlan.schemas
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(8, 0, 0) }))
+        XCTAssertTrue(schemas.contains(where: { $0.versionIdentifier == Schema.Version(9, 0, 0) }))
+        XCTAssertTrue(schemas.last == SchemaV9.self)
+        XCTAssertEqual(EpisodeTrackerMigrationPlan.stages.count, 8)
+    }
+
+    func testUniverseManagedCatalogIDDefaultsToNilAfterUpgrade() throws {
+        let container = try makeInMemoryContainer()
+        let context = container.mainContext
+
+        let universe = Universe(name: "Die drei ???")
+        context.insert(universe)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Universe>())
+        XCTAssertNil(fetched.first?.managedCatalogID)
+    }
+
+    func testUniverseManagedCatalogIDPersistsRoundtrip() throws {
+        let url = temporaryStoreURL()
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        do {
+            let container = try makePersistentContainer(url: url)
+            let universe = Universe(name: "Die drei ???")
+            universe.managedCatalogID = "die-drei-fragezeichen"
+            container.mainContext.insert(universe)
+            try container.mainContext.save()
+        }
+
+        let reopened = try makePersistentContainer(url: url)
+        let fetched = try reopened.mainContext.fetch(FetchDescriptor<Universe>())
+        XCTAssertEqual(fetched.first?.managedCatalogID, "die-drei-fragezeichen")
     }
 
     func testSchemaV5ReferencesHistoricalModels() {

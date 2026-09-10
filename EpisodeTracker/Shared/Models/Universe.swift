@@ -8,6 +8,11 @@ final class Universe {
     var syncKey: String?
     var coverImageName: String?
     var styleRaw: String = CatalogStyle.numbered.rawValue
+    /// Identifier of the managed catalog source this collection is bound to, when
+    /// the user activated it from "Reihen auswählen". `nil` for hand-made
+    /// collections and for pre-V9 collections until the binding adoption fills it
+    /// in on an unambiguous name match. Added in SchemaV9 (V1.18 Paket 3).
+    var managedCatalogID: String?
     @Relationship(originalName: "episodes") var episodeRelationships: [Episode]? = []
 
     init(
