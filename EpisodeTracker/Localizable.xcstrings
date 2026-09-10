@@ -3385,6 +3385,22 @@
         }
       }
     },
+    "Katalog wird geladen …" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katalog wird geladen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading catalog …"
+          }
+        }
+      }
+    },
     "Kataloge" : {
       "localizations" : {
         "de" : {

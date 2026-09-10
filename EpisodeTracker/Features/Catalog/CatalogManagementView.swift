@@ -13,6 +13,7 @@ struct CatalogManagementView: View {
     @State private var activeCatalogIDs: Set<String> = []
     @State private var selectedCatalogLanguages: Set<String> = []
     @State private var searchText = ""
+    @State private var activationHandler = CatalogActivationHandler()
     private let activeCatalogStore = ActiveCatalogStore()
     private let languageFilterStore = CatalogLanguageFilterStore()
 
@@ -107,7 +108,9 @@ struct CatalogManagementView: View {
                             source: source,
                             episodeCount: episodeCount(for: source.name),
                             isActive: true,
-                            onToggle: { newValue in toggleCatalog(source, active: newValue) }
+                            activationState: activationHandler.state(for: source.id),
+                            onToggle: { newValue in toggleCatalog(source, active: newValue) },
+                            onRetry: { activationHandler.retry(source: source) }
                         )
                     }
                 } header: {
@@ -124,7 +127,9 @@ struct CatalogManagementView: View {
                         source: source,
                         episodeCount: episodeCount(for: source.name),
                         isActive: false,
-                        onToggle: { newValue in toggleCatalog(source, active: newValue) }
+                        activationState: activationHandler.state(for: source.id),
+                        onToggle: { newValue in toggleCatalog(source, active: newValue) },
+                        onRetry: { activationHandler.retry(source: source) }
                     )
                 }
             } header: {
@@ -252,19 +257,13 @@ struct CatalogManagementView: View {
 
         guard active else { return }
 
-        let key = CatalogLibraryMatcher.normalizedCollectionKey(source.name)
-        if let existing = universes.first(where: {
-            CatalogLibraryMatcher.normalizedCollectionKey($0.name) == key
-        }) {
-            // Bind an existing, still-unbound collection; never overwrite a
-            // collection that already points at a different source.
-            CatalogBindingReconciler.bind(existing, to: source)
-        } else {
-            let universe = Universe(name: source.name)
-            universe.style = source.effectiveStyle
-            universe.managedCatalogID = source.id
-            modelContext.insert(universe)
-        }
+        // Bind (P3-B) and immediately pull the source's catalog (D6). A failed
+        // fetch leaves the activation above in place.
+        activationHandler.activate(
+            source: source,
+            modelContext: modelContext,
+            existingUniverses: universes
+        )
     }
 
     private func addCustomUniverse() {
@@ -325,7 +324,9 @@ struct CatalogToggleRow: View {
     let source: ManagedCatalogSource
     let episodeCount: Int
     let isActive: Bool
+    var activationState: CatalogActivationHandler.State = .idle
     let onToggle: (Bool) -> Void
+    var onRetry: () -> Void = {}
 
     static func catalogSubtitle(episodeCount: Int, titleCount: Int?) -> String {
         guard let titleCount else { return "Nicht geladen" }
@@ -357,9 +358,29 @@ struct CatalogToggleRow: View {
         )) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.name)
-                Text(subtitle)
-                    .font(.footnote)
-                    .foregroundStyle(episodeCount > 0 ? .secondary : .tertiary)
+
+                switch activationState {
+                case .running:
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Katalog wird geladen …")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                case .failed(let message):
+                    HStack(spacing: 8) {
+                        Text(message)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Button("Erneut versuchen", action: onRetry)
+                            .font(.footnote.weight(.medium))
+                            .buttonStyle(.borderless)
+                    }
+                case .idle:
+                    Text(subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(episodeCount > 0 ? .secondary : .tertiary)
+                }
             }
         }
     }
