@@ -1,0 +1,44 @@
+{
+  "collectionName": "Contract Test Reihe",
+  "version": 3,
+  "lastUpdated": "2026-09-10",
+  "entryCount": 3,
+  "catalogFormat": 2,
+  "entries": [
+    {
+      "number": 1,
+      "title": "Der erste Fall",
+      "releaseYear": 2001,
+      "links": {
+        "spotify": "https://open.spotify.com/album/aaa",
+        "apple": "https://music.apple.com/de/album/aaa",
+        "source": "https://www.example-sender.de/mediathek/der-erste-fall"
+      },
+      "releaseDate": "2001-05-04",
+      "releaseStatus": "released",
+      "sourceCheckedAt": "2026-09-01",
+      "changedAt": "2026-08-15"
+    },
+    {
+      "number": 2,
+      "title": "Der zweite Fall",
+      "releaseYear": 2026,
+      "links": {
+        "source": "https://www.example-sender.de/mediathek/der-zweite-fall"
+      },
+      "releaseDate": "2026-12-01",
+      "releaseStatus": "announced",
+      "changedAt": "2026-09-09"
+    },
+    {
+      "kind": "special",
+      "slug": "live-hoerspiel-2019",
+      "number": 1,
+      "title": "Live-Hörspiel 2019",
+      "releaseYear": 2019,
+      "links": {
+        "audible": "https://www.audible.de/pd/special"
+      }
+    }
+  ]
+}

@@ -14,7 +14,7 @@ import Foundation
 /// .dayFormatter()` übernommen; `DateFormatter` ist seit iOS 7 für reines
 /// Parsen/Formatieren thread-sicher, deshalb eine geteilte Instanz statt einer
 /// Allokation pro Eintrag.
-enum CalendarDayFormatter {
+nonisolated enum CalendarDayFormatter {
     static let formatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"

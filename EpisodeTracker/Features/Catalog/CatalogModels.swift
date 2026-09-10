@@ -11,6 +11,14 @@ struct CatalogEntry: Codable, Equatable {
     /// vier festen URL-Felder: ein neuer Dienst braucht nur Katalogdaten, keine
     /// Änderung an Parser, Cache-Store oder Katalog-Pipeline.
     let links: [String: String]
+    /// V2-Provenienzfelder (Datenvertrag §5.3). Alle optional bzw. mit
+    /// `unknown`-Default → Legacy- und 1.17-Kataloge dekodieren unverändert,
+    /// die Felder sind dann schlicht `nil` / `.unknown`. Noch keine UI
+    /// (Paket 3/4); hier nur dekodiert und im Cache-Roundtrip erhalten.
+    let releaseDate: Date?
+    let releaseStatus: CatalogReleaseStatus
+    let sourceCheckedAt: Date?
+    let changedAt: Date?
 
     private enum CodingKeys: String, CodingKey {
         case number
@@ -20,6 +28,10 @@ struct CatalogEntry: Codable, Equatable {
         case releaseYear
         case collectionName
         case links
+        case releaseDate
+        case releaseStatus
+        case sourceCheckedAt
+        case changedAt
         // Legacy-Felder: werden weiterhin gelesen, aber nicht mehr geschrieben.
         case spotifyURL
         case appleMusicURL
@@ -34,7 +46,11 @@ struct CatalogEntry: Codable, Equatable {
         title: String,
         releaseYear: Int,
         collectionName: String? = nil,
-        links: [String: String]
+        links: [String: String],
+        releaseDate: Date? = nil,
+        releaseStatus: CatalogReleaseStatus = .unknown,
+        sourceCheckedAt: Date? = nil,
+        changedAt: Date? = nil
     ) {
         self.number = number
         self.kind = kind
@@ -43,6 +59,10 @@ struct CatalogEntry: Codable, Equatable {
         self.releaseYear = releaseYear
         self.collectionName = collectionName
         self.links = Self.sanitized(links)
+        self.releaseDate = releaseDate
+        self.releaseStatus = releaseStatus
+        self.sourceCheckedAt = sourceCheckedAt
+        self.changedAt = changedAt
     }
 
     /// Convenience-Init mit den historischen benannten Feldern. Bleibt erhalten,
@@ -57,7 +77,11 @@ struct CatalogEntry: Codable, Equatable {
         spotifyURL: String? = nil,
         appleMusicURL: String? = nil,
         deezerURL: String? = nil,
-        audibleURL: String? = nil
+        audibleURL: String? = nil,
+        releaseDate: Date? = nil,
+        releaseStatus: CatalogReleaseStatus = .unknown,
+        sourceCheckedAt: Date? = nil,
+        changedAt: Date? = nil
     ) {
         self.init(
             number: number,
@@ -71,7 +95,11 @@ struct CatalogEntry: Codable, Equatable {
                 appleMusicURL: appleMusicURL,
                 deezerURL: deezerURL,
                 audibleURL: audibleURL
-            )
+            ),
+            releaseDate: releaseDate,
+            releaseStatus: releaseStatus,
+            sourceCheckedAt: sourceCheckedAt,
+            changedAt: changedAt
         )
     }
 
@@ -100,6 +128,33 @@ struct CatalogEntry: Codable, Equatable {
         }
 
         links = Self.sanitized(resolved)
+
+        // V2-Provenienzfelder. Fehlender Key / JSON-null → nil bzw. .unknown
+        // (Legacy bleibt unverändert). Ein vorhandener, aber falsch getypter
+        // Wert (z. B. Zahl statt yyyy-MM-dd-String) wirft weiter — Fail-Fast,
+        // damit ein kaputtes Remote-JSON den Payload verwirft statt still ein
+        // Feld zu verschlucken (siehe Playbook „decodeIfPresent statt try?").
+        releaseDate = try Self.decodeCalendarDay(from: container, forKey: .releaseDate)
+        sourceCheckedAt = try Self.decodeCalendarDay(from: container, forKey: .sourceCheckedAt)
+        changedAt = try Self.decodeCalendarDay(from: container, forKey: .changedAt)
+        releaseStatus = CatalogReleaseStatus.resolve(
+            try container.decodeIfPresent(String.self, forKey: .releaseStatus)
+        )
+    }
+
+    private static func decodeCalendarDay(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys
+    ) throws -> Date? {
+        guard let raw = try container.decodeIfPresent(String.self, forKey: key) else { return nil }
+        guard let date = CalendarDayFormatter.date(from: raw) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: key,
+                in: container,
+                debugDescription: "Erwartet wurde yyyy-MM-dd, gelesen wurde \"\(raw)\""
+            )
+        }
+        return date
     }
 
     func encode(to encoder: Encoder) throws {
@@ -111,6 +166,24 @@ struct CatalogEntry: Codable, Equatable {
         try container.encode(releaseYear, forKey: .releaseYear)
         try container.encodeIfPresent(collectionName, forKey: .collectionName)
         try container.encode(links, forKey: .links)
+        // Nur schreiben, wenn belegt: ein Legacy-Eintrag ohne Provenienzfelder
+        // wird byte-gleich wie vor Paket 1 serialisiert, der Disk-Cache ändert
+        // sich für Bestandsdaten nicht.
+        try container.encodeIfPresent(
+            releaseDate.map(CalendarDayFormatter.string(from:)),
+            forKey: .releaseDate
+        )
+        if releaseStatus != .unknown {
+            try container.encode(releaseStatus, forKey: .releaseStatus)
+        }
+        try container.encodeIfPresent(
+            sourceCheckedAt.map(CalendarDayFormatter.string(from:)),
+            forKey: .sourceCheckedAt
+        )
+        try container.encodeIfPresent(
+            changedAt.map(CalendarDayFormatter.string(from:)),
+            forKey: .changedAt
+        )
     }
 
     private static func linksFromLegacyFields(
@@ -162,6 +235,26 @@ extension CatalogEntry {
             if let link = links[service.rawValue] { return link }
         }
         return nil
+    }
+
+    /// Kopie mit ersetztem `collectionName`, alle übrigen Felder unverändert.
+    /// Der Parser normalisiert nur den Sammlungsnamen — dieser Helfer stellt
+    /// sicher, dass dabei kein anderes Feld (inkl. der V2-Provenienzfelder)
+    /// still verloren geht.
+    func withCollectionName(_ newValue: String?) -> CatalogEntry {
+        CatalogEntry(
+            number: number,
+            kind: kind,
+            slug: slug,
+            title: title,
+            releaseYear: releaseYear,
+            collectionName: newValue,
+            links: links,
+            releaseDate: releaseDate,
+            releaseStatus: releaseStatus,
+            sourceCheckedAt: sourceCheckedAt,
+            changedAt: changedAt
+        )
     }
 }
 

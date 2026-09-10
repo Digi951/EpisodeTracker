@@ -1,0 +1,22 @@
+{
+  "collectionName": "Contract Test Unknown Fields",
+  "version": 2,
+  "lastUpdated": "2026-09-10",
+  "catalogFormat": 2,
+  "editorNote": "Feld ist im Vertrag nicht definiert und muss ignoriert werden",
+  "entries": [
+    {
+      "number": 1,
+      "title": "Mit Zusatzfeldern",
+      "releaseYear": 2020,
+      "foo": "bar",
+      "links": {
+        "spotify": "https://open.spotify.com/album/known",
+        "youtube": "https://youtube.com/watch?v=unknownkey",
+        "source": "https://www.example-sender.de/x"
+      },
+      "releaseStatus": "released",
+      "changedAt": "2026-09-01"
+    }
+  ]
+}

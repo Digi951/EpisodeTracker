@@ -1,0 +1,26 @@
+{
+  "collectionName": "Contract Test Legacy",
+  "version": 6,
+  "lastUpdated": "2026-06-14",
+  "entryCount": 2,
+  "entries": [
+    {
+      "number": 1,
+      "title": "und der Super-Papagei",
+      "releaseYear": 1979,
+      "appleMusicURL": "https://music.apple.com/de/album/folge-1/1092529875",
+      "spotifyURL": "https://open.spotify.com/album/4N9tvSjWfZXx3eHKblYEWQ",
+      "deezerURL": "https://www.deezer.com/album/12761822",
+      "audibleURL": "https://www.audible.de/pd/B0B1QKF361"
+    },
+    {
+      "number": 2,
+      "title": "und der Phantomsee",
+      "releaseYear": 1979,
+      "spotifyURL": "https://open.spotify.com/album/0xldqK4Ocdt8dwQSxUzt6x",
+      "appleMusicURL": "",
+      "deezerURL": "",
+      "audibleURL": ""
+    }
+  ]
+}

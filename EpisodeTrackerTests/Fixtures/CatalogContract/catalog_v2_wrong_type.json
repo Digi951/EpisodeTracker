@@ -1,0 +1,14 @@
+{
+  "collectionName": "Contract Test Wrong Type",
+  "version": 1,
+  "catalogFormat": 2,
+  "entries": [
+    {
+      "number": 1,
+      "title": "Datum als Zahl statt String",
+      "releaseYear": 2025,
+      "links": { "source": "https://www.example-sender.de/z" },
+      "releaseDate": 20260101
+    }
+  ]
+}

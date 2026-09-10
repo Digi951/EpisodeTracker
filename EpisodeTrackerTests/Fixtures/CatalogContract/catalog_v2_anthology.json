@@ -1,0 +1,30 @@
+{
+  "collectionName": "Contract Test Anthologie",
+  "version": 1,
+  "lastUpdated": "2026-09-10",
+  "catalogFormat": 2,
+  "entries": [
+    {
+      "kind": "special",
+      "slug": "la-premiere-enquete",
+      "title": "La première enquête",
+      "releaseYear": 2022,
+      "links": {
+        "source": "https://www.radiofrance.fr/franceculture/podcasts/premiere-enquete",
+        "spotify": "https://open.spotify.com/episode/xyz"
+      },
+      "releaseStatus": "released",
+      "sourceCheckedAt": "2026-09-05"
+    },
+    {
+      "kind": "special",
+      "slug": "le-mystere-du-phare",
+      "title": "Le mystère du phare",
+      "releaseYear": 2023,
+      "links": {
+        "source": "https://www.radiofrance.fr/franceculture/podcasts/mystere-phare"
+      },
+      "releaseStatus": "released"
+    }
+  ]
+}
