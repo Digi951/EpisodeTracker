@@ -11,12 +11,35 @@ struct CatalogManagementView: View {
     @State private var catalogStatusIsError = false
     @State private var isRefreshingCatalogs = false
     @State private var activeCatalogIDs: Set<String> = []
+    @State private var selectedCatalogLanguages: Set<String> = []
     @State private var searchText = ""
     private let activeCatalogStore = ActiveCatalogStore()
+    private let languageFilterStore = CatalogLanguageFilterStore()
 
+    /// Sources shown in the list: the language-filtered `visibleSources`, plus
+    /// any active or bound source the filter would otherwise hide (§3).
     private var predefinedCatalogSources: [ManagedCatalogSource] {
-        CatalogSourceRegistry.managedSources
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        CatalogSourceRegistry.visibleSourcesIncludingAlwaysShown(
+            visible: CatalogSourceRegistry.visibleSources,
+            allKnown: CatalogSourceRegistry.allKnownSources,
+            alwaysShownIDs: activeCatalogStore.activeIDs.union(boundCatalogIDs)
+        )
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    private var boundCatalogIDs: Set<String> {
+        Set(universes.compactMap(\.managedCatalogID))
+    }
+
+    /// Distinct catalog languages across the full registry, sorted. The language
+    /// filter only appears once this holds more than one entry — with a
+    /// single-language registry there is nothing to choose.
+    private var availableCatalogLanguages: [String] {
+        var seen = Set<String>()
+        return CatalogSourceRegistry.allKnownSources
+            .map(\.effectiveLanguage)
+            .filter { seen.insert($0).inserted }
+            .sorted()
     }
 
     private var filteredSources: [ManagedCatalogSource] {
@@ -49,6 +72,34 @@ struct CatalogManagementView: View {
 
     var body: some View {
         List {
+            if availableCatalogLanguages.count > 1 {
+                Section {
+                    ForEach(availableCatalogLanguages, id: \.self) { code in
+                        Button {
+                            toggleCatalogLanguage(code)
+                        } label: {
+                            HStack {
+                                Text(languageDisplayName(code))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedCatalogLanguages.contains(code) {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                    }
+
+                    if CatalogSourceRegistry.visibleSources.isEmpty {
+                        Button("Weitere Sprachen") {
+                            expandCatalogLanguagesToAll()
+                        }
+                    }
+                } header: {
+                    Text("Sprache")
+                }
+            }
+
             if !activeSources.isEmpty {
                 Section {
                     ForEach(activeSources, id: \.id) { source in
@@ -165,7 +216,27 @@ struct CatalogManagementView: View {
         .searchable(text: $searchText, prompt: "Katalog suchen")
         .onAppear {
             activeCatalogIDs = activeCatalogStore.activeIDs
+            selectedCatalogLanguages = languageFilterStore.selectedLanguages
         }
+    }
+
+    private func languageDisplayName(_ code: String) -> String {
+        Locale.current.localizedString(forLanguageCode: code)?.localizedCapitalized
+            ?? code.uppercased()
+    }
+
+    private func toggleCatalogLanguage(_ code: String) {
+        if selectedCatalogLanguages.contains(code) {
+            selectedCatalogLanguages.remove(code)
+        } else {
+            selectedCatalogLanguages.insert(code)
+        }
+        languageFilterStore.setSelected(selectedCatalogLanguages)
+    }
+
+    private func expandCatalogLanguagesToAll() {
+        selectedCatalogLanguages = Set(availableCatalogLanguages)
+        languageFilterStore.setSelected(selectedCatalogLanguages)
     }
 
     private func episodeCount(for universeName: String) -> Int {

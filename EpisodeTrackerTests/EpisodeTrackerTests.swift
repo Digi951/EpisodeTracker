@@ -2679,7 +2679,7 @@ final class EpisodeTrackerTests: XCTestCase {
             XCTAssertEqual(
                 source.effectiveLanguage,
                 ManagedCatalogSource.deviceLanguage,
-                "visibleSources must only contain device-language catalogs before P3-D"
+                "with no explicit catalog-language choice, visibleSources is the app language"
             )
         }
         XCTAssertEqual(
@@ -2687,6 +2687,43 @@ final class EpisodeTrackerTests: XCTestCase {
             visible.map(\.id),
             "managedSources is a pure alias of visibleSources"
         )
+    }
+
+    func testVisibleSourcesIncludingAlwaysShownUnionsPinnedForeignSources() {
+        let url = URL(string: "https://example.com/catalog.json")!
+        let de1 = ManagedCatalogSource(id: "de-1", name: "Die drei ???", language: "de", url: url)
+        let de2 = ManagedCatalogSource(id: "de-2", name: "TKKG", language: "de", url: url)
+        let fr = ManagedCatalogSource(id: "fr-1", name: "Oui-Oui", language: "fr", url: url)
+        let allKnown = [de1, de2, fr]
+        let visible = [de1, de2]
+
+        let unioned = CatalogSourceRegistry.visibleSourcesIncludingAlwaysShown(
+            visible: visible,
+            allKnown: allKnown,
+            alwaysShownIDs: ["fr-1"]
+        )
+        XCTAssertEqual(unioned.map(\.id), ["de-1", "de-2", "fr-1"], "a pinned foreign source is appended")
+
+        let noPins = CatalogSourceRegistry.visibleSourcesIncludingAlwaysShown(
+            visible: visible,
+            allKnown: allKnown,
+            alwaysShownIDs: []
+        )
+        XCTAssertEqual(noPins.map(\.id), ["de-1", "de-2"], "empty pin set is a no-op")
+
+        let alreadyVisible = CatalogSourceRegistry.visibleSourcesIncludingAlwaysShown(
+            visible: visible,
+            allKnown: allKnown,
+            alwaysShownIDs: ["de-1"]
+        )
+        XCTAssertEqual(alreadyVisible.map(\.id), ["de-1", "de-2"], "a pin already in the visible set is not duplicated")
+
+        let unknownPin = CatalogSourceRegistry.visibleSourcesIncludingAlwaysShown(
+            visible: visible,
+            allKnown: allKnown,
+            alwaysShownIDs: ["ghost"]
+        )
+        XCTAssertEqual(unknownPin.map(\.id), ["de-1", "de-2"], "a pin absent from the full registry is ignored")
     }
 
     func testPruneKeepsIDsPresentInFullRegistryAndRemovesTrulyGoneOnes() {

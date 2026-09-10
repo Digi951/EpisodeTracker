@@ -5230,6 +5230,22 @@
         }
       }
     },
+    "Sprache" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        }
+      }
+    },
     "Standard-Vorschläge" : {
       "localizations" : {
         "de" : {
@@ -5988,6 +6004,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "What Fits Now?"
+          }
+        }
+      }
+    },
+    "Weitere Sprachen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Sprachen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More languages"
           }
         }
       }

@@ -512,9 +512,14 @@ enum CatalogSourceRegistry {
     }
 
     /// The sources shown in "Reihen auswählen": `allKnownSources` narrowed to the
-    /// active catalog languages. Until P3-D wires `CatalogLanguageFilterStore`
-    /// this is the device language, so the visible set is identical to the
-    /// pre-split `managedSources`.
+    /// catalog languages the user selected in `CatalogLanguageFilterStore`. With
+    /// no explicit choice this is the app language, so the visible set is
+    /// identical to the pre-split `managedSources`.
+    ///
+    /// This is a pure language projection. Sources that must stay visible even
+    /// when the filter would hide them — active or bound series (§3) — are
+    /// unioned back in by the caller via `visibleSourcesIncludingAlwaysShown`,
+    /// so this type stays free of `ActiveCatalogStore` / SwiftData.
     static var visibleSources: [ManagedCatalogSource] {
         managedSourcesLock.lock()
         defer { managedSourcesLock.unlock() }
@@ -523,7 +528,7 @@ enum CatalogSourceRegistry {
 
         let sources = narrowed(
             allKnownSourcesLocked(),
-            toLanguages: [ManagedCatalogSource.deviceLanguage]
+            toLanguages: CatalogLanguageFilterStore().selectedLanguages
         )
         cachedVisibleSources = sources
         return sources
@@ -554,10 +559,38 @@ enum CatalogSourceRegistry {
         sources.filter { languages.contains($0.effectiveLanguage) }
     }
 
+    /// `visible` plus any `allKnown` source that must stay on screen because it
+    /// is active or bound (§3: active / bound series are always visible,
+    /// independent of the language filter). Pure — the caller supplies the id
+    /// set (from `ActiveCatalogStore` and `Universe.managedCatalogID`) so this
+    /// type never touches SwiftData. Order: `visible` first, then the pinned
+    /// extras, both as given.
+    static func visibleSourcesIncludingAlwaysShown(
+        visible: [ManagedCatalogSource],
+        allKnown: [ManagedCatalogSource],
+        alwaysShownIDs: Set<String>
+    ) -> [ManagedCatalogSource] {
+        guard !alwaysShownIDs.isEmpty else { return visible }
+        let visibleIDs = Set(visible.map(\.id))
+        let extras = allKnown.filter {
+            alwaysShownIDs.contains($0.id) && !visibleIDs.contains($0.id)
+        }
+        return visible + extras
+    }
+
     static func invalidateManagedSourcesCache() {
         managedSourcesLock.lock()
         defer { managedSourcesLock.unlock() }
         cachedAllKnownSources = nil
+        cachedVisibleSources = nil
+    }
+
+    /// Narrow invalidation for a catalog-language filter change: `allKnownSources`
+    /// does not depend on the filter, so only the language-projected cache is
+    /// dropped.
+    static func invalidateVisibleSourcesCache() {
+        managedSourcesLock.lock()
+        defer { managedSourcesLock.unlock() }
         cachedVisibleSources = nil
     }
 
