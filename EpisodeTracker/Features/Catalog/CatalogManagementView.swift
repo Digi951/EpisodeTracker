@@ -179,13 +179,20 @@ struct CatalogManagementView: View {
         activeCatalogStore.setActive(source.id, active: active)
         activeCatalogIDs = activeCatalogStore.activeIDs
 
-        if active {
-            let key = CatalogLibraryMatcher.normalizedCollectionKey(source.name)
-            if !existingUniverseNameKeys.contains(key) {
-                let universe = Universe(name: source.name)
-                universe.style = source.effectiveStyle
-                modelContext.insert(universe)
-            }
+        guard active else { return }
+
+        let key = CatalogLibraryMatcher.normalizedCollectionKey(source.name)
+        if let existing = universes.first(where: {
+            CatalogLibraryMatcher.normalizedCollectionKey($0.name) == key
+        }) {
+            // Bind an existing, still-unbound collection; never overwrite a
+            // collection that already points at a different source.
+            CatalogBindingReconciler.bind(existing, to: source)
+        } else {
+            let universe = Universe(name: source.name)
+            universe.style = source.effectiveStyle
+            universe.managedCatalogID = source.id
+            modelContext.insert(universe)
         }
     }
 

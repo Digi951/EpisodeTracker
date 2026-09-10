@@ -11,6 +11,9 @@ enum AppDataBootstrapper {
     static let schemaVersionKey = "schemaVersion"
     static let currentSchemaVersion = 6
     static let automaticCloudMigrationStatusKey = "syncMigration.automaticStatus"
+    /// Gates the one-time SchemaV9 backfill of `Universe.managedCatalogID` for
+    /// collections created before the binding existed.
+    static let catalogBindingAdoptionKey = "hasRunCatalogBindingAdoptionV9"
 
     @discardableResult
     @MainActor
@@ -86,6 +89,7 @@ enum AppDataBootstrapper {
         ensureBundledCollectionExists(container: containerSet.primary)
         reconcileSpecialEpisodes(container: containerSet.primary)
         reconcileCatalogStyles(container: containerSet.primary)
+        adoptCatalogBindingsIfNeeded(container: containerSet.primary, userDefaults: userDefaults)
         report.removedOrphanCovers = cleanupOrphanedCovers(container: containerSet.primary)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
@@ -116,6 +120,7 @@ enum AppDataBootstrapper {
         ensureBundledCollectionExists(container: container)
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)
+        adoptCatalogBindingsIfNeeded(container: container, userDefaults: userDefaults)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -356,6 +361,38 @@ enum AppDataBootstrapper {
             sources: CatalogSourceRegistry.managedSources
         )
         try? context.save()
+    }
+
+    /// Einmaliger SchemaV9-Backfill: bindet Sammlungen, die vor der Bindung
+    /// angelegt wurden, an ihre verwaltete Katalogquelle — aber nur bei einem
+    /// **eindeutigen** Treffer über den normalisierten Namen gegen die volle
+    /// Registry. Mehrdeutige oder unpassende Sammlungen bleiben ungebunden.
+    /// Über ein `UserDefaults`-Flag auf genau einen Lauf begrenzt; kein Netz-I/O.
+    @MainActor
+    static func adoptCatalogBindingsIfNeeded(
+        container: ModelContainer,
+        userDefaults: UserDefaults = .standard
+    ) {
+        guard !userDefaults.bool(forKey: catalogBindingAdoptionKey) else { return }
+
+        let context = container.mainContext
+        guard let universes = try? context.fetch(FetchDescriptor<Universe>()),
+              !universes.isEmpty else {
+            userDefaults.set(true, forKey: catalogBindingAdoptionKey)
+            return
+        }
+
+        let result = CatalogBindingReconciler.reconcile(
+            universes: universes,
+            sources: CatalogSourceRegistry.allKnownSources
+        )
+        if result.bound > 0 {
+            try? context.save()
+        }
+        bootstrapLogger.info(
+            "Bootstrap: catalog binding adoption bound=\(result.bound, privacy: .public) ambiguous=\(result.ambiguous, privacy: .public) unmatched=\(result.unmatched, privacy: .public)"
+        )
+        userDefaults.set(true, forKey: catalogBindingAdoptionKey)
     }
 
     /// Läuft, nachdem der vom Bootstrap entkoppelte Katalog-Refresh frische
