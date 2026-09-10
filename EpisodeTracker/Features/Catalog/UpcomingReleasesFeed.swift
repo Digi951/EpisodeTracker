@@ -34,7 +34,10 @@ struct UpcomingReleasesFeed {
 
         let rows = releases
             .filter { activeCatalogIDs.contains($0.catalogID) && $0.releaseDate >= startOfToday }
-            .sorted { ($0.releaseDate, $0.number) < ($1.releaseDate, $1.number) }
+            .sorted {
+                ($0.releaseDate, $0.number ?? .max, $0.slug ?? "")
+                    < ($1.releaseDate, $1.number ?? .max, $1.slug ?? "")
+            }
             .compactMap { release -> Row? in
                 guard let name = namesByCatalogID[release.catalogID],
                       seenIDs.insert(release.id).inserted

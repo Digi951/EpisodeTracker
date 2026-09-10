@@ -200,4 +200,79 @@ final class CatalogDataContractTests: XCTestCase {
         XCTAssertEqual(first.sourceCheckedAt, day("2026-09-01"))
         XCTAssertEqual(first.changedAt, day("2026-08-15"))
     }
+
+    // MARK: - 8. Terminfeed V2: number- und slug-Zeilen koexistieren
+
+    func testFeedV2DecodesNumberedAndAnthologyRows() throws {
+        let doc = try JSONDecoder().decode(
+            UpcomingReleasesDocument.self,
+            from: fixtureData("upcoming_feed_v2.json")
+        )
+
+        XCTAssertEqual(doc.feedVersion, 1)
+        XCTAssertEqual(doc.releases.count, 3)
+
+        let numbered = try XCTUnwrap(doc.releases.first { $0.catalogID == "die-drei-fragezeichen" })
+        XCTAssertEqual(numbered.number, 241)
+        XCTAssertNil(numbered.slug)
+        XCTAssertEqual(numbered.releaseStatus, .announced)
+        XCTAssertEqual(numbered.id, "die-drei-fragezeichen-241")
+
+        let released = try XCTUnwrap(doc.releases.first { $0.catalogID == "tkkg" })
+        XCTAssertEqual(released.releaseStatus, .released)
+
+        let anthology = try XCTUnwrap(doc.releases.first { $0.catalogID == "fr-anthologie-pilot" })
+        XCTAssertNil(anthology.number)
+        XCTAssertEqual(anthology.slug, "le-secret-de-la-tour")
+        XCTAssertEqual(anthology.releaseStatus, .announced) // Feld fehlt → announced
+        XCTAssertEqual(anthology.id, "fr-anthologie-pilot-le-secret-de-la-tour")
+
+        // IDs eindeutig.
+        XCTAssertEqual(Set(doc.releases.map(\.id)).count, doc.releases.count)
+    }
+
+    // MARK: - 9. Zeile ohne number UND slug wird verworfen, der Rest bleibt
+
+    func testFeedV2DropsIdlessRowButKeepsTheRest() throws {
+        let doc = try JSONDecoder().decode(
+            UpcomingReleasesDocument.self,
+            from: fixtureData("upcoming_feed_v2_idless.json")
+        )
+
+        XCTAssertEqual(doc.releases.count, 2)
+        XCTAssertEqual(
+            Set(doc.releases.map(\.catalogID)),
+            ["die-drei-fragezeichen", "fr-anthologie-pilot"]
+        )
+    }
+
+    // MARK: - Sortierung mit gemischten number/slug-Zeilen bleibt stabil
+
+    func testFeedSortOrdersMixedRowsDeterministically() throws {
+        let doc = try JSONDecoder().decode(
+            UpcomingReleasesDocument.self,
+            from: fixtureData("upcoming_feed_v2.json")
+        )
+        let feed = UpcomingReleasesFeed.make(
+            releases: doc.releases,
+            activeCatalogIDs: ["die-drei-fragezeichen", "tkkg", "fr-anthologie-pilot"],
+            namesByCatalogID: [
+                "die-drei-fragezeichen": "Die drei ???",
+                "tkkg": "TKKG",
+                "fr-anthologie-pilot": "FR Anthologie"
+            ],
+            seenReleaseIDs: [],
+            today: day("2026-09-01")!
+        )
+
+        // 09-11 TKKG, dann 09-18 (numbered vor slug: 241 < .max), dann 09-18 slug.
+        XCTAssertEqual(
+            feed.rows.map(\.id),
+            [
+                "tkkg-243",
+                "die-drei-fragezeichen-241",
+                "fr-anthologie-pilot-le-secret-de-la-tour"
+            ]
+        )
+    }
 }

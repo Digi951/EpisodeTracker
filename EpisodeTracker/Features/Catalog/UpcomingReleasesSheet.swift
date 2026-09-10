@@ -25,7 +25,7 @@ struct UpcomingReleasesSheet: View {
                         Section {
                             ForEach(group.rows) { row in
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(row.seriesName) · Folge \(row.release.number)")
+                                    Text(row.release.number.map { "\(row.seriesName) · Folge \($0)" } ?? row.seriesName)
                                     Text(row.release.title)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)

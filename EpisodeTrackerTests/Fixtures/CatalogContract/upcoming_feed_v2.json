@@ -1,0 +1,26 @@
+{
+  "feedVersion": 1,
+  "updatedAt": "2026-09-10",
+  "releases": [
+    {
+      "catalogID": "die-drei-fragezeichen",
+      "number": 241,
+      "title": "Meister des Lichts",
+      "releaseDate": "2026-09-18",
+      "releaseStatus": "announced"
+    },
+    {
+      "catalogID": "tkkg",
+      "number": 243,
+      "title": "Die Fährte des Hehlers",
+      "releaseDate": "2026-09-11",
+      "releaseStatus": "released"
+    },
+    {
+      "catalogID": "fr-anthologie-pilot",
+      "slug": "le-secret-de-la-tour",
+      "title": "Le secret de la tour",
+      "releaseDate": "2026-09-18"
+    }
+  ]
+}

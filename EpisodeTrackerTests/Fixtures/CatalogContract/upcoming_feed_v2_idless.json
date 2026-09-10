@@ -1,0 +1,23 @@
+{
+  "feedVersion": 1,
+  "updatedAt": "2026-09-10",
+  "releases": [
+    {
+      "catalogID": "die-drei-fragezeichen",
+      "number": 241,
+      "title": "Meister des Lichts",
+      "releaseDate": "2026-09-18"
+    },
+    {
+      "catalogID": "kaputt",
+      "title": "Weder Nummer noch Slug",
+      "releaseDate": "2026-10-01"
+    },
+    {
+      "catalogID": "fr-anthologie-pilot",
+      "slug": "le-secret-de-la-tour",
+      "title": "Le secret de la tour",
+      "releaseDate": "2026-09-25"
+    }
+  ]
+}
