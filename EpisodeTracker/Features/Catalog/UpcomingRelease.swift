@@ -19,19 +19,9 @@ struct UpcomingRelease: Codable, Equatable, Identifiable {
         self.releaseDate = releaseDate
     }
 
-    /// Das Datum kommt als reiner Kalendertag ("2026-09-18") ohne Uhrzeit. Es wird
-    /// auf lokale Mitternacht verankert, nicht auf UTC: sonst zeigt eine Zeitzone
-    /// westlich von UTC den Vortag an und blendet die Folge am Erscheinungstag aus.
-    /// Cache und Remote-JSON nutzen dasselbe Format, damit beide Wege denselben
-    /// Wert ergeben.
-    private static func dayFormatter() -> DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        return formatter
-    }
+    // Datum als reiner Kalendertag ("2026-09-18"), an lokale Mitternacht
+    // verankert — siehe `CalendarDayFormatter`. Cache- und Remote-JSON nutzen
+    // dasselbe Format, damit beide Wege denselben `Date`-Wert ergeben.
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -40,7 +30,7 @@ struct UpcomingRelease: Codable, Equatable, Identifiable {
         title = try container.decode(String.self, forKey: .title)
 
         let rawDate = try container.decode(String.self, forKey: .releaseDate)
-        guard let date = Self.dayFormatter().date(from: rawDate) else {
+        guard let date = CalendarDayFormatter.date(from: rawDate) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .releaseDate,
                 in: container,
@@ -55,7 +45,7 @@ struct UpcomingRelease: Codable, Equatable, Identifiable {
         try container.encode(catalogID, forKey: .catalogID)
         try container.encode(number, forKey: .number)
         try container.encode(title, forKey: .title)
-        try container.encode(Self.dayFormatter().string(from: releaseDate), forKey: .releaseDate)
+        try container.encode(CalendarDayFormatter.string(from: releaseDate), forKey: .releaseDate)
     }
 }
 
