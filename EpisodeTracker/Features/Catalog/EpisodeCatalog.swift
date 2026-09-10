@@ -95,17 +95,7 @@ final class EpisodeCatalog {
         // `.numbered` — der Normalizer ist hier ein No-Op, hält aber die
         // Invariante an einer Stelle, falls je ein custom-anthology-Weg entsteht.
         let normalizedEntries = CatalogStyleNormalizer.normalize(
-            parsedEntries.map {
-                CatalogEntry(
-                    number: $0.number,
-                    kind: $0.kind,
-                    slug: $0.slug,
-                    title: $0.title,
-                    releaseYear: $0.releaseYear,
-                    collectionName: collectionName,
-                    links: $0.links
-                )
-            },
+            parsedEntries.map { $0.withCollectionName(collectionName) },
             style: .numbered,
             collectionName: collectionName
         )
@@ -389,17 +379,7 @@ final class EpisodeCatalog {
                 // Anthologie-Regel auf Eintragsebene erzwingen, bevor Snapshot und
                 // Delta gebildet werden — sonst stimmen `specialSlugs`/Delta nicht.
                 let normalizedEntries = CatalogStyleNormalizer.normalize(
-                    document.entries.map {
-                        CatalogEntry(
-                            number: $0.number,
-                            kind: $0.kind,
-                            slug: $0.slug,
-                            title: $0.title,
-                            releaseYear: $0.releaseYear,
-                            collectionName: source.name,
-                            links: $0.links
-                        )
-                    },
+                    document.entries.map { $0.withCollectionName(source.name) },
                     style: source.effectiveStyle,
                     collectionName: source.name
                 )

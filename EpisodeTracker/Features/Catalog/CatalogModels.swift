@@ -256,6 +256,26 @@ extension CatalogEntry {
             changedAt: changedAt
         )
     }
+
+    /// Kopie als `special` mit erzwungenem Slug, alle übrigen Felder (inkl. der
+    /// V2-Provenienzfelder) unverändert. Für `CatalogStyleNormalizer`, damit die
+    /// Anthologie-Invariante keine `releaseDate`/`releaseStatus`/`sourceCheckedAt`/
+    /// `changedAt` still fallenlässt.
+    func asSpecial(slug: String) -> CatalogEntry {
+        CatalogEntry(
+            number: number,
+            kind: .special,
+            slug: slug,
+            title: title,
+            releaseYear: releaseYear,
+            collectionName: collectionName,
+            links: links,
+            releaseDate: releaseDate,
+            releaseStatus: releaseStatus,
+            sourceCheckedAt: sourceCheckedAt,
+            changedAt: changedAt
+        )
+    }
 }
 
 struct CatalogManifest: Codable {

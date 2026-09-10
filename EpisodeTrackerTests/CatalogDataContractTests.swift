@@ -201,6 +201,34 @@ final class CatalogDataContractTests: XCTestCase {
         XCTAssertEqual(first.changedAt, day("2026-08-15"))
     }
 
+    // MARK: - 7c. CatalogStyleNormalizer reicht die Provenienzfelder durch
+
+    /// `EpisodeCatalog` normalisiert frisch geparste Einträge über
+    /// `CatalogStyleNormalizer`, bevor sie in den Cache gehen. Erzwingt der
+    /// Normalizer für einen `.anthology`-Katalog `kind: .special` + Slug, dürfen
+    /// `releaseDate`/`releaseStatus`/`sourceCheckedAt`/`changedAt` dabei nicht
+    /// verloren gehen — sonst landeten sie nie im Disk-Cache.
+    func testStyleNormalizerKeepsProvenanceFieldsWhenForcingSpecialKind() throws {
+        let parsed = try CatalogParser().parseNormalizedCatalogDocument(
+            from: fixtureData("catalog_v2_numbered.json"),
+            fallbackCollectionName: "Contract Test Reihe"
+        )
+
+        let normalized = CatalogStyleNormalizer.normalize(
+            parsed.entries,
+            style: .anthology,
+            collectionName: "Contract Test Reihe"
+        )
+
+        let first = try XCTUnwrap(normalized.first { $0.title == "Der erste Fall" })
+        XCTAssertEqual(first.kind, .special)            // war .regular → umgeschrieben
+        XCTAssertFalse(first.slug?.isEmpty ?? true)     // Slug synthetisiert
+        XCTAssertEqual(first.releaseStatus, .released)
+        XCTAssertEqual(first.releaseDate, day("2001-05-04"))
+        XCTAssertEqual(first.sourceCheckedAt, day("2026-09-01"))
+        XCTAssertEqual(first.changedAt, day("2026-08-15"))
+    }
+
     // MARK: - 8. Terminfeed V2: number- und slug-Zeilen koexistieren
 
     func testFeedV2DecodesNumberedAndAnthologyRows() throws {

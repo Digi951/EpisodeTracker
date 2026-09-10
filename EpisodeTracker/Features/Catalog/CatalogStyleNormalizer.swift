@@ -37,15 +37,7 @@ enum CatalogStyleNormalizer {
                     universeKey: universeKey
                 )
 
-            return CatalogEntry(
-                number: entry.number,
-                kind: .special,
-                slug: slug,
-                title: entry.title,
-                releaseYear: entry.releaseYear,
-                collectionName: entry.collectionName,
-                links: entry.links
-            )
+            return entry.asSpecial(slug: slug)
         }
     }
 }
