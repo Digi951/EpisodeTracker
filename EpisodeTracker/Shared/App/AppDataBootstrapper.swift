@@ -90,6 +90,7 @@ enum AppDataBootstrapper {
         reconcileSpecialEpisodes(container: containerSet.primary)
         reconcileCatalogStyles(container: containerSet.primary)
         adoptCatalogBindingsIfNeeded(container: containerSet.primary, userDefaults: userDefaults)
+        reconcileNewsEvents()
         report.removedOrphanCovers = cleanupOrphanedCovers(container: containerSet.primary)
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
@@ -121,6 +122,7 @@ enum AppDataBootstrapper {
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)
         adoptCatalogBindingsIfNeeded(container: container, userDefaults: userDefaults)
+        reconcileNewsEvents()
 
         userDefaults.set(currentSchemaVersion, forKey: schemaVersionKey)
         AppModelContainerFactory.removePreMigrationBackup()
@@ -403,6 +405,44 @@ enum AppDataBootstrapper {
     static func reconcileAfterCatalogRefresh(container: ModelContainer) {
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)
+    }
+
+    /// Macht die drei bestehenden ephemeren Katalogsignale dauerhaft (Paket 4,
+    /// `NewsReconciler`). Läuft rein gegen den JSON-Cache — kein Netz-I/O, kein
+    /// SwiftData-Zugriff: ein beschädigter Neuigkeiten-Store kann die
+    /// Episoden-Bibliothek nie beeinträchtigen.
+    static func reconcileNewsEvents(
+        newsStore: NewsStore = NewsStore(),
+        cacheStore: CatalogCacheStore = CatalogCacheStore(),
+        activeCatalogStore: ActiveCatalogStore = ActiveCatalogStore()
+    ) {
+        let namesByCatalogID = Dictionary(
+            CatalogSourceRegistry.managedSources.map { ($0.id, $0.name) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let activeCatalogIDs = activeCatalogStore.activeIDs
+        let deltas = cacheStore.loadCatalogEpisodeDeltas()
+        let availability = cacheStore.loadNewCatalogAvailability()
+        let upcoming = cacheStore.loadUpcomingReleases()
+
+        var document = newsStore.load()
+        document = NewsReconciler.establishBaselineIfNeeded(
+            document: document,
+            deltas: deltas,
+            availability: availability,
+            upcoming: upcoming,
+            namesByCatalogID: namesByCatalogID,
+            activeCatalogIDs: activeCatalogIDs
+        )
+        document = NewsReconciler.reconcile(
+            document: document,
+            deltas: deltas,
+            availability: availability,
+            upcoming: upcoming,
+            namesByCatalogID: namesByCatalogID,
+            activeCatalogIDs: activeCatalogIDs
+        )
+        try? newsStore.save(document)
     }
 
     @MainActor
