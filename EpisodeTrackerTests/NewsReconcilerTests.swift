@@ -285,6 +285,86 @@ final class NewsReconcilerTests: XCTestCase {
         XCTAssertEqual(document.events[0].revision, CalendarDayFormatter.string(from: laterDate))
     }
 
+    // MARK: Prune
+
+    private func makeSeenEvent(seenAt: Date?) -> NewsEvent {
+        NewsEvent(
+            kind: .newEpisode,
+            universeName: universeName,
+            catalogID: catalogID,
+            episodeNumber: 241,
+            title: "Meister des Lichts",
+            revision: "5",
+            discoveredAt: now,
+            seenAt: seenAt
+        )
+    }
+
+    func testUnseenEventSurvivesRegardlessOfAge() {
+        var document = NewsStoreDocument()
+        document.events = [makeSeenEvent(seenAt: nil)]
+
+        let result = NewsReconciler.pruneSeenEvents(document: document, now: now.addingTimeInterval(365 * 24 * 60 * 60))
+
+        XCTAssertEqual(result.events.count, 1)
+    }
+
+    func testSeenEventIsPrunedAt90DaysButNotAt89() {
+        let seenAt = now
+        var document = NewsStoreDocument()
+        document.events = [makeSeenEvent(seenAt: seenAt)]
+
+        let after89Days = NewsReconciler.pruneSeenEvents(document: document, now: seenAt.addingTimeInterval(89 * 24 * 60 * 60))
+        XCTAssertEqual(after89Days.events.count, 1, "must not prune one day early")
+
+        let after90Days = NewsReconciler.pruneSeenEvents(document: document, now: seenAt.addingTimeInterval(90 * 24 * 60 * 60))
+        XCTAssertEqual(after90Days.events.count, 0)
+    }
+
+    func testPrunedButUnchangedEventDoesNotReappearOnNextReconcile() {
+        let delta = makeDelta(currentVersion: 5, addedNumbers: [241])
+
+        var document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+        document = NewsReconciler.reconcile(
+            document: document,
+            deltas: [delta],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+        XCTAssertEqual(document.events.count, 1)
+        document.events[0].seenAt = now
+
+        let seenAt = now
+        document = NewsReconciler.pruneSeenEvents(document: document, now: seenAt.addingTimeInterval(90 * 24 * 60 * 60))
+        XCTAssertEqual(document.events, [], "the row is pruned once seen and past retention")
+        XCTAssertFalse(document.lastReconciledRevisions.isEmpty, "the watermark must survive pruning")
+
+        // Derselbe Katalogstand, unverändert — reconcile darf die Zeile nicht
+        // wiederbeleben, nur weil sie aus `events` verschwunden ist.
+        let rerun = NewsReconciler.reconcile(
+            document: document,
+            deltas: [delta],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: seenAt.addingTimeInterval(90 * 24 * 60 * 60 + 3600)
+        )
+
+        XCTAssertEqual(rerun.events, [], "an unchanged revision must not be re-announced after pruning")
+    }
+
     func testNewCatalogAvailabilityProducesOneEventPerSource() {
         var document = NewsReconciler.establishBaselineIfNeeded(
             document: NewsStoreDocument(),

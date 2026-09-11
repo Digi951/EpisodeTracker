@@ -158,5 +158,22 @@ enum NewsReconciler {
         return result
     }
 
-    // 90-Tage-Aufräumen folgt in P4-D als eigener Commit (`pruneSeenEvents`).
+    /// Räumt gesehene Ereignisse 90 Tage nach `seenAt` auf; ungesehene
+    /// überleben unbegrenzt, unabhängig vom Alter — sonst würde eine Zeile
+    /// verschwinden, die der Nutzer nie zu Gesicht bekommen hat.
+    /// `lastReconciledRevisions` bleibt bewusst unangetastet: eine aufgeräumte,
+    /// aber unveränderte Zeile darf beim nächsten `reconcile` nicht erneut
+    /// auftauchen (Datenvertrag §4.D5).
+    static func pruneSeenEvents(
+        document: NewsStoreDocument,
+        now: Date = Date(),
+        retention: TimeInterval = 90 * 24 * 60 * 60
+    ) -> NewsStoreDocument {
+        var result = document
+        result.events.removeAll { event in
+            guard let seenAt = event.seenAt else { return false }
+            return now.timeIntervalSince(seenAt) >= retention
+        }
+        return result
+    }
 }

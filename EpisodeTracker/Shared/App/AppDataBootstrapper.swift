@@ -442,6 +442,7 @@ enum AppDataBootstrapper {
             namesByCatalogID: namesByCatalogID,
             activeCatalogIDs: activeCatalogIDs
         )
+        document = NewsReconciler.pruneSeenEvents(document: document)
         try? newsStore.save(document)
     }
 
