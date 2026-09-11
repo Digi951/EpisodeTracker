@@ -14,6 +14,12 @@
             "state" : "translated",
             "value" : "Catalogue directory unreachable."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Répertoire des catalogues inaccessible."
+          }
         }
       }
     },
@@ -29,6 +35,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ of %2$@ catalogues couldn’t be updated."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ catalogue(s) sur %2$@ n’ont pas pu être mis à jour."
           }
         }
       }
@@ -46,6 +58,12 @@
             "state" : "translated",
             "value" : "Couldn’t update the “%@” catalogue."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le catalogue « %@ » n’a pas pu être mis à jour."
+          }
         }
       }
     },
@@ -62,6 +80,12 @@
             "state" : "translated",
             "value" : "Open original source"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir la source d’origine"
+          }
         }
       }
     },
@@ -74,6 +98,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld ⭐"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "· %lld ⭐"
@@ -94,6 +124,12 @@
             "state" : "translated",
             "value" : "· %lld× listened"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld× écouté"
+          }
         }
       }
     },
@@ -106,6 +142,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ · %2$@"
@@ -128,6 +170,12 @@
             "state" : "translated",
             "value" : "%1$@ · Episode %2$lld"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · Épisode %2$lld"
+          }
         }
       }
     },
@@ -144,6 +192,12 @@
             "state" : "translated",
             "value" : "%1$@ %2$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
         }
       }
     },
@@ -156,6 +210,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, %2$@, %3$@"
@@ -178,6 +238,12 @@
             "state" : "translated",
             "value" : "%@, Favorite"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, Favori"
+          }
         }
       }
     },
@@ -190,6 +256,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld"
@@ -210,6 +282,12 @@
             "state" : "translated",
             "value" : "%lld ⭐"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ⭐"
+          }
         }
       }
     },
@@ -225,6 +303,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete %1$lld episode%2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer %1$lld épisode%2$@"
           }
         }
       }
@@ -242,6 +326,12 @@
             "state" : "translated",
             "value" : "%lld episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld épisodes"
+          }
         }
       }
     },
@@ -254,6 +344,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "+%lld"
@@ -274,6 +370,12 @@
             "state" : "translated",
             "value" : "Cancel"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
         }
       }
     },
@@ -289,6 +391,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enabled catalogs update automatically and provide title suggestions when you add new episodes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les catalogues activés sont mis à jour automatiquement et proposent des titres lors de l’ajout de nouveaux épisodes."
           }
         }
       }
@@ -306,6 +414,12 @@
             "state" : "translated",
             "value" : "Refresh…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mise à jour…"
+          }
         }
       }
     },
@@ -321,6 +435,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accent Color"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur d’accentuation"
           }
         }
       }
@@ -338,6 +458,12 @@
             "state" : "translated",
             "value" : "Refresh All"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout actualiser"
+          }
         }
       }
     },
@@ -353,6 +479,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All Years"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toutes les années"
           }
         }
       }
@@ -370,6 +502,12 @@
             "state" : "translated",
             "value" : "Mark as Favorite"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme favori"
+          }
         }
       }
     },
@@ -385,6 +523,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark as Listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme écouté"
           }
         }
       }
@@ -402,6 +546,12 @@
             "state" : "translated",
             "value" : "Up Next"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À suivre"
+          }
         }
       }
     },
@@ -417,6 +567,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Customize"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personnaliser"
           }
         }
       }
@@ -436,6 +592,12 @@
             "state" : "translated",
             "value" : "Apply"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appliquer"
+          }
         }
       }
     },
@@ -451,6 +613,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App Icon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icône de l’app"
           }
         }
       }
@@ -468,6 +636,12 @@
             "state" : "translated",
             "value" : "Add to Listen Later"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter à écouter plus tard"
+          }
         }
       }
     },
@@ -483,6 +657,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove from Favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer des favoris"
           }
         }
       }
@@ -500,6 +680,12 @@
             "state" : "translated",
             "value" : "Paste from Clipboard"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coller depuis le presse-papiers"
+          }
         }
       }
     },
@@ -515,6 +701,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hide"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer"
           }
         }
       }
@@ -532,6 +724,12 @@
             "state" : "translated",
             "value" : "Hidden"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masqué"
+          }
         }
       }
     },
@@ -547,6 +745,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hidden episodes do not appear in Smart Lists or suggestions."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les épisodes masqués n’apparaissent pas dans les Smart Lists ni dans les suggestions."
           }
         }
       }
@@ -564,6 +768,12 @@
             "state" : "translated",
             "value" : "Select"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sélectionner"
+          }
         }
       }
     },
@@ -578,6 +788,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auto"
@@ -598,6 +814,12 @@
             "state" : "translated",
             "value" : "Export Backup"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter la sauvegarde"
+          }
         }
       }
     },
@@ -613,6 +835,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import Backup"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer une sauvegarde"
           }
         }
       }
@@ -630,6 +858,12 @@
             "state" : "translated",
             "value" : "Import backup?"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer la sauvegarde ?"
+          }
         }
       }
     },
@@ -645,6 +879,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Backups stay local as a JSON file and include your episodes, catalogs, moods, and notes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les sauvegardes restent en local sous forme de fichier JSON et contiennent tes épisodes, catalogues, humeurs et notes."
           }
         }
       }
@@ -664,6 +904,12 @@
             "state" : "translated",
             "value" : "Coming Soon"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bientôt disponible"
+          }
         }
       }
     },
@@ -680,6 +926,12 @@
             "state" : "translated",
             "value" : "Edit"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier"
+          }
         }
       }
     },
@@ -695,6 +947,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Already listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjà écouté"
           }
         }
       }
@@ -713,6 +971,12 @@
             "state" : "translated",
             "value" : "Top Ratings"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meilleures notes"
+          }
         }
       }
     },
@@ -728,6 +992,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Existing episodes with the same number will be updated, new ones will be added."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les épisodes existants portant le même numéro sont mis à jour, les nouveaux sont ajoutés."
           }
         }
       }
@@ -746,6 +1016,12 @@
             "state" : "translated",
             "value" : "Rate episodes to see your favorites here."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note des épisodes pour voir tes favoris ici."
+          }
         }
       }
     },
@@ -762,6 +1038,12 @@
             "state" : "translated",
             "value" : "Rating"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
         }
       }
     },
@@ -777,6 +1059,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add a rating and note right away."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu peux ajouter une note et une remarque tout de suite."
           }
         }
       }
@@ -796,6 +1084,12 @@
             "state" : "translated",
             "value" : "Edit Image"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier l’image"
+          }
         }
       }
     },
@@ -812,6 +1106,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import all %d visible episodes from %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer les %d épisodes visibles depuis %@"
           }
         }
       }
@@ -830,6 +1130,12 @@
             "state" : "translated",
             "value" : "Import the visible episode from %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer l’épisode visible depuis %@"
+          }
         }
       }
     },
@@ -847,6 +1153,12 @@
             "state" : "translated",
             "value" : "Import %d Episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer %d épisodes"
+          }
         }
       }
     },
@@ -863,6 +1175,12 @@
             "state" : "translated",
             "value" : "Import 1 Episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer 1 épisode"
+          }
         }
       }
     },
@@ -878,6 +1196,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import episodes?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer les épisodes ?"
           }
         }
       }
@@ -896,6 +1220,12 @@
             "state" : "translated",
             "value" : "All %d currently visible missing episodes will be created in the \"%@\" catalog."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les %d épisodes manquants actuellement visibles seront créés dans le catalogue « %@ »."
+          }
         }
       }
     },
@@ -912,6 +1242,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This visible missing episode will be created in the \"%@\" catalog."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cet épisode manquant visible sera créé dans le catalogue « %@ »."
           }
         }
       }
@@ -930,6 +1266,12 @@
             "state" : "translated",
             "value" : "Import episodes from %@?"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer les épisodes depuis %@ ?"
+          }
         }
       }
     },
@@ -946,6 +1288,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The suggestions will be created directly in the \"%@\" catalog."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les suggestions seront créées directement dans le catalogue « %@ »."
           }
         }
       }
@@ -964,6 +1312,12 @@
             "state" : "translated",
             "value" : "Import all %d missing episodes from the catalog"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer les %d épisodes manquants du catalogue"
+          }
         }
       }
     },
@@ -979,6 +1333,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import the missing episode from the catalog"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer l’épisode manquant du catalogue"
           }
         }
       }
@@ -997,6 +1357,12 @@
             "state" : "translated",
             "value" : "Import all %d visible episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer les %d épisodes visibles"
+          }
         }
       }
     },
@@ -1013,6 +1379,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import the visible episode"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer l’épisode visible"
           }
         }
       }
@@ -1031,6 +1403,12 @@
             "state" : "translated",
             "value" : "%d missing episodes in %d catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d épisodes manquants dans %d catalogues"
+          }
         }
       }
     },
@@ -1047,6 +1425,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d missing episodes in 1 catalog"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d épisodes manquants dans 1 catalogue"
           }
         }
       }
@@ -1065,6 +1449,12 @@
             "state" : "translated",
             "value" : "No missing episodes from %d"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode manquant pour %d"
+          }
         }
       }
     },
@@ -1082,6 +1472,12 @@
             "state" : "translated",
             "value" : "%d visible missing episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d épisodes manquants visibles"
+          }
         }
       }
     },
@@ -1097,6 +1493,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 visible missing episode"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 épisode manquant visible"
           }
         }
       }
@@ -1115,6 +1517,12 @@
             "state" : "translated",
             "value" : "New episodes in %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveaux épisodes dans %@."
+          }
         }
       }
     },
@@ -1131,6 +1539,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld new catalog episodes in %lld catalogs"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux épisodes de catalogue dans %lld catalogues"
           }
         }
       }
@@ -1149,6 +1563,12 @@
             "state" : "translated",
             "value" : "%@ - %lld episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ - %lld épisodes"
+          }
         }
       }
     },
@@ -1165,6 +1585,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld -> %lld episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld -> %lld épisodes"
           }
         }
       }
@@ -1183,6 +1609,12 @@
             "state" : "translated",
             "value" : "%@ and more new episodes were added."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ et d’autres nouveaux épisodes ont été ajoutés."
+          }
         }
       }
     },
@@ -1199,6 +1631,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ was added."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a été ajouté."
           }
         }
       }
@@ -1217,6 +1655,12 @@
             "state" : "translated",
             "value" : "%lld new catalog episodes in %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux épisodes de catalogue dans %@"
+          }
         }
       }
     },
@@ -1234,6 +1678,12 @@
             "state" : "translated",
             "value" : "1 new catalog episode in %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 nouvel épisode de catalogue dans %@"
+          }
         }
       }
     },
@@ -1247,6 +1697,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@ -> %@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Version %@ -> %@"
@@ -1268,6 +1724,12 @@
             "state" : "translated",
             "value" : "%@, %@, and %lld more catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ et %lld autres catalogues"
+          }
         }
       }
     },
@@ -1284,6 +1746,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@, %@, and %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ et %@"
           }
         }
       }
@@ -1302,6 +1770,12 @@
             "state" : "translated",
             "value" : "%@ and %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ et %@"
+          }
         }
       }
     },
@@ -1318,6 +1792,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ and more catalogs were added to your library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ et d’autres catalogues ont été ajoutés à ta bibliothèque."
           }
         }
       }
@@ -1336,6 +1816,12 @@
             "state" : "translated",
             "value" : "%@ was added to your library."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a été ajouté à ta bibliothèque."
+          }
         }
       }
     },
@@ -1353,6 +1839,12 @@
             "state" : "translated",
             "value" : "%lld new catalogs added"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux catalogues ajoutés"
+          }
         }
       }
     },
@@ -1368,6 +1860,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New catalog added"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau catalogue ajouté"
           }
         }
       }
@@ -1386,6 +1884,12 @@
             "state" : "translated",
             "value" : "%lld new catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux catalogues"
+          }
         }
       }
     },
@@ -1402,6 +1906,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ and more catalogs can be enabled."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ et d’autres catalogues peuvent être activés."
           }
         }
       }
@@ -1420,6 +1930,12 @@
             "state" : "translated",
             "value" : "%@ can be enabled in Catalogs."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ peut être activé dans les catalogues."
+          }
         }
       }
     },
@@ -1437,6 +1953,12 @@
             "state" : "translated",
             "value" : "%lld new catalogs available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux catalogues disponibles"
+          }
         }
       }
     },
@@ -1452,6 +1974,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 new catalog available"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 nouveau catalogue disponible"
           }
         }
       }
@@ -1470,6 +1998,12 @@
             "state" : "translated",
             "value" : "%lld catalogs, incl. %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogues, dont %@"
+          }
         }
       }
     },
@@ -1486,6 +2020,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Active catalogs have new episodes, including %@ in %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des catalogues actifs ont de nouveaux épisodes, dont %@ dans %@."
           }
         }
       }
@@ -1504,6 +2044,12 @@
             "state" : "translated",
             "value" : "%@: %@ is waiting for your library."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ : %@ attend dans ta bibliothèque."
+          }
         }
       }
     },
@@ -1521,6 +2067,12 @@
             "state" : "translated",
             "value" : "%lld new catalog episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nouveaux épisodes de catalogue"
+          }
         }
       }
     },
@@ -1536,6 +2088,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 new catalog episode"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 nouvel épisode de catalogue"
           }
         }
       }
@@ -1554,6 +2112,12 @@
             "state" : "translated",
             "value" : "%lld catalogs removed"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogues supprimés"
+          }
         }
       }
     },
@@ -1570,6 +2134,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ are no longer supported and were removed from your active catalogs."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ne sont plus pris en charge et ont été retirés de tes catalogues actifs."
           }
         }
       }
@@ -1588,6 +2158,12 @@
             "state" : "translated",
             "value" : "%@ is no longer supported and was removed from your active catalogs."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’est plus pris en charge et a été retiré de tes catalogues actifs."
+          }
         }
       }
     },
@@ -1605,6 +2181,12 @@
             "state" : "translated",
             "value" : "%lld catalogs no longer available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld catalogues plus disponibles"
+          }
         }
       }
     },
@@ -1621,6 +2203,12 @@
             "state" : "translated",
             "value" : "Catalog no longer available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalogue plus disponible"
+          }
         }
       }
     },
@@ -1636,6 +2224,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cloud sync becomes active after the next app launch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La synchronisation iCloud ne sera active qu’au prochain démarrage de l’app."
           }
         }
       }
@@ -1654,6 +2248,12 @@
             "state" : "translated",
             "value" : "Cover"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pochette"
+          }
         }
       }
     },
@@ -1669,6 +2269,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove Cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer la pochette"
           }
         }
       }
@@ -1686,6 +2292,12 @@
             "state" : "translated",
             "value" : "Replace Cover"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remplacer la pochette"
+          }
         }
       }
     },
@@ -1701,6 +2313,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add Cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter une pochette"
           }
         }
       }
@@ -1718,6 +2336,12 @@
             "state" : "translated",
             "value" : "Display"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparence"
+          }
         }
       }
     },
@@ -1734,6 +2358,12 @@
             "state" : "translated",
             "value" : "Reset Appearance"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser l’apparence"
+          }
         }
       }
     },
@@ -1749,6 +2379,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reset appearance?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser l’apparence ?"
           }
         }
       }
@@ -1768,6 +2404,12 @@
             "state" : "translated",
             "value" : "The original photo will be replaced by the perspective-corrected version."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La photo originale sera remplacée par la version à la perspective corrigée."
+          }
         }
       }
     },
@@ -1783,6 +2425,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Data"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Données"
           }
         }
       }
@@ -1800,6 +2448,12 @@
             "state" : "translated",
             "value" : "Database Diagnostics"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostic de la base de données"
+          }
         }
       }
     },
@@ -1815,6 +2469,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Disabled lists are hidden. Hold and drag to change the order."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les listes désactivées sont masquées. Maintiens et fais glisser pour modifier l’ordre."
           }
         }
       }
@@ -1832,6 +2492,12 @@
             "state" : "translated",
             "value" : "Your AudioPlayLog is Ready"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton AudioPlayLog est prêt"
+          }
         }
       }
     },
@@ -1847,6 +2513,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your Listening Progress"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta progression d’écoute"
           }
         }
       }
@@ -1864,6 +2536,12 @@
             "state" : "translated",
             "value" : "Your Listening Progress at a Glance"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta progression d’écoute en un coup d’œil"
+          }
         }
       }
     },
@@ -1879,6 +2557,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The collection name appears at the top of your episode list. You can hide listening progress if you prefer to start directly with the list. For known catalogs, progress can optionally be calculated against the full catalog instead of only your library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le nom de la collection apparaît en haut de ta liste d’épisodes. Tu peux masquer la progression d’écoute si tu préfères commencer directement par la liste. Pour les catalogues connus, la progression peut être calculée par rapport au catalogue complet plutôt qu’uniquement à ta bibliothèque."
           }
         }
       }
@@ -1896,6 +2580,12 @@
             "state" : "translated",
             "value" : "The database had to be repaired automatically at launch. This information helps with troubleshooting and never leaves your device."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La base de données a dû être réparée automatiquement au démarrage. Cette information aide au diagnostic et ne quitte jamais ton appareil."
+          }
         }
       }
     },
@@ -1911,6 +2601,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The most important numbers and patterns in your collection, optimized for a quick overview."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les chiffres et tendances les plus importants de ta collection, optimisés pour un aperçu rapide."
           }
         }
       }
@@ -1928,6 +2624,12 @@
             "state" : "translated",
             "value" : "This action cannot be undone."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette action est irréversible."
+          }
         }
       }
     },
@@ -1943,6 +2645,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listen +1"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoute +1"
           }
         }
       }
@@ -1960,6 +2668,12 @@
             "state" : "translated",
             "value" : "Custom Catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalogues personnalisés"
+          }
         }
       }
     },
@@ -1976,6 +2690,12 @@
             "state" : "translated",
             "value" : "Show"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher"
+          }
         }
       }
     },
@@ -1991,6 +2711,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Settings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réglages"
           }
         }
       }
@@ -2009,6 +2735,12 @@
             "state" : "translated",
             "value" : "Specials"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes spéciaux"
+          }
         }
       }
     },
@@ -2025,6 +2757,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Last listened: %1$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernière écoute : %1$@"
           }
         }
       }
@@ -2043,6 +2781,12 @@
             "state" : "translated",
             "value" : "Number"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro"
+          }
         }
       }
     },
@@ -2059,6 +2803,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Number (optional)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro (facultatif)"
           }
         }
       }
@@ -2077,6 +2827,12 @@
             "state" : "translated",
             "value" : "Listened (%1$lld×)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouté (%1$lld×)"
+          }
         }
       }
     },
@@ -2093,6 +2849,12 @@
             "state" : "translated",
             "value" : "Catalog entries stay available and can be added again."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les entrées du catalogue restent disponibles et peuvent être réimportées."
+          }
         }
       }
     },
@@ -2106,6 +2868,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ %@"
@@ -2127,6 +2895,12 @@
             "state" : "translated",
             "value" : "“%@” will be permanently deleted. %@ %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » sera définitivement supprimé. %@ %@"
+          }
         }
       }
     },
@@ -2143,6 +2917,12 @@
             "state" : "translated",
             "value" : "The episodes will be removed from all synced devices."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les épisodes seront supprimés sur tous les appareils synchronisés."
+          }
         }
       }
     },
@@ -2158,6 +2938,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The episodes will only be removed from this device."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les épisodes ne seront supprimés que sur cet appareil."
           }
         }
       }
@@ -2176,6 +2962,12 @@
             "state" : "translated",
             "value" : "Delete %lld episodes?"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer %lld épisodes ?"
+          }
         }
       }
     },
@@ -2191,6 +2983,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete episode?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’épisode ?"
           }
         }
       }
@@ -2209,6 +3007,12 @@
             "state" : "translated",
             "value" : "Cover"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pochette"
+          }
         }
       }
     },
@@ -2225,6 +3029,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moods"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Humeurs"
           }
         }
       }
@@ -2243,6 +3053,12 @@
             "state" : "translated",
             "value" : "Personal Note"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note personnelle"
+          }
         }
       }
     },
@@ -2259,6 +3075,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Status"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statut"
           }
         }
       }
@@ -2277,6 +3099,12 @@
             "state" : "translated",
             "value" : "Streaming Link"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lien de streaming"
+          }
         }
       }
     },
@@ -2293,6 +3121,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Drag the fields into your preferred order."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fais glisser les champs dans l’ordre souhaité."
           }
         }
       }
@@ -2311,6 +3145,12 @@
             "state" : "translated",
             "value" : "Fields in Episode Editing"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Champs dans l’édition d’épisode"
+          }
         }
       }
     },
@@ -2328,6 +3168,12 @@
             "state" : "translated",
             "value" : "Field Order"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordre des champs"
+          }
         }
       }
     },
@@ -2343,6 +3189,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous"
           }
         }
       }
@@ -2360,6 +3212,12 @@
             "state" : "translated",
             "value" : "Favorites"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoris"
+          }
         }
       }
     },
@@ -2376,6 +3234,12 @@
             "state" : "translated",
             "value" : "Listened"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutés"
+          }
         }
       }
     },
@@ -2391,6 +3255,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unlistened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non écoutés"
           }
         }
       }
@@ -2409,6 +3279,12 @@
             "state" : "translated",
             "value" : "Reset Filter"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser le filtre"
+          }
         }
       }
     },
@@ -2425,6 +3301,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The current filter will be saved as a new list."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le filtre actuel sera enregistré comme nouvelle liste."
           }
         }
       }
@@ -2443,6 +3325,12 @@
             "state" : "translated",
             "value" : "Name"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
+          }
         }
       }
     },
@@ -2459,6 +3347,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer"
           }
         }
       }
@@ -2477,6 +3371,12 @@
             "state" : "translated",
             "value" : "Save List"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer la liste"
+          }
         }
       }
     },
@@ -2493,6 +3393,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save as List"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer comme liste"
           }
         }
       }
@@ -2511,6 +3417,12 @@
             "state" : "translated",
             "value" : "%1$lld of %2$lld listened · %3$lld open"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld sur %2$lld écoutés · %3$lld en attente"
+          }
         }
       }
     },
@@ -2528,6 +3440,12 @@
             "state" : "translated",
             "value" : "%1$lld of %2$lld episodes listened"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld sur %2$lld épisodes écoutés"
+          }
         }
       }
     },
@@ -2543,6 +3461,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sort and Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trier et filtrer"
           }
         }
       }
@@ -2560,6 +3484,12 @@
             "state" : "translated",
             "value" : "Specials"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes spéciaux"
+          }
         }
       }
     },
@@ -2575,6 +3505,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Number"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro"
           }
         }
       }
@@ -2592,6 +3528,12 @@
             "state" : "translated",
             "value" : "Rating"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
         }
       }
     },
@@ -2607,6 +3549,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recently Played"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutés récemment"
           }
         }
       }
@@ -2624,6 +3572,12 @@
             "state" : "translated",
             "value" : "Release Year"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Année de sortie"
+          }
         }
       }
     },
@@ -2639,6 +3593,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Title A-Z"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titre A-Z"
           }
         }
       }
@@ -2656,6 +3616,12 @@
             "state" : "translated",
             "value" : "All"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous"
+          }
         }
       }
     },
@@ -2671,6 +3637,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoris"
           }
         }
       }
@@ -2688,6 +3660,12 @@
             "state" : "translated",
             "value" : "Listened"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutés"
+          }
         }
       }
     },
@@ -2703,6 +3681,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "With Note"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avec note"
           }
         }
       }
@@ -2720,6 +3704,12 @@
             "state" : "translated",
             "value" : "Open"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En attente"
+          }
         }
       }
     },
@@ -2736,6 +3726,12 @@
             "state" : "translated",
             "value" : "Rated"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notés"
+          }
         }
       }
     },
@@ -2751,6 +3747,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Special Episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes spéciaux"
           }
         }
       }
@@ -2769,6 +3771,12 @@
             "state" : "translated",
             "value" : "Specials only"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes spéciaux uniquement"
+          }
         }
       }
     },
@@ -2784,6 +3792,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Try Again"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
           }
         }
       }
@@ -2801,6 +3815,12 @@
             "state" : "translated",
             "value" : "Appearance"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparence"
+          }
         }
       }
     },
@@ -2816,6 +3836,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Release Year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Année de sortie"
           }
         }
       }
@@ -2833,6 +3859,12 @@
             "state" : "translated",
             "value" : "Add First Episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer le premier épisode"
+          }
         }
       }
     },
@@ -2849,6 +3881,12 @@
             "state" : "translated",
             "value" : "Done"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminé"
+          }
         }
       }
     },
@@ -2864,6 +3902,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtre"
           }
         }
       }
@@ -2882,6 +3926,12 @@
             "state" : "translated",
             "value" : "Reset Filters"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser les filtres"
+          }
         }
       }
     },
@@ -2897,6 +3947,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrer"
           }
         }
       }
@@ -2914,6 +3970,12 @@
             "state" : "translated",
             "value" : "Episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode"
+          }
         }
       }
     },
@@ -2929,6 +3991,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episode %d"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode %d"
           }
         }
       }
@@ -2947,6 +4015,12 @@
             "state" : "translated",
             "value" : "Episode %lld"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode %lld"
+          }
         }
       }
     },
@@ -2962,6 +4036,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episode %lld, Favorite"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode %lld, favori"
           }
         }
       }
@@ -2979,6 +4059,12 @@
             "state" : "translated",
             "value" : "Edit Episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier l’épisode"
+          }
         }
       }
     },
@@ -2994,6 +4080,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete Episode"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’épisode"
           }
         }
       }
@@ -3011,6 +4103,12 @@
             "state" : "translated",
             "value" : "Search episode..."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher un épisode..."
+          }
         }
       }
     },
@@ -3026,6 +4124,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Really delete episode?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vraiment supprimer cet épisode ?"
           }
         }
       }
@@ -3043,6 +4147,12 @@
             "state" : "translated",
             "value" : "Episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes"
+          }
         }
       }
     },
@@ -3058,6 +4168,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episodes from %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes de %@"
           }
         }
       }
@@ -3075,6 +4191,12 @@
             "state" : "translated",
             "value" : "Restore episodes, catalogs, and moods"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurer les épisodes, catalogues et humeurs"
+          }
         }
       }
     },
@@ -3090,6 +4212,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter the episode number"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisir le numéro de l’épisode"
           }
         }
       }
@@ -3109,6 +4237,12 @@
             "state" : "translated",
             "value" : "Overwrite Photo?"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remplacer la photo ?"
+          }
         }
       }
     },
@@ -3124,6 +4258,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouté"
           }
         }
       }
@@ -3141,6 +4281,12 @@
             "state" : "translated",
             "value" : "Mark as listened"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme écouté"
+          }
         }
       }
     },
@@ -3156,6 +4302,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
           }
         }
       }
@@ -3173,6 +4325,12 @@
             "state" : "translated",
             "value" : "Add"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter"
+          }
         }
       }
     },
@@ -3188,6 +4346,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listening Progress"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression d’écoute"
           }
         }
       }
@@ -3205,6 +4369,12 @@
             "state" : "translated",
             "value" : "Show Listening Progress"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher la progression d’écoute"
+          }
         }
       }
     },
@@ -3217,6 +4387,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://open.spotify.com/album/…"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "https://open.spotify.com/album/…"
@@ -3237,6 +4413,12 @@
             "state" : "translated",
             "value" : "iCloud Sync"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisation iCloud"
+          }
         }
       }
     },
@@ -3253,6 +4435,12 @@
             "state" : "translated",
             "value" : "Start Import"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Démarrer l’import"
+          }
         }
       }
     },
@@ -3268,6 +4456,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In the episode detail view, you can open available catalog links directly in your chosen service."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans la fiche détaillée d’un épisode, tu peux ouvrir les liens de catalogue disponibles directement dans le service choisi."
           }
         }
       }
@@ -3286,6 +4480,12 @@
             "state" : "translated",
             "value" : "Internal Sync Options"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Options de synchronisation internes"
+          }
         }
       }
     },
@@ -3301,6 +4501,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iOS shows a brief system alert when you switch. The change applies to your Home Screen right away."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS affiche une brève notification système lors du changement. Le changement s’applique immédiatement à l’écran d’accueil."
           }
         }
       }
@@ -3318,6 +4524,12 @@
             "state" : "translated",
             "value" : "Year"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Année"
+          }
         }
       }
     },
@@ -3333,6 +4545,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Catalog"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalogue"
           }
         }
       }
@@ -3350,6 +4568,12 @@
             "state" : "translated",
             "value" : "Select Catalog"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir un catalogue"
+          }
         }
       }
     },
@@ -3365,6 +4589,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search catalogs"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher un catalogue"
           }
         }
       }
@@ -3382,6 +4612,12 @@
             "state" : "translated",
             "value" : "Choose a catalog"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir un catalogue"
+          }
         }
       }
     },
@@ -3397,6 +4633,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loading catalog …"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargement du catalogue…"
           }
         }
       }
@@ -3414,6 +4656,12 @@
             "state" : "translated",
             "value" : "Catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalogues"
+          }
         }
       }
     },
@@ -3429,6 +4677,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You can adjust catalogs, moods, and appearance later in Settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu peux ajuster catalogues, humeurs et apparence plus tard dans les réglages."
           }
         }
       }
@@ -3446,6 +4700,12 @@
             "state" : "translated",
             "value" : "Use Catalog Progress"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser la progression du catalogue"
+          }
         }
       }
     },
@@ -3462,6 +4722,12 @@
             "state" : "translated",
             "value" : "Catalog Matches"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résultats de catalogue"
+          }
         }
       }
     },
@@ -3477,6 +4743,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Moods"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune humeur"
           }
         }
       }
@@ -3496,6 +4768,12 @@
             "state" : "translated",
             "value" : "No Upcoming Releases"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun rendez-vous"
+          }
         }
       }
     },
@@ -3511,6 +4789,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quick access to continuations, random picks, and open catalog tips."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accès rapide aux suites, épisodes au hasard et suggestions de catalogue."
           }
         }
       }
@@ -3528,6 +4812,12 @@
             "state" : "translated",
             "value" : "Add your first episode."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crée ton premier épisode."
+          }
         }
       }
     },
@@ -3544,6 +4834,12 @@
             "state" : "translated",
             "value" : "Add your first episode. If it is in the catalog, the title will be suggested automatically."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crée ton premier épisode. S’il figure dans le catalogue, le titre sera suggéré automatiquement."
+          }
         }
       }
     },
@@ -3559,6 +4855,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create your own moods or use the default suggestions."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crée tes propres humeurs ou reprends les suggestions par défaut."
           }
         }
       }
@@ -3578,6 +4880,12 @@
             "state" : "translated",
             "value" : "Left"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gauche"
+          }
         }
       }
     },
@@ -3595,6 +4903,12 @@
             "state" : "translated",
             "value" : "Internally Move Local Data to Cloud"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transférer les données locales vers le cloud (interne)"
+          }
         }
       }
     },
@@ -3610,6 +4924,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer"
           }
         }
       }
@@ -3627,6 +4947,12 @@
             "state" : "translated",
             "value" : "Library"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Médiathèque"
+          }
         }
       }
     },
@@ -3642,6 +4968,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adventure"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aventure"
           }
         }
       }
@@ -3659,6 +4991,12 @@
             "state" : "translated",
             "value" : "Scary"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effrayant"
+          }
         }
       }
     },
@@ -3674,6 +5012,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Classic"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classique"
           }
         }
       }
@@ -3691,6 +5035,12 @@
             "state" : "translated",
             "value" : "Thoughtful"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pensif"
+          }
         }
       }
     },
@@ -3706,6 +5056,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exciting"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Palpitant"
           }
         }
       }
@@ -3723,6 +5079,12 @@
             "state" : "translated",
             "value" : "Funny"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amusant"
+          }
         }
       }
     },
@@ -3739,6 +5101,12 @@
             "state" : "translated",
             "value" : "Name"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
+          }
         }
       }
     },
@@ -3754,6 +5122,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Draw Again"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tirer à nouveau"
           }
         }
       }
@@ -3772,6 +5146,12 @@
             "state" : "translated",
             "value" : "New: Accent Color"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau : couleur d’accentuation"
+          }
         }
       }
     },
@@ -3787,6 +5167,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New: Color & Icon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau : couleur et icône"
           }
         }
       }
@@ -3804,6 +5190,12 @@
             "state" : "translated",
             "value" : "New Episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouvel épisode"
+          }
         }
       }
     },
@@ -3819,6 +5211,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New Mood"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouvelle humeur"
           }
         }
       }
@@ -3836,6 +5234,12 @@
             "state" : "translated",
             "value" : "New Catalog"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau catalogue"
+          }
         }
       }
     },
@@ -3851,6 +5255,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nothing Found"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien trouvé"
           }
         }
       }
@@ -3869,6 +5279,12 @@
             "state" : "translated",
             "value" : "No Ratings Yet"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de notes"
+          }
         }
       }
     },
@@ -3884,6 +5300,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No episodes yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore d’épisodes"
           }
         }
       }
@@ -3901,6 +5323,12 @@
             "state" : "translated",
             "value" : "No Statistics Yet"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de statistiques"
+          }
         }
       }
     },
@@ -3916,6 +5344,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Moods Yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore d’humeurs"
           }
         }
       }
@@ -3933,6 +5367,12 @@
             "state" : "translated",
             "value" : "No moods in your library yet"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore d’humeurs dans ta bibliothèque"
+          }
         }
       }
     },
@@ -3948,6 +5388,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Again"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encore"
           }
         }
       }
@@ -3965,6 +5411,12 @@
             "state" : "translated",
             "value" : "Listen Again"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réécouter"
+          }
         }
       }
     },
@@ -3980,6 +5432,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Number"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro"
           }
         }
       }
@@ -3997,6 +5455,12 @@
             "state" : "translated",
             "value" : "Number (optional)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro (facultatif)"
+          }
         }
       }
     },
@@ -4013,6 +5477,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For development and testing only: Cloud sync becomes active after the next app launch when both the request and safety switch are enabled."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour le développement et les tests uniquement : la synchronisation iCloud ne devient active qu’au prochain démarrage de l’app, lorsque la demande et le commutateur de sécurité sont activés en même temps."
           }
         }
       }
@@ -4032,6 +5502,12 @@
             "state" : "translated",
             "value" : "Only catalogs with an officially announced date. No reliable date is available for your other enabled catalogs."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uniquement les catalogues avec une date officiellement annoncée. Aucune date fiable n’est disponible pour tes autres catalogues activés."
+          }
         }
       }
     },
@@ -4047,6 +5523,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Only empty catalogs can be deleted."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuls les catalogues vides peuvent être supprimés."
           }
         }
       }
@@ -4064,6 +5546,12 @@
             "state" : "translated",
             "value" : "Only unused moods can be deleted."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seules les humeurs inutilisées peuvent être supprimées."
+          }
         }
       }
     },
@@ -4079,6 +5567,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En attente"
           }
         }
       }
@@ -4096,6 +5590,12 @@
             "state" : "translated",
             "value" : "Assign moods to episodes to discover patterns in your collection."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Associe des humeurs à tes épisodes pour découvrir des tendances dans ta collection."
+          }
         }
       }
     },
@@ -4111,6 +5611,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adjust search or filters."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste la recherche ou les filtres."
           }
         }
       }
@@ -4128,6 +5634,12 @@
             "state" : "translated",
             "value" : "Matching titles appear as suggestions."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les titres correspondants apparaissent en suggestion."
+          }
         }
       }
     },
@@ -4144,6 +5656,12 @@
             "state" : "translated",
             "value" : "Personalize your app icon and accent color in Settings."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personnalise l’icône de l’app et la couleur d’accentuation dans les réglages."
+          }
         }
       }
     },
@@ -4159,6 +5677,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Personal Note"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note personnelle"
           }
         }
       }
@@ -4178,6 +5702,12 @@
             "state" : "translated",
             "value" : "Right"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Droite"
+          }
         }
       }
     },
@@ -4193,6 +5723,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collection Name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom de la collection"
           }
         }
       }
@@ -4210,6 +5746,12 @@
             "state" : "translated",
             "value" : "Delete"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer"
+          }
         }
       }
     },
@@ -4225,6 +5767,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rename"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer"
           }
         }
       }
@@ -4243,6 +5791,12 @@
             "state" : "translated",
             "value" : "No episodes match the saved filter criteria."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode ne correspond aux critères de filtre enregistrés."
+          }
         }
       }
     },
@@ -4259,6 +5813,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode"
           }
         }
       }
@@ -4277,6 +5837,12 @@
             "state" : "translated",
             "value" : "Save an active filter from the library as a list."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre un filtre actif de la bibliothèque comme liste."
+          }
         }
       }
     },
@@ -4293,6 +5859,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Saved Lists"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune liste enregistrée"
           }
         }
       }
@@ -4311,6 +5883,12 @@
             "state" : "translated",
             "value" : "My Lists"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mes listes"
+          }
         }
       }
     },
@@ -4327,6 +5905,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
           }
         }
       }
@@ -4345,6 +5929,12 @@
             "state" : "translated",
             "value" : "Save"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer"
+          }
         }
       }
     },
@@ -4361,6 +5951,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rename List"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommer la liste"
           }
         }
       }
@@ -4379,6 +5975,12 @@
             "state" : "translated",
             "value" : "All Episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les épisodes"
+          }
         }
       }
     },
@@ -4395,6 +5997,12 @@
             "state" : "translated",
             "value" : "All"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous"
+          }
         }
       }
     },
@@ -4410,6 +6018,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "None"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun"
           }
         }
       }
@@ -4428,6 +6042,12 @@
             "state" : "translated",
             "value" : "Back up %1$lld episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sauvegarder %1$lld épisodes"
+          }
         }
       }
     },
@@ -4444,6 +6064,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Field Order"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordre des champs"
           }
         }
       }
@@ -4462,6 +6088,12 @@
             "state" : "translated",
             "value" : "%1$lld of %2$lld catalogs active"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld catalogue(s) actif(s) sur %2$lld"
+          }
         }
       }
     },
@@ -4478,6 +6110,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld moods saved"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld humeurs enregistrées"
           }
         }
       }
@@ -4496,6 +6134,12 @@
             "state" : "translated",
             "value" : "My Lists"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mes listes"
+          }
         }
       }
     },
@@ -4511,6 +6155,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Streaming Service"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Service de streaming"
           }
         }
       }
@@ -4528,6 +6178,12 @@
             "state" : "translated",
             "value" : "Save"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer"
+          }
         }
       }
     },
@@ -4540,6 +6196,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Lists"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Smart Lists"
@@ -4561,6 +6223,12 @@
             "state" : "translated",
             "value" : "%@: Episode %d - %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ : Épisode %d - %@"
+          }
         }
       }
     },
@@ -4576,6 +6244,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You are up to date everywhere"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu es à jour partout"
           }
         }
       }
@@ -4593,6 +6267,12 @@
             "state" : "translated",
             "value" : "Shows the next unlistened episode per series after the highest listened episode. Sorted by latest activity."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche par série le prochain épisode non écouté après le dernier écouté. Trié par activité la plus récente."
+          }
         }
       }
     },
@@ -4608,6 +6288,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continue Listening"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer l’écoute"
           }
         }
       }
@@ -4625,6 +6311,12 @@
             "state" : "translated",
             "value" : "No episodes available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode disponible"
+          }
         }
       }
     },
@@ -4640,6 +6332,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No listened episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode écouté"
           }
         }
       }
@@ -4657,6 +6355,12 @@
             "state" : "translated",
             "value" : "No episodes with this mood"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode avec cette humeur"
+          }
         }
       }
     },
@@ -4672,6 +6376,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No unlistened episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode non écouté"
           }
         }
       }
@@ -4690,6 +6400,12 @@
             "state" : "translated",
             "value" : "%@: Episode %d - %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ : Épisode %d - %@"
+          }
         }
       }
     },
@@ -4706,6 +6422,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No favorites marked yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de favoris marqués"
           }
         }
       }
@@ -4724,6 +6446,12 @@
             "state" : "translated",
             "value" : "All episodes you have marked as favorites, whether listened or not. Your personal best-of list."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les épisodes que tu as marqués comme favoris, écoutés ou non. Ton classement personnel."
+          }
         }
       }
     },
@@ -4740,6 +6468,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoris"
           }
         }
       }
@@ -4758,6 +6492,12 @@
             "state" : "translated",
             "value" : "No episodes on your listen-later list"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode à écouter plus tard"
+          }
         }
       }
     },
@@ -4774,6 +6514,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episodes you have bookmarked and have not listened to yet. Once you mark an episode as listened, the bookmark is removed automatically."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes que tu as mis de côté et pas encore écoutés. Dès que tu marques un épisode comme écouté, il est automatiquement retiré de cette liste."
           }
         }
       }
@@ -4792,6 +6538,12 @@
             "state" : "translated",
             "value" : "Listen Later"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter plus tard"
+          }
         }
       }
     },
@@ -4807,6 +6559,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No long-paused series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune série longtemps en pause"
           }
         }
       }
@@ -4824,6 +6582,12 @@
             "state" : "translated",
             "value" : "Series where you have not listened for over 30 days and still have open episodes left."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Séries pour lesquelles tu n’as rien écouté depuis plus de 30 jours et qui ont encore des épisodes en attente."
+          }
         }
       }
     },
@@ -4839,6 +6603,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Long Paused"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pause depuis longtemps"
           }
         }
       }
@@ -4856,6 +6626,12 @@
             "state" : "translated",
             "value" : "No more catalog episodes available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun autre épisode de catalogue disponible"
+          }
         }
       }
     },
@@ -4871,6 +6647,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shows the next catalog episode per series that is not yet in your library. Great for discovering new episodes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le prochain épisode du catalogue par série que tu n’as pas encore dans ta bibliothèque. Idéal pour découvrir de nouveaux épisodes."
           }
         }
       }
@@ -4888,6 +6670,12 @@
             "state" : "translated",
             "value" : "Next from Catalog"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suivant dans le catalogue"
+          }
         }
       }
     },
@@ -4903,6 +6691,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Everything listened!"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout est écouté !"
           }
         }
       }
@@ -4920,6 +6714,12 @@
             "state" : "translated",
             "value" : "A random selection from your library. Choose above whether to draw from unlistened, listened, or all episodes."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une sélection aléatoire de ta bibliothèque. Choisis ci-dessus si tu veux tirer parmi les épisodes non écoutés, écoutés ou tous."
+          }
         }
       }
     },
@@ -4935,6 +6735,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Random"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aléatoire"
           }
         }
       }
@@ -4952,6 +6758,12 @@
             "state" : "translated",
             "value" : "No moods in your library"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune humeur dans ta bibliothèque"
+          }
         }
       }
     },
@@ -4967,6 +6779,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose a mood and get a random selection of matching episodes. You can then narrow it to unlistened, listened, or all episodes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis une humeur et obtiens une sélection aléatoire d’épisodes correspondants. Tu peux ensuite filtrer par non écoutés, écoutés ou tous."
           }
         }
       }
@@ -4985,6 +6803,12 @@
             "state" : "translated",
             "value" : "%d moods available"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d humeurs disponibles"
+          }
         }
       }
     },
@@ -5000,6 +6824,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 mood available"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 humeur disponible"
           }
         }
       }
@@ -5017,6 +6847,12 @@
             "state" : "translated",
             "value" : "Choose mood…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir une humeur…"
+          }
         }
       }
     },
@@ -5032,6 +6868,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Random by Mood"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aléatoire par humeur"
           }
         }
       }
@@ -5049,6 +6891,12 @@
             "state" : "translated",
             "value" : "No skipped episodes"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode sauté"
+          }
         }
       }
     },
@@ -5064,6 +6912,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episodes with a lower number than one you have already listened to, meaning gaps in your listening history."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes avec un numéro inférieur à un épisode déjà écouté — donc des lacunes dans ton historique d’écoute."
           }
         }
       }
@@ -5081,6 +6935,12 @@
             "state" : "translated",
             "value" : "Skipped"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sautés"
+          }
         }
       }
     },
@@ -5096,6 +6956,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No rated unlistened episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun épisode non écouté et noté"
           }
         }
       }
@@ -5113,6 +6979,12 @@
             "state" : "translated",
             "value" : "Unlistened episodes that already have a rating. Sorted by stars."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes non écoutés qui ont déjà une note. Triés par nombre d’étoiles."
+          }
         }
       }
     },
@@ -5128,6 +7000,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Top Rated"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les mieux notés"
           }
         }
       }
@@ -5145,6 +7023,12 @@
             "state" : "translated",
             "value" : "Once you add episodes, your listening progress appears here."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dès que tu crées des épisodes, ta progression d’écoute apparaît ici."
+          }
         }
       }
     },
@@ -5161,6 +7045,12 @@
             "state" : "translated",
             "value" : "Special"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode spécial"
+          }
         }
       }
     },
@@ -5176,6 +7066,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Special %d"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode spécial %d"
           }
         }
       }
@@ -5194,6 +7090,12 @@
             "state" : "translated",
             "value" : "Special Episode, Favorite"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode spécial, favori"
+          }
         }
       }
     },
@@ -5211,6 +7113,12 @@
             "state" : "translated",
             "value" : "Sort and Filter"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trier et filtrer"
+          }
         }
       }
     },
@@ -5226,6 +7134,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose an episode on the left to see details, rating, and notes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis un épisode à gauche pour voir les détails, la note et les remarques."
           }
         }
       }
@@ -5243,6 +7157,12 @@
             "state" : "translated",
             "value" : "Select an episode"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir un épisode"
+          }
         }
       }
     },
@@ -5258,6 +7178,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Language"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Langue"
           }
         }
       }
@@ -5275,6 +7201,12 @@
             "state" : "translated",
             "value" : "Default Suggestions"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions par défaut"
+          }
         }
       }
     },
@@ -5290,6 +7222,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "View Moods"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voir les humeurs"
           }
         }
       }
@@ -5307,6 +7245,12 @@
             "state" : "translated",
             "value" : "Average"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moyenne"
+          }
         }
       }
     },
@@ -5323,6 +7267,12 @@
             "state" : "translated",
             "value" : "Bookmarked"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mis de côté"
+          }
         }
       }
     },
@@ -5338,6 +7288,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Episodes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisodes"
           }
         }
       }
@@ -5356,6 +7312,12 @@
             "state" : "translated",
             "value" : "Favorites"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoris"
+          }
         }
       }
     },
@@ -5371,6 +7333,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutés"
           }
         }
       }
@@ -5388,6 +7356,12 @@
             "state" : "translated",
             "value" : "Open"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En attente"
+          }
         }
       }
     },
@@ -5403,6 +7377,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listens"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutes"
           }
         }
       }
@@ -5420,6 +7400,12 @@
             "state" : "translated",
             "value" : "Ratings"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
         }
       }
     },
@@ -5435,6 +7421,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moods"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Humeurs"
           }
         }
       }
@@ -5452,6 +7444,12 @@
             "state" : "translated",
             "value" : "Overview"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperçu"
+          }
         }
       }
     },
@@ -5467,6 +7465,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Top Ratings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meilleures notes"
           }
         }
       }
@@ -5484,6 +7488,12 @@
             "state" : "translated",
             "value" : "Rate episodes to see your favorites here."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note des épisodes pour voir tes favoris ici."
+          }
         }
       }
     },
@@ -5499,6 +7509,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Ratings Yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de notes"
           }
         }
       }
@@ -5516,6 +7532,12 @@
             "state" : "translated",
             "value" : "Statistic Sections"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sections de statistiques"
+          }
         }
       }
     },
@@ -5531,6 +7553,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Statistics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statistiques"
           }
         }
       }
@@ -5548,6 +7576,12 @@
             "state" : "translated",
             "value" : "Status"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statut"
+          }
         }
       }
     },
@@ -5563,6 +7597,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stars"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Étoiles"
           }
         }
       }
@@ -5580,6 +7620,12 @@
             "state" : "translated",
             "value" : "Moods"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Humeurs"
+          }
         }
       }
     },
@@ -5592,6 +7638,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Streaming"
@@ -5612,6 +7664,12 @@
             "state" : "translated",
             "value" : "Reset Search and Filters"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser la recherche et les filtres"
+          }
         }
       }
     },
@@ -5628,6 +7686,12 @@
             "state" : "translated",
             "value" : "Symbol"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbole"
+          }
         }
       }
     },
@@ -5640,6 +7704,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync"
@@ -5660,6 +7730,12 @@
             "state" : "translated",
             "value" : "Episode Title"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titre de l’épisode"
+          }
         }
       }
     },
@@ -5675,6 +7751,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use title: %1$@ (%2$@)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reprendre le titre : %1$@ (%2$@)"
           }
         }
       }
@@ -5692,6 +7774,12 @@
             "state" : "translated",
             "value" : "Top Pick"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coup de cœur"
+          }
         }
       }
     },
@@ -5707,6 +7795,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À propos"
           }
         }
       }
@@ -5726,6 +7820,12 @@
             "state" : "translated",
             "value" : "Apply"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appliquer"
+          }
         }
       }
     },
@@ -5741,6 +7841,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Imports only the currently visible suggestions from this list."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "N’importe que les suggestions actuellement visibles de cette liste."
           }
         }
       }
@@ -5760,6 +7866,12 @@
             "state" : "translated",
             "value" : "Overwrite"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remplacer"
+          }
         }
       }
     },
@@ -5777,6 +7889,12 @@
             "state" : "translated",
             "value" : "Overview"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperçu"
+          }
         }
       }
     },
@@ -5792,6 +7910,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Overview Metrics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valeurs d’aperçu"
           }
         }
       }
@@ -5809,6 +7933,12 @@
             "state" : "translated",
             "value" : "General"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Général"
+          }
         }
       }
     },
@@ -5824,6 +7954,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose a list on the left to see suggestions and episodes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis une liste à gauche pour voir les suggestions et les épisodes."
           }
         }
       }
@@ -5841,6 +7977,12 @@
             "state" : "translated",
             "value" : "Select a list"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir une liste"
+          }
         }
       }
     },
@@ -5856,6 +7998,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "My Lists"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mes listes"
           }
         }
       }
@@ -5874,6 +8022,12 @@
             "state" : "translated",
             "value" : "Available Catalogs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalogues disponibles"
+          }
         }
       }
     },
@@ -5889,6 +8043,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manage"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gérer"
           }
         }
       }
@@ -5906,6 +8066,12 @@
             "state" : "translated",
             "value" : "Remove from Listen Later"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer d’écouter plus tard"
+          }
         }
       }
     },
@@ -5921,6 +8087,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Existing Moods"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Humeurs existantes"
           }
         }
       }
@@ -5940,6 +8112,12 @@
             "state" : "translated",
             "value" : "Preview"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperçu"
+          }
         }
       }
     },
@@ -5952,6 +8130,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions"
@@ -5973,6 +8157,12 @@
             "state" : "translated",
             "value" : "Choose your accent color in Settings."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis ta couleur d’accentuation dans les réglages."
+          }
         }
       }
     },
@@ -5988,6 +8178,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose the series your episode belongs to."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis la série à laquelle appartient ton épisode."
           }
         }
       }
@@ -6005,6 +8201,12 @@
             "state" : "translated",
             "value" : "What would you like to remember?"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Que veux-tu mettre de côté ?"
+          }
         }
       }
     },
@@ -6020,6 +8222,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "What Fits Now?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qu’est-ce qui te tente ?"
           }
         }
       }
@@ -6037,6 +8245,12 @@
             "state" : "translated",
             "value" : "More languages"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autres langues"
+          }
         }
       }
     },
@@ -6052,6 +8266,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shows only missing episodes from the selected release year. Choose “All Years” to see all open catalog suggestions again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche uniquement les épisodes manquants de l’année de sortie sélectionnée. Choisis « Toutes les années » pour revoir toutes les suggestions de catalogue en attente."
           }
         }
       }
@@ -6069,6 +8289,12 @@
             "state" : "translated",
             "value" : "Tap to expand"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toucher pour développer"
+          }
         }
       }
     },
@@ -6084,6 +8310,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tap to collapse"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toucher pour réduire"
           }
         }
       }
@@ -6101,6 +8333,12 @@
             "state" : "translated",
             "value" : "Collection name, appearance, visible listening progress, and catalog progress display will be reset."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seront réinitialisés : le nom de la collection, l’apparence, la progression d’écoute visible et l’affichage de la progression du catalogue."
+          }
         }
       }
     },
@@ -6116,6 +8354,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reset"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser"
           }
         }
       }
@@ -6133,6 +8377,12 @@
             "state" : "translated",
             "value" : "Show older"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les plus anciens"
+          }
         }
       }
     },
@@ -6148,6 +8398,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "There is currently no news for your activated catalogues."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il n’y a actuellement aucune nouveauté pour tes catalogues activés."
           }
         }
       }
@@ -6165,6 +8421,12 @@
             "state" : "translated",
             "value" : "No news"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune nouveauté"
+          }
         }
       }
     },
@@ -6180,6 +8442,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Newly released"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveautés"
           }
         }
       }
@@ -6197,6 +8465,12 @@
             "state" : "translated",
             "value" : "New series"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouvelles séries"
+          }
         }
       }
     },
@@ -6212,6 +8486,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "News"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveautés"
           }
         }
       }
@@ -6229,6 +8509,12 @@
             "state" : "translated",
             "value" : "Date pending"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date à confirmer"
+          }
         }
       }
     },
@@ -6244,6 +8530,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opens details"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre les détails"
           }
         }
       }
@@ -6263,6 +8555,12 @@
             "state" : "translated",
             "value" : "No new episodes are currently announced for your enabled catalogs."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun nouvel épisode n’est actuellement annoncé pour tes catalogues activés."
+          }
         }
       }
     },
@@ -6280,6 +8578,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crop"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recadrer"
           }
         }
       }
