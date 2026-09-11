@@ -18,7 +18,9 @@ struct NewsOverviewView: View {
     var initialFocus: NewsOverviewSection = .neuErschienen
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Episode.episodeNumber) private var libraryEpisodes: [Episode]
+    @Query(sort: \Universe.name) private var libraryUniverses: [Universe]
 
     @State private var document: NewsStoreDocument = NewsStoreDocument()
     @State private var showAllNeuErschienen = false
@@ -74,7 +76,13 @@ struct NewsOverviewView: View {
     private var neuErschienenSection: some View {
         Section {
             ForEach(sections.neuErschienen) { event in
-                NewsEventRow(event: event, onTap: { handleTap(on: event) })
+                NewsEventRow(
+                    event: event,
+                    isBookmarkable: event.kind != .newCatalog,
+                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    onTap: { handleTap(on: event) },
+                    onToggleBookmark: { toggleBookmark(on: event) }
+                )
             }
             if sections.hasHiddenOlderNeuErschienen {
                 Button("Ältere anzeigen") {
@@ -92,7 +100,13 @@ struct NewsOverviewView: View {
         ForEach(Array(sections.baldVerfuegbar.enumerated()), id: \.element.id) { index, group in
             Section {
                 ForEach(group.events) { event in
-                    NewsEventRow(event: event, onTap: { handleTap(on: event) })
+                    NewsEventRow(
+                    event: event,
+                    isBookmarkable: event.kind != .newCatalog,
+                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    onTap: { handleTap(on: event) },
+                    onToggleBookmark: { toggleBookmark(on: event) }
+                )
                 }
             } header: {
                 // Nur die erste Gruppe trägt die Scroll-Sprungmarke — sonst
@@ -112,13 +126,29 @@ struct NewsOverviewView: View {
         if !sections.neueReihen.isEmpty {
             Section {
                 ForEach(sections.neueReihen) { event in
-                    NewsEventRow(event: event, onTap: { handleTap(on: event) })
+                    NewsEventRow(
+                    event: event,
+                    isBookmarkable: event.kind != .newCatalog,
+                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    onTap: { handleTap(on: event) },
+                    onToggleBookmark: { toggleBookmark(on: event) }
+                )
                 }
             } header: {
                 Text("Neue Reihen")
             }
             .id(NewsOverviewSection.neueReihen)
         }
+    }
+
+    private func toggleBookmark(on event: NewsEvent) {
+        NewsBookmarkHandler.toggleBookmark(
+            for: event,
+            modelContext: modelContext,
+            existingEpisodes: libraryEpisodes,
+            existingUniverses: libraryUniverses
+        )
+        try? modelContext.save()
     }
 
     private func handleTap(on event: NewsEvent) {
@@ -160,22 +190,45 @@ struct NewsOverviewView: View {
     }
 }
 
+/// Titel-Tap und Merken-Button sind zwei GLEICHRANGIGE `Button`s in einer
+/// `HStack`, keine verschachtelten Buttons mit `.contentShape`-Klimmzügen —
+/// SwiftUI vergibt jedem Geschwister-Button sein eigenes Tipp-Ziel, sodass
+/// der Merken-Button nie die Zeilennavigation auslöst (Datenvertrag §4.D7).
 private struct NewsEventRow: View {
     let event: NewsEvent
+    let isBookmarkable: Bool
+    let isBookmarked: Bool
     let onTap: () -> Void
+    let onToggleBookmark: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(event.title)
-                    .lineLimit(nil)
-                Text(event.universeName)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            Button(action: onTap) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(event.title)
+                        .lineLimit(nil)
+                    Text(event.universeName)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Öffnet Details"))
+
+            if isBookmarkable {
+                Button(action: onToggleBookmark) {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(isBookmarked ? .cyan : .secondary)
+                        .imageScale(.large)
+                        // Ausreichend großes Tipp-/VoiceOver-Ziel, unabhängig
+                        // vom kleinen SF-Symbol selbst.
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen"))
             }
         }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("Öffnet Details"))
     }
 }
 
