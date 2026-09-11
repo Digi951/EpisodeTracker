@@ -211,6 +211,16 @@ enum EpisodeListOrganizer {
         episodes.contains { $0.coverImageName?.isEmpty == false }
     }
 
+    /// Paket 6, P6-A: der schwebende Hinzufügen-Button ist nur sinnvoll,
+    /// wenn die Bibliothek bereits Folgen enthält. Ist sie leer, zeigt
+    /// `EmptyLibraryOnboardingView` bereits eine eigene primäre Aktion
+    /// ("Erste Folge anlegen") — ein zweiter, überlagernder Weg zum selben
+    /// Ziel verwirrt mehr, als er hilft (Review vom 08.09.2026,
+    /// `docs/reviews/2026-09-08/01-erststart.png`).
+    static func shouldShowFloatingAddButton(isEditing: Bool, isLibraryEmpty: Bool) -> Bool {
+        !isEditing && !isLibraryEmpty
+    }
+
     // MARK: - Filtern, Sortieren, Gruppieren
 
     static func filteredAndSortedEpisodes(

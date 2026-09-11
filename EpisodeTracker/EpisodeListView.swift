@@ -170,7 +170,7 @@ struct EpisodeListView: View {
             bottomActionInset
         }
         .overlay(alignment: .bottomTrailing) {
-            if !isEditing {
+            if EpisodeListOrganizer.shouldShowFloatingAddButton(isEditing: isEditing, isLibraryEmpty: episodes.isEmpty) {
                 FloatingAddButton {
                     showingAddEpisode = true
                 }
@@ -264,7 +264,7 @@ struct EpisodeListView: View {
     @ViewBuilder
     private var contentRows: some View {
         if episodes.isEmpty {
-            EmptyLibraryOnboardingView()
+            EmptyLibraryOnboardingView(onAddFirstEpisode: { showingAddEpisode = true })
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -450,63 +450,68 @@ private struct EmptyFilteredEpisodesView: View {
 }
 
 private struct EmptyLibraryOnboardingView: View {
+    let onAddFirstEpisode: () -> Void
+
+    // Bewusst keine eigene ScrollView: diese View ist bereits eine Zeile in
+    // der äußeren `List` (siehe `contentRows`) und nimmt damit automatisch
+    // an deren Scrollen und an `.contentMargins(.bottom, ...)` teil. Eine
+    // zweite, verschachtelte Scroll-Ebene ignoriert diesen Bottom-Inset und
+    // lässt den Fußtext hinter der Tab-Bar verschwinden (Paket 6, P6-A;
+    // Review vom 08.09.2026, `docs/reviews/2026-09-08/01-erststart.png`).
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                Image(systemName: "headphones.circle.fill")
-                    .font(.system(size: 72))
-                    .foregroundStyle(.tint)
-                    .symbolRenderingMode(.hierarchical)
+        VStack(spacing: 24) {
+            Image(systemName: "headphones.circle.fill")
+                .font(.system(size: 72))
+                .foregroundStyle(.tint)
+                .symbolRenderingMode(.hierarchical)
 
-                VStack(spacing: 8) {
-                    Text("Dein HörspielLog ist bereit")
-                        .font(.title2.weight(.semibold))
-                        .multilineTextAlignment(.center)
-                    Text("Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                VStack(spacing: 12) {
-                    OnboardingStepRow(
-                        systemImage: "books.vertical",
-                        title: "Katalog wählen",
-                        detail: "Wähle die Reihe, zu der deine Folge gehört."
-                    )
-                    OnboardingStepRow(
-                        systemImage: "number",
-                        title: "Folgennummer eingeben",
-                        detail: "Passende Titel erscheinen als Vorschlag."
-                    )
-                    OnboardingStepRow(
-                        systemImage: "checkmark.circle",
-                        title: "Gehört markieren",
-                        detail: "Bewertung und Notiz kannst du direkt ergänzen."
-                    )
-                }
-                .padding(.vertical, 4)
-
-                NavigationLink(value: NavigationDestination.addEpisode) {
-                    Label("Erste Folge anlegen", systemImage: "plus.circle.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-
-                Text("Kataloge, Stimmungen und Darstellung kannst du später in den Einstellungen anpassen.")
-                    .font(.footnote)
+            VStack(spacing: 8) {
+                Text("Dein HörspielLog ist bereit")
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text("Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen.")
+                    .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 48)
-            .frame(maxWidth: 520)
-            .frame(maxWidth: .infinity)
+
+            VStack(spacing: 12) {
+                OnboardingStepRow(
+                    systemImage: "books.vertical",
+                    title: "Katalog wählen",
+                    detail: "Wähle die Reihe, zu der deine Folge gehört."
+                )
+                OnboardingStepRow(
+                    systemImage: "number",
+                    title: "Folgennummer eingeben",
+                    detail: "Passende Titel erscheinen als Vorschlag."
+                )
+                OnboardingStepRow(
+                    systemImage: "checkmark.circle",
+                    title: "Gehört markieren",
+                    detail: "Bewertung und Notiz kannst du direkt ergänzen."
+                )
+            }
+            .padding(.vertical, 4)
+
+            Button(action: onAddFirstEpisode) {
+                Label("Erste Folge anlegen", systemImage: "plus.circle.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+
+            Text("Kataloge, Stimmungen und Darstellung kannst du später in den Einstellungen anpassen.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
-        .scrollIndicators(.hidden)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 48)
+        .frame(maxWidth: 520)
+        .frame(maxWidth: .infinity)
         .background(.background)
     }
 }
