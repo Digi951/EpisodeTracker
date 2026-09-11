@@ -434,4 +434,42 @@ final class NewsReconcilerTests: XCTestCase {
             "the watermark must survive so reactivating with an unchanged revision doesn't re-announce it"
         )
     }
+
+    // MARK: id-Kollision bei fehlender Nummer UND Slug (Review-Fund #6)
+
+    func testAddedEntryWithoutNumberAndWithoutSlugIsDiscardedInsteadOfCollidingWithAnother() {
+        let identityless = CatalogEntry(number: nil, slug: nil, title: "Ohne Identität", releaseYear: 2026, links: [:])
+        let withNumber = CatalogEntry(number: 241, title: "Meister des Lichts", releaseYear: 2026, links: [:])
+        let delta = CatalogEpisodeDelta(
+            catalogID: catalogID,
+            name: universeName,
+            previousVersion: 4,
+            currentVersion: 5,
+            previousEntryCount: 1,
+            currentEntryCount: 3,
+            addedEntries: [identityless, withNumber]
+        )
+
+        var document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+        document = NewsReconciler.reconcile(
+            document: document,
+            deltas: [delta],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        XCTAssertEqual(document.events.count, 1, "the identity-less entry must be discarded, not silently collide with the numbered one")
+        XCTAssertEqual(document.events.first?.episodeNumber, 241)
+    }
 }

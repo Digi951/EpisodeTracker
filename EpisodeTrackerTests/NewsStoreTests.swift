@@ -113,4 +113,37 @@ final class NewsStoreTests: XCTestCase {
 
         XCTAssertEqual(result, document)
     }
+
+    // MARK: - Cache (Review-Fund #7)
+
+    func testLoadIsCachedPerDirectoryURLAcrossInstances() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NewsStoreTests-\(UUID().uuidString)")
+        let storeA = NewsStore(directoryURL: tempDir)
+
+        var document = NewsStoreDocument()
+        document.hasEstablishedBaseline = true
+        try storeA.save(document)
+
+        // Datei extern beschädigen, ohne über `NewsStore.save` zu gehen —
+        // eine zweite Instanz für dasselbe Verzeichnis muss trotzdem den
+        // zwischengespeicherten, gültigen Stand liefern statt erneut von der
+        // (jetzt kaputten) Datei zu lesen.
+        let storeFile = tempDir.appendingPathComponent("NewsEvents.json")
+        try Data("not valid json { [".utf8).write(to: storeFile)
+
+        let storeB = NewsStore(directoryURL: tempDir)
+        XCTAssertEqual(storeB.load(), document)
+    }
+
+    func testLoadDoesNotLeakBetweenDifferentDirectoryURLs() throws {
+        let storeA = makeStore()
+        var documentA = NewsStoreDocument()
+        documentA.lastReconciledRevisions = ["marker": "a"]
+        try storeA.save(documentA)
+
+        let storeB = makeStore()
+
+        XCTAssertEqual(storeB.load(), NewsStoreDocument(), "a store for a different directory must never see storeA's cached document")
+    }
 }

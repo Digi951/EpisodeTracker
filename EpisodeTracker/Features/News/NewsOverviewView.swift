@@ -120,7 +120,7 @@ struct NewsOverviewView: View {
                 NewsEventRow(
                     event: event,
                     isBookmarkable: event.kind != .newCatalog,
-                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    isBookmarked: NewsBookmarkHandler.matchingEpisode(for: event, in: libraryEpisodes)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
                     onToggleBookmark: { toggleBookmark(on: event) },
                     onRowAppear: { markSeenOnRowAppear(event) }
@@ -145,7 +145,7 @@ struct NewsOverviewView: View {
                     NewsEventRow(
                     event: event,
                     isBookmarkable: event.kind != .newCatalog,
-                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    isBookmarked: NewsBookmarkHandler.matchingEpisode(for: event, in: libraryEpisodes)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
                     onToggleBookmark: { toggleBookmark(on: event) },
                     onRowAppear: { markSeenOnRowAppear(event) }
@@ -172,7 +172,7 @@ struct NewsOverviewView: View {
                     NewsEventRow(
                     event: event,
                     isBookmarkable: event.kind != .newCatalog,
-                    isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
+                    isBookmarked: NewsBookmarkHandler.matchingEpisode(for: event, in: libraryEpisodes)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
                     onToggleBookmark: { toggleBookmark(on: event) },
                     onRowAppear: { markSeenOnRowAppear(event) }
@@ -196,29 +196,12 @@ struct NewsOverviewView: View {
     }
 
     private func handleTap(on event: NewsEvent) {
-        if let episode = matchingLibraryEpisode(for: event) {
+        if let episode = NewsBookmarkHandler.matchingEpisode(for: event, in: libraryEpisodes) {
             selectedEpisode = episode
         } else {
             previewedEvent = event
         }
     }
-
-    private func matchingLibraryEpisode(for event: NewsEvent) -> Episode? {
-        let normalizedUniverse = CatalogLibraryMatcher.normalizedCollectionKey(event.universeName)
-        return libraryEpisodes.first { episode in
-            guard CatalogLibraryMatcher.normalizedCollectionKey(episode.universe?.name ?? "") == normalizedUniverse else {
-                return false
-            }
-            if let episodeNumber = event.episodeNumber {
-                return episode.episodeNumber == episodeNumber
-            }
-            if let slug = event.slug {
-                return episode.catalogSlug?.lowercased() == slug.lowercased()
-            }
-            return false
-        }
-    }
-
 }
 
 /// Titel-Tap und Merken-Button sind zwei GLEICHRANGIGE `Button`s in einer

@@ -29,6 +29,13 @@ enum NewsReconciler {
         for delta in deltas where activeCatalogIDs.contains(delta.catalogID) {
             let revision = String(delta.currentVersion ?? 0)
             for entry in delta.addedEntries {
+                // Ohne Nummer UND ohne Slug hätte die Zeile keine stabile
+                // Identität — `NewsEvent.id` würde auf "…-?" kollabieren und
+                // eine zweite solche Zeile stumm verschlucken. `CatalogEntry`
+                // selbst prüft das nicht (anders als `UpcomingRelease.init`),
+                // deshalb hier verwerfen statt eine Kollision zu riskieren
+                // (Review-Fund #6).
+                guard entry.number != nil || entry.slug != nil else { continue }
                 events.append(NewsEvent(
                     kind: .newEpisode,
                     universeName: delta.name,

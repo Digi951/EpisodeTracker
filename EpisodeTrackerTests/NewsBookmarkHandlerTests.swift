@@ -184,4 +184,38 @@ final class NewsBookmarkHandlerTests: XCTestCase {
 
         XCTAssertTrue(result === existingSpecial)
     }
+
+    // MARK: Doppel-Tipp-Rennen gegen einen veralteten @Query-Stand (Review-Fund #8)
+
+    func testSecondCallWithStaleSnapshotsFindsTheEpisodeTheFirstCallJustCreatedInsteadOfDuplicating() throws {
+        let context = try makeContext()
+        let event = makeEvent()
+
+        // Erster Tipp: legt Sammlung + Folge an. Der Aufrufer übergibt hier
+        // bewusst absichtlich LEERE Arrays für den zweiten Aufruf weiter unten
+        // — genau der veraltete @Query-Snapshot, den ein zweiter, schneller
+        // Tipp noch sehen könnte, bevor SwiftUI neu rendert hat.
+        let created = NewsBookmarkHandler.toggleBookmark(
+            for: event,
+            modelContext: context,
+            existingEpisodes: [],
+            existingUniverses: []
+        )
+        XCTAssertTrue(created.isBookmarked)
+
+        let second = NewsBookmarkHandler.toggleBookmark(
+            for: event,
+            modelContext: context,
+            existingEpisodes: [],
+            existingUniverses: []
+        )
+
+        XCTAssertTrue(second === created, "must find the episode the first call just inserted via the context, not via the stale snapshot")
+        XCTAssertFalse(second.isBookmarked, "the second tap toggles the freshly found episode back off")
+
+        let allEpisodes = try context.fetch(FetchDescriptor<Episode>())
+        let allUniverses = try context.fetch(FetchDescriptor<Universe>())
+        XCTAssertEqual(allEpisodes.count, 1, "a stale-snapshot double-tap must never create a second episode")
+        XCTAssertEqual(allUniverses.count, 1, "a stale-snapshot double-tap must never create a second universe")
+    }
 }

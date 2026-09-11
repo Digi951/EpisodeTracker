@@ -35,11 +35,26 @@ enum NewsBookmarkHandler {
             return existing
         }
 
-        let universe = matchingUniverse(for: event, in: existingUniverses) ?? {
-            let created = Universe(name: event.universeName)
-            modelContext.insert(created)
-            return created
-        }()
+        // `existingEpisodes`/`existingUniverses` sind der @Query-Stand des
+        // Aufrufers zum Zeitpunkt, an dem die Zeile zuletzt gerendert wurde —
+        // bei einem schnellen Doppel-Tipp auf denselben Button kann die
+        // zweite Berührung noch denselben (veralteten) Stand sehen, obwohl
+        // der erste Tipp bereits eine Folge angelegt hat (Review-Fund #8).
+        // Direkt gegen den Kontext nachschlagen schließt die Lücke, ohne auf
+        // den Aufrufer angewiesen zu sein.
+        if let freshMatch = freshMatchingEpisode(for: event, modelContext: modelContext) {
+            freshMatch.isBookmarked.toggle()
+            freshMatch.bookmarkedUpdatedAt = Date()
+            return freshMatch
+        }
+
+        let universe = matchingUniverse(for: event, in: existingUniverses)
+            ?? freshMatchingUniverse(for: event, modelContext: modelContext)
+            ?? {
+                let created = Universe(name: event.universeName)
+                modelContext.insert(created)
+                return created
+            }()
 
         let episode = Episode(
             episodeNumber: event.episodeNumber ?? 0,
@@ -75,6 +90,21 @@ enum NewsBookmarkHandler {
     private static func matchingUniverse(for event: NewsEvent, in universes: [Universe]) -> Universe? {
         let key = CatalogLibraryMatcher.normalizedCollectionKey(event.universeName)
         return universes.first { CatalogLibraryMatcher.normalizedCollectionKey($0.name) == key }
+    }
+
+    /// Letzte, verbindliche Prüfung direkt gegen den `ModelContext` — bewusst
+    /// nicht auf den vom Aufrufer übergebenen `@Query`-Snapshot verlassen
+    /// (Review-Fund #8).
+    @MainActor
+    private static func freshMatchingEpisode(for event: NewsEvent, modelContext: ModelContext) -> Episode? {
+        let allEpisodes = (try? modelContext.fetch(FetchDescriptor<Episode>())) ?? []
+        return matchingEpisode(for: event, in: allEpisodes)
+    }
+
+    @MainActor
+    private static func freshMatchingUniverse(for event: NewsEvent, modelContext: ModelContext) -> Universe? {
+        let allUniverses = (try? modelContext.fetch(FetchDescriptor<Universe>())) ?? []
+        return matchingUniverse(for: event, in: allUniverses)
     }
 
     /// `NewsEvent` trägt kein eigenes `releaseYear` — bei `.upcoming` liefert
