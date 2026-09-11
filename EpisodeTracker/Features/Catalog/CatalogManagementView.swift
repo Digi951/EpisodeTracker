@@ -343,6 +343,17 @@ struct CatalogToggleRow: View {
         "\(active) von \(total) aktiv"
     }
 
+    /// VoiceOver-Hinweis für den Toggle (Paket 6, P6-B): der Reihenname allein
+    /// verrät nicht, was ein Doppeltipp bewirkt. Der bestätigte
+    /// "Aktivieren"/"Deaktivieren"-Wortlaut (Glossar, Paket 5 D4, statt
+    /// "Abonnieren") ist damit erstmals als UI-Text vorhanden, nicht nur im
+    /// Systemwert "An"/"Aus" des Toggles.
+    static func activationAccessibilityHint(isActive: Bool) -> String {
+        isActive
+            ? String(localized: "Catalog.Toggle.DeactivateHint", defaultValue: "Deaktivieren")
+            : String(localized: "Catalog.Toggle.ActivateHint", defaultValue: "Aktivieren")
+    }
+
     private var subtitle: String {
         let store = CatalogCacheStore()
         let titleCount = store.loadRemoteCatalogStatus(
@@ -383,5 +394,6 @@ struct CatalogToggleRow: View {
                 }
             }
         }
+        .accessibilityHint(CatalogToggleRow.activationAccessibilityHint(isActive: isActive))
     }
 }

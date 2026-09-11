@@ -34,4 +34,20 @@ final class CatalogManagementViewTests: XCTestCase {
     func testActiveCountLabelWhenAllActive() {
         XCTAssertEqual(CatalogToggleRow.activeCountLabel(active: 4, total: 4), "4 von 4 aktiv")
     }
+
+    // MARK: - activationAccessibilityHint (Paket 6, P6-B)
+
+    func testActivationAccessibilityHintOffersToActivateWhenInactive() {
+        XCTAssertEqual(
+            CatalogToggleRow.activationAccessibilityHint(isActive: false),
+            String(localized: "Catalog.Toggle.ActivateHint", defaultValue: "Aktivieren")
+        )
+    }
+
+    func testActivationAccessibilityHintOffersToDeactivateWhenActive() {
+        XCTAssertEqual(
+            CatalogToggleRow.activationAccessibilityHint(isActive: true),
+            String(localized: "Catalog.Toggle.DeactivateHint", defaultValue: "Deaktivieren")
+        )
+    }
 }
