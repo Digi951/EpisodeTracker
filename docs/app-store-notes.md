@@ -58,6 +58,66 @@ Diese Version macht das Pflegen deiner Sammlung ein gutes Stück angenehmer.
 
 Dazu kommen viele Feinschliffe in der Folgenliste und unter der Haube. Danke, dass du HörspielLog nutzt. Viel Freude beim Hören!
 
+## App Store Copy — Français (FR)
+
+Paket 6, P6-D (V1.18). Struktur spiegelt die deutsche "App Store Copy"
+oben 1:1; Kernbegriffe folgen `docs/glossary-de-en-fr.md`. Produktname im
+Fließtext ist **AudioPlayLog**, nicht HörspielLog — das ist die bereits in
+Paket 5 bestätigte internationale Marke (`en.lproj`/`fr.lproj`
+`CFBundleDisplayName`, Release-Plan §6). "Nouveautés" übersetzt die
+tatsächlich aktuellste deutsche Update-Ankündigung (Version 1.7, unten
+unter "Review Notes Draft" abgelegt) statt der chronologisch früheren
+Version 1.6 direkt darüber.
+
+**Hinweis wie bei der UI-Übersetzung:** KI-gestützt und fachlich fundiert
+(Glossar-Begriffe konsistent verwendet), aber bislang **nicht
+muttersprachlich gegengeprüft** — dieselbe offene Gegenprüfung wie für die
+UI-Übersetzung (Paket 5, §6).
+
+### Sous-titre
+
+Retrouve facilement tes fictions audio
+
+### Texte promotionnel
+
+Garde une vue d'ensemble des épisodes écoutés, de tes notes et de tes remarques personnelles sur ta collection de fictions audio.
+
+### Description
+
+AudioPlayLog t'aide à organiser tes épisodes de fictions audio de façon claire.
+
+Marque les épisodes comme écoutés, attribue des notes, ajoute tes impressions personnelles et filtre ta collection par catalogue, humeur ou statut d'écoute.
+
+Les listes d'épisodes de nombreuses séries populaires sont déjà prêtes – parmi lesquelles Die drei ???, TKKG, Bibi Blocksberg, Benjamin Blümchen et Fünf Freunde. Ces catalogues peuvent être activés individuellement et sont mis à jour via des listes JSON publiques, ce qui rend disponibles de nouvelles séries et de nouveaux épisodes sans mise à jour de l'application.
+
+Chaque épisode peut s'ouvrir d'un simple geste directement dans Spotify ou Apple Music – pour de nombreux épisodes, les liens correspondants sont déjà renseignés. Tu choisis le service préféré dans les réglages.
+
+L'application ne fournit elle-même aucun contenu audio, ne diffuse aucune fiction audio et n'est affiliée à aucun éditeur ou détenteur de marque. Tes propres entrées, notes, remarques et sauvegardes restent sur ton appareil, sauf si tu les exportes toi-même.
+
+### Mots-clés
+
+fictions audio,épisodes,suivi,collection,notes,avis,catalogue
+
+### Nouveautés (Version 1.7)
+
+Cette version donne à l'application une touche plus personnelle et rend la vue de la pochette bien plus belle.
+
+• Choisis ta couleur : dans les réglages, tu peux désormais choisir parmi six couleurs d'accentuation – bleu, indigo, violet, sarcelle, vert ou rouge. La couleur choisie se retrouve dans toute l'application.
+
+• Nouvelle vue détaillée : la pochette d'un épisode remplit désormais tout l'arrière-plan – doucement floutée et teintée. La note, les humeurs et la remarque apparaissent sur une surface vitrée nette au premier plan.
+
+• Pochettes dans les widgets : les widgets « À suivre » et « Épisode aléatoire » affichent désormais la pochette de l'épisode – en arrière-plan doux dans le petit widget et en image d'aperçu dans le widget moyen.
+
+• Espace réservé dans la liste des épisodes : dès qu'un épisode a une pochette, tous les autres épisodes affichent une petite initiale de série en guise d'espace réservé – la liste paraît ainsi plus homogène.
+
+• Ajouter un épisode plus vite : le bouton plus flotte désormais en bas à droite – toujours à portée de main, comme dans les applications d'Apple.
+
+• iPad plus fiable : sur iPad, la bibliothèque et « À suivre » utilisent désormais entièrement la vue partagée. L'importation de catalogues et tous les boutons fonctionnent à nouveau correctement.
+
+• Derniers réglages : animations douces à l'ouverture et à la fermeture des groupes, retour haptique lors des actions.
+
+Merci d'utiliser AudioPlayLog. Bonne écoute !
+
 ## Future Freemium Model
 
 Version 1.0 should launch free and without In-App Purchases. Add StoreKit only after TestFlight feedback confirms the right product boundary.
