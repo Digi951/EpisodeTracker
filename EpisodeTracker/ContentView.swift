@@ -269,11 +269,15 @@ enum AppearanceMode: String, CaseIterable {
     case light
     case dark
 
+    // Paket 6, P6-C: beim FR-Sichtprüfungsdurchlauf gefunden — die drei
+    // Optionen waren hartkodiertes Deutsch ohne xcstrings-Eintrag und blieben
+    // in EN/FR-App-Sprache unübersetzt. Trivialer, risikofreier Fund direkt
+    // im selben Commit behoben (Plan §"P6-C").
     var title: String {
         switch self {
-        case .system: "System"
-        case .light: "Hell"
-        case .dark: "Dunkel"
+        case .system: String(localized: "Appearance.Mode.System", defaultValue: "System")
+        case .light: String(localized: "Appearance.Mode.Light", defaultValue: "Hell")
+        case .dark: String(localized: "Appearance.Mode.Dark", defaultValue: "Dunkel")
         }
     }
 
