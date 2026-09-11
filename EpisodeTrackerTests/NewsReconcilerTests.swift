@@ -391,4 +391,47 @@ final class NewsReconcilerTests: XCTestCase {
         XCTAssertEqual(document.events[0].kind, .newCatalog)
         XCTAssertEqual(document.events[0].catalogID, "tkkg")
     }
+
+    // MARK: removeEventsForDeactivatedCatalogs (Review-Fund #3)
+
+    func testRemoveEventsForDeactivatedCatalogsDropsOnlyInactiveCatalogEvents() {
+        let staysActive = NewsEvent(
+            kind: .newEpisode, universeName: universeName, catalogID: catalogID,
+            episodeNumber: 241, title: "Meister des Lichts", revision: "5", discoveredAt: now
+        )
+        let deactivated = NewsEvent(
+            kind: .newCatalog, universeName: "TKKG", catalogID: "tkkg",
+            title: "TKKG", revision: "tkkg", discoveredAt: now
+        )
+        var document = NewsStoreDocument()
+        document.events = [staysActive, deactivated]
+
+        let result = NewsReconciler.removeEventsForDeactivatedCatalogs(
+            document: document,
+            activeCatalogIDs: [catalogID]
+        )
+
+        XCTAssertEqual(result.events, [staysActive])
+    }
+
+    func testRemoveEventsForDeactivatedCatalogsLeavesLastReconciledRevisionsUntouched() {
+        let deactivated = NewsEvent(
+            kind: .newCatalog, universeName: "TKKG", catalogID: "tkkg",
+            title: "TKKG", revision: "tkkg", discoveredAt: now
+        )
+        var document = NewsStoreDocument()
+        document.events = [deactivated]
+        document.lastReconciledRevisions = [deactivated.id: "tkkg"]
+
+        let result = NewsReconciler.removeEventsForDeactivatedCatalogs(
+            document: document,
+            activeCatalogIDs: []
+        )
+
+        XCTAssertEqual(result.events, [])
+        XCTAssertEqual(
+            result.lastReconciledRevisions, document.lastReconciledRevisions,
+            "the watermark must survive so reactivating with an unchanged revision doesn't re-announce it"
+        )
+    }
 }

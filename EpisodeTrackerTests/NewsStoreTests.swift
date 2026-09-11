@@ -68,4 +68,49 @@ final class NewsStoreTests: XCTestCase {
 
         XCTAssertEqual(store.load().lastReconciledRevisions["run"], "4")
     }
+
+    // MARK: - markingSeen (Review-Fund #2)
+
+    func testMarkingSeenSetsSeenAtOnlyForTheMatchingUnseenEvent() {
+        let now = Date(timeIntervalSince1970: 1_789_000_000)
+        let target = NewsEvent(
+            kind: .newEpisode, universeName: "Die drei ???", catalogID: "die-drei-fragezeichen",
+            episodeNumber: 241, title: "Meister des Lichts", revision: "241", discoveredAt: now
+        )
+        let other = NewsEvent(
+            kind: .newCatalog, universeName: "TKKG", catalogID: "tkkg",
+            title: "TKKG", revision: "tkkg", discoveredAt: now
+        )
+        var document = NewsStoreDocument()
+        document.events = [target, other]
+
+        let result = document.markingSeen(eventID: target.id, now: now)
+
+        XCTAssertEqual(result.events.first { $0.id == target.id }?.seenAt, now)
+        XCTAssertNil(result.events.first { $0.id == other.id }?.seenAt, "unrelated events must stay untouched")
+    }
+
+    func testMarkingSeenIsANoOpWhenAlreadySeen() {
+        let now = Date(timeIntervalSince1970: 1_789_000_000)
+        let alreadySeenAt = now.addingTimeInterval(-3600)
+        let event = NewsEvent(
+            kind: .newEpisode, universeName: "Die drei ???", catalogID: "die-drei-fragezeichen",
+            episodeNumber: 241, title: "Meister des Lichts", revision: "241", discoveredAt: now, seenAt: alreadySeenAt
+        )
+        var document = NewsStoreDocument()
+        document.events = [event]
+
+        let result = document.markingSeen(eventID: event.id, now: now)
+
+        XCTAssertEqual(result, document, "must not overwrite an existing seenAt or otherwise change the document")
+    }
+
+    func testMarkingSeenIsANoOpForAnUnknownEventID() {
+        var document = NewsStoreDocument()
+        document.events = []
+
+        let result = document.markingSeen(eventID: "does-not-exist")
+
+        XCTAssertEqual(result, document)
+    }
 }

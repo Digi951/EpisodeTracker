@@ -22,15 +22,25 @@ struct NewsOverviewView: View {
     @Query(sort: \Episode.episodeNumber) private var libraryEpisodes: [Episode]
     @Query(sort: \Universe.name) private var libraryUniverses: [Universe]
 
+    /// Der tatsächlich zu speichernde Stand, inklusive der in dieser Sitzung
+    /// gesetzten `seenAt`-Markierungen.
     @State private var document: NewsStoreDocument = NewsStoreDocument()
+    /// Eingefrorene Momentaufnahme von `document` direkt nach dem Laden — die
+    /// gerenderten Bereiche leiten sich aus DIESER ab, nicht aus `document`.
+    /// Sonst würde eine Zeile, die 30+ Tage alt und ungesehen war, beim
+    /// Scrollen verschwinden, sobald `onRowAppear` sie als gesehen markiert
+    /// und sie dadurch die "ungesehen übersteht das Fenster"-Ausnahme verliert.
+    @State private var displayDocument: NewsStoreDocument = NewsStoreDocument()
     @State private var showAllNeuErschienen = false
     @State private var previewedEvent: NewsEvent?
     @State private var selectedEpisode: Episode?
+    @State private var hasScrolledToInitialFocus = false
+    @State private var hasUnsavedSeenChanges = false
 
     private var newsStore: NewsStore { NewsStore() }
 
     private var sections: NewsOverviewOrganizer.Sections {
-        NewsOverviewOrganizer.sections(from: document.events, showAllNeuErschienen: showAllNeuErschienen)
+        NewsOverviewOrganizer.sections(from: displayDocument.events, showAllNeuErschienen: showAllNeuErschienen)
     }
 
     var body: some View {
@@ -49,7 +59,15 @@ struct NewsOverviewView: View {
                         )
                     }
                 }
-                .onAppear {
+                // Erst scrollen, nachdem `displayDocument` geladen ist — beim
+                // ersten (leeren) Default-Zustand trägt noch keine Zeile die
+                // Sprungmarke, ein `scrollTo` in `.onAppear` würde ins Leere
+                // laufen (Review-Fund #4). `displayDocument` wird danach nie
+                // wieder verändert (siehe oben), der Flag ist hier nur eine
+                // Absicherung gegen ein erneutes Feuern.
+                .onChange(of: displayDocument) { _, _ in
+                    guard !hasScrolledToInitialFocus else { return }
+                    hasScrolledToInitialFocus = true
                     proxy.scrollTo(initialFocus, anchor: .top)
                 }
             }
@@ -61,7 +79,18 @@ struct NewsOverviewView: View {
                 }
             }
             .task {
-                loadAndMarkSeen()
+                let loaded = newsStore.load()
+                document = loaded
+                displayDocument = loaded
+            }
+            .onDisappear {
+                // Erst beim Verlassen des Screens auf einmal speichern, statt
+                // pro Zeile — die Gesehen-Markierungen selbst passieren in
+                // `NewsEventRow.onAppear` und betreffen dann nur tatsächlich
+                // gerenderte Zeilen (Review-Fund #2), nicht den ganzen Store.
+                if hasUnsavedSeenChanges {
+                    try? newsStore.save(document)
+                }
             }
             .sheet(item: $previewedEvent) { event in
                 NewsCatalogPreviewSheet(event: event)
@@ -70,6 +99,18 @@ struct NewsOverviewView: View {
                 EpisodeDetailView(episode: episode)
             }
         }
+    }
+
+    /// Markiert ein Ereignis erst dann als gesehen, wenn seine Zeile
+    /// tatsächlich gerendert wurde (`NewsEventRow.onAppear`) — nicht pauschal
+    /// jedes ungesehene Ereignis im Store, sobald der Screen überhaupt
+    /// geöffnet wird (Review-Fund #2). Rein in-memory; `onDisappear`
+    /// speichert einmalig.
+    private func markSeenOnRowAppear(_ event: NewsEvent) {
+        let updated = document.markingSeen(eventID: event.id)
+        guard updated != document else { return }
+        document = updated
+        hasUnsavedSeenChanges = true
     }
 
     @ViewBuilder
@@ -81,7 +122,8 @@ struct NewsOverviewView: View {
                     isBookmarkable: event.kind != .newCatalog,
                     isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
-                    onToggleBookmark: { toggleBookmark(on: event) }
+                    onToggleBookmark: { toggleBookmark(on: event) },
+                    onRowAppear: { markSeenOnRowAppear(event) }
                 )
             }
             if sections.hasHiddenOlderNeuErschienen {
@@ -105,7 +147,8 @@ struct NewsOverviewView: View {
                     isBookmarkable: event.kind != .newCatalog,
                     isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
-                    onToggleBookmark: { toggleBookmark(on: event) }
+                    onToggleBookmark: { toggleBookmark(on: event) },
+                    onRowAppear: { markSeenOnRowAppear(event) }
                 )
                 }
             } header: {
@@ -131,7 +174,8 @@ struct NewsOverviewView: View {
                     isBookmarkable: event.kind != .newCatalog,
                     isBookmarked: matchingLibraryEpisode(for: event)?.isBookmarked ?? false,
                     onTap: { handleTap(on: event) },
-                    onToggleBookmark: { toggleBookmark(on: event) }
+                    onToggleBookmark: { toggleBookmark(on: event) },
+                    onRowAppear: { markSeenOnRowAppear(event) }
                 )
                 }
             } header: {
@@ -175,19 +219,6 @@ struct NewsOverviewView: View {
         }
     }
 
-    private func loadAndMarkSeen() {
-        var loaded = newsStore.load()
-        let now = Date()
-        var didMarkAnySeen = false
-        for index in loaded.events.indices where loaded.events[index].seenAt == nil {
-            loaded.events[index].seenAt = now
-            didMarkAnySeen = true
-        }
-        document = loaded
-        if didMarkAnySeen {
-            try? newsStore.save(loaded)
-        }
-    }
 }
 
 /// Titel-Tap und Merken-Button sind zwei GLEICHRANGIGE `Button`s in einer
@@ -200,6 +231,10 @@ private struct NewsEventRow: View {
     let isBookmarked: Bool
     let onTap: () -> Void
     let onToggleBookmark: () -> Void
+    /// Feuert, wenn SwiftUI diese Zeile tatsächlich rendert — das ist der
+    /// Zeitpunkt, an dem das Ereignis als gesehen zählt (Review-Fund #2),
+    /// nicht schon beim bloßen Öffnen des Screens.
+    let onRowAppear: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -229,6 +264,7 @@ private struct NewsEventRow: View {
                 .accessibilityLabel(Text(isBookmarked ? "Von Merkliste entfernen" : "Auf Merkliste setzen"))
             }
         }
+        .onAppear(perform: onRowAppear)
     }
 }
 

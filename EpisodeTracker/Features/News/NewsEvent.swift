@@ -124,4 +124,20 @@ struct NewsStoreDocument: Codable, Equatable {
         self.events = events
         self.lastReconciledRevisions = lastReconciledRevisions
     }
+
+    /// Markiert genau ein Ereignis als gesehen, falls es noch ungesehen ist —
+    /// sonst ein No-op. Rein, ohne Seiteneffekt: der Aufrufer entscheidet, ob
+    /// und wann gespeichert wird. Gedacht für zeilenweises Markieren beim
+    /// tatsächlichen Rendern einer Zeile (Review-Fund #2) statt eines
+    /// pauschalen "alles im Store gilt als gesehen" beim Öffnen des Screens.
+    func markingSeen(eventID: String, now: Date = Date()) -> NewsStoreDocument {
+        var result = self
+        guard let index = result.events.firstIndex(where: { $0.id == eventID }),
+              result.events[index].seenAt == nil
+        else {
+            return self
+        }
+        result.events[index].seenAt = now
+        return result
+    }
 }

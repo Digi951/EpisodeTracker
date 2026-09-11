@@ -400,11 +400,15 @@ enum AppDataBootstrapper {
     /// Läuft, nachdem der vom Bootstrap entkoppelte Katalog-Refresh frische
     /// Manifest-/Katalogdaten geschrieben hat: gleicht Sonderfolgen-Slugs und
     /// Katalog-Stil erneut ab, damit ein neu geladener Anthologie-Katalog ohne
-    /// App-Neustart wirkt. Beide Reconciler sind idempotent.
+    /// App-Neustart wirkt. Auch `reconcileNewsEvents` läuft hier erneut —
+    /// sonst würden Neuigkeiten aus dem Refresh der laufenden Sitzung erst
+    /// beim nächsten App-Start sichtbar (Review-Fund #1). Alle drei Reconciler
+    /// sind idempotent.
     @MainActor
     static func reconcileAfterCatalogRefresh(container: ModelContainer) {
         reconcileSpecialEpisodes(container: container)
         reconcileCatalogStyles(container: container)
+        reconcileNewsEvents()
     }
 
     /// Macht die drei bestehenden ephemeren Katalogsignale dauerhaft (Paket 4,
@@ -442,6 +446,7 @@ enum AppDataBootstrapper {
             namesByCatalogID: namesByCatalogID,
             activeCatalogIDs: activeCatalogIDs
         )
+        document = NewsReconciler.removeEventsForDeactivatedCatalogs(document: document, activeCatalogIDs: activeCatalogIDs)
         document = NewsReconciler.pruneSeenEvents(document: document)
         try? newsStore.save(document)
     }

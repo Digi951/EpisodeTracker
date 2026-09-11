@@ -176,4 +176,21 @@ enum NewsReconciler {
         }
         return result
     }
+
+    /// Entfernt Ereignisse deaktivierter Kataloge aus dem Protokoll (Review-
+    /// Fund #3): `candidateEvents` verhindert nur, dass ein deaktivierter
+    /// Katalog NEUE Zeilen erzeugt — ohne diesen Schritt blieben bereits
+    /// bestehende Zeilen (inklusive funktionierendem Merken-Button) unbegrenzt
+    /// sichtbar, obwohl §3 "Deaktivieren stoppt … Neuigkeiten dieser Reihe"
+    /// verlangt. `lastReconciledRevisions` bleibt unangetastet, damit eine
+    /// spätere Reaktivierung mit unveränderter Revision nicht sofort erneut
+    /// meldet.
+    static func removeEventsForDeactivatedCatalogs(
+        document: NewsStoreDocument,
+        activeCatalogIDs: Set<String>
+    ) -> NewsStoreDocument {
+        var result = document
+        result.events.removeAll { !activeCatalogIDs.contains($0.catalogID) }
+        return result
+    }
 }
