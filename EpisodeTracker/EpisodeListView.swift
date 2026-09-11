@@ -19,8 +19,7 @@ struct EpisodeListView: View {
     @State private var showingAddEpisode = false
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
-    @State private var showingUpcomingReleases = false
-    @AppStorage("seenUpcomingReleaseIDs") private var seenUpcomingReleaseIDsRaw = ""
+    @State private var showingNewsOverview = false
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -84,8 +83,10 @@ struct EpisodeListView: View {
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
-    private var upcomingReleasesFeed: UpcomingReleasesFeed {
-        .current(seenReleaseIDsRaw: seenUpcomingReleaseIDsRaw)
+    /// Badge am Kalender-Symbol: unabhängig vom `NewsOverviewView`, das seine
+    /// eigenen Ereignisse erst beim Öffnen als gesehen markiert.
+    private var hasUnseenUpcomingNews: Bool {
+        NewsStore().load().events.contains { $0.kind == .upcoming && $0.seenAt == nil }
     }
 
     var body: some View {
@@ -131,7 +132,7 @@ struct EpisodeListView: View {
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showingUpcomingReleases = true
+                        showingNewsOverview = true
                     } label: {
                         // Eingebautes Symbol-Badge statt eines eigenen Overlays: das
                         // sitzt immer am Glyph, egal wie groß der Button-Rahmen ist,
@@ -144,7 +145,7 @@ struct EpisodeListView: View {
                     // damit der Punkt am Symbol klebt und nicht frei zwischen den
                     // Toolbar-Symbolen schwebt.
                     .overlay(alignment: .topTrailing) {
-                        if upcomingReleasesFeed.hasUnseen {
+                        if hasUnseenUpcomingNews {
                             Circle()
                                 .fill(.red)
                                 .frame(width: 7, height: 7)
@@ -182,14 +183,8 @@ struct EpisodeListView: View {
                 EpisodeEditView()
             }
         }
-        .sheet(isPresented: $showingUpcomingReleases) {
-            UpcomingReleasesSheet(feed: upcomingReleasesFeed)
-        }
-        .onChange(of: showingUpcomingReleases) { _, isShowing in
-            guard isShowing else { return }
-            // Nur die aktuell sichtbaren IDs merken - erschienene Folgen fallen
-            // damit automatisch wieder aus der gespeicherten Menge heraus.
-            seenUpcomingReleaseIDsRaw = upcomingReleasesFeed.visibleReleaseIDs.sorted().joined(separator: ",")
+        .sheet(isPresented: $showingNewsOverview) {
+            NewsOverviewView(initialFocus: .baldVerfuegbar)
         }
         .task {
             await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()

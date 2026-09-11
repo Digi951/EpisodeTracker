@@ -10,17 +10,42 @@ struct CatalogUpdateBannerRow: View {
     let style: CatalogUpdateBannerStyle
 
     @AppStorage("dismissedCatalogBannerFingerprint") private var dismissedBannerFingerprint = ""
+    @State private var newsOverviewFocus: NewsOverviewSection?
+
+    /// `nil` (kein Fokus, Banner nicht antippbar) für `.removed` — eine
+    /// Katalogentfernung ist kein `NewsEvent` und hat keine sinnvolle
+    /// Zielansicht (Paket 4, P4-G).
+    private func initialFocus(for origin: CatalogUpdateBannerRecommendation.Origin) -> NewsOverviewSection? {
+        switch origin {
+        case .newEpisodes: .neuErschienen
+        case .newCatalogs: .neueReihen
+        case .removed: nil
+        }
+    }
 
     var body: some View {
         if let recommendation, recommendation.fingerprint != dismissedBannerFingerprint {
-            CatalogUpdateBannerView(recommendation: recommendation, style: style) {
-                withAnimation { dismissedBannerFingerprint = recommendation.fingerprint }
-            }
+            CatalogUpdateBannerView(
+                recommendation: recommendation,
+                style: style,
+                onTap: initialFocus(for: recommendation.origin).map { focus in
+                    { newsOverviewFocus = focus }
+                },
+                onDismiss: {
+                    withAnimation { dismissedBannerFingerprint = recommendation.fingerprint }
+                }
+            )
             .listRowInsets(style == .sidebar
                 ? EdgeInsets(top: 0, leading: 10, bottom: 10, trailing: 10)
                 : EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
+            .sheet(isPresented: Binding(
+                get: { newsOverviewFocus != nil },
+                set: { if !$0 { newsOverviewFocus = nil } }
+            )) {
+                NewsOverviewView(initialFocus: newsOverviewFocus ?? .neuErschienen)
+            }
         }
     }
 }
@@ -28,6 +53,9 @@ struct CatalogUpdateBannerRow: View {
 struct CatalogUpdateBannerView: View {
     let recommendation: CatalogUpdateBannerRecommendation
     let style: CatalogUpdateBannerStyle
+    /// `nil` für Herkünfte ohne sinnvolles Ziel (`.removed`) — das Banner
+    /// bleibt dann wie zuvor rein informativ, nur mit Schließen-Button.
+    var onTap: (() -> Void)?
     let onDismiss: () -> Void
 
     private var isSidebar: Bool {
@@ -42,6 +70,32 @@ struct CatalogUpdateBannerView: View {
     }
 
     var body: some View {
+        HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
+            // Icon + Text sind ein eigener Button, das Schließen-Kreuz ein
+            // gleichrangiger Geschwister-Button daneben — kein verschachtelter
+            // Button, damit beide ihr eigenes Tipp-Ziel behalten.
+            content
+                .modifier(TappableIfPresent(onTap: onTap))
+
+            Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(.secondary.opacity(0.12), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(isSidebar ? 12 : 14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var content: some View {
         HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
             Image(systemName: recommendation.iconName)
                 .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
@@ -63,22 +117,27 @@ struct CatalogUpdateBannerView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
 
-            Button {
-                onDismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
-                    .background(.secondary.opacity(0.12), in: Circle())
+/// Wraps `content` in a plain `Button` only when `onTap` is non-nil — a
+/// `.removed`-Banner bleibt unverändert unantippbar.
+private struct TappableIfPresent: ViewModifier {
+    let onTap: (() -> Void)?
+
+    func body(content: Content) -> some View {
+        if let onTap {
+            Button(action: onTap) {
+                content
             }
             .buttonStyle(.plain)
+            .accessibilityHint(Text("Öffnet Details"))
+        } else {
+            content
         }
-        .padding(isSidebar ? 12 : 14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .combine)
     }
 }
 

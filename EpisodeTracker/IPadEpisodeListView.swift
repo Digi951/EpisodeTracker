@@ -56,11 +56,12 @@ private struct IPadEpisodeListView: View {
     @State private var isEditing = false
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
-    @State private var showingUpcomingReleases = false
-    @AppStorage("seenUpcomingReleaseIDs") private var seenUpcomingReleaseIDsRaw = ""
+    @State private var showingNewsOverview = false
 
-    private var upcomingReleasesFeed: UpcomingReleasesFeed {
-        .current(seenReleaseIDsRaw: seenUpcomingReleaseIDsRaw)
+    /// Badge am Kalender-Symbol: unabhängig vom `NewsOverviewView`, das seine
+    /// eigenen Ereignisse erst beim Öffnen als gesehen markiert.
+    private var hasUnseenUpcomingNews: Bool {
+        NewsStore().load().events.contains { $0.kind == .upcoming && $0.seenAt == nil }
     }
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
@@ -173,13 +174,13 @@ private struct IPadEpisodeListView: View {
                     }
                 } else {
                     Button {
-                        showingUpcomingReleases = true
+                        showingNewsOverview = true
                     } label: {
                         Image(systemName: "calendar")
                     }
                     .accessibilityLabel("Bald verf\u{00FC}gbar")
                     .overlay(alignment: .topTrailing) {
-                        if upcomingReleasesFeed.hasUnseen {
+                        if hasUnseenUpcomingNews {
                             Circle()
                                 .fill(.red)
                                 .frame(width: 7, height: 7)
@@ -224,14 +225,8 @@ private struct IPadEpisodeListView: View {
                 EpisodeEditView()
             }
         }
-        .sheet(isPresented: $showingUpcomingReleases) {
-            UpcomingReleasesSheet(feed: upcomingReleasesFeed)
-        }
-        .onChange(of: showingUpcomingReleases) { _, isShowing in
-            guard isShowing else { return }
-            // Nur die aktuell sichtbaren IDs merken - erschienene Folgen fallen
-            // damit automatisch wieder aus der gespeicherten Menge heraus.
-            seenUpcomingReleaseIDsRaw = upcomingReleasesFeed.visibleReleaseIDs.sorted().joined(separator: ",")
+        .sheet(isPresented: $showingNewsOverview) {
+            NewsOverviewView(initialFocus: .baldVerfuegbar)
         }
         .task {
             await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()

@@ -10,6 +10,7 @@ struct UpNextView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
     @State private var showingInfo: SmartListDefinition?
     @State private var showingEditSheet = false
+    @State private var showingNewsOverview = false
     @State private var renameFilter: SavedFilter?
     @State private var renameText = ""
     @Binding var iPadNavSelection: SmartListNavigation?
@@ -30,6 +31,12 @@ struct UpNextView: View {
             catalogEntries: EpisodeCatalog.shared.allEntries,
             libraryEpisodes: episodes
         )
+    }
+
+    /// Badge am "Neuigkeiten"-Symbol — unabhängig von `NewsOverviewView`, das
+    /// seine Ereignisse erst beim Öffnen als gesehen markiert.
+    private var hasUnseenNews: Bool {
+        NewsStore().load().events.contains { $0.seenAt == nil }
     }
 
     private func count(for smartList: SmartListDefinition) -> Int {
@@ -76,6 +83,22 @@ struct UpNextView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    showingNewsOverview = true
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+                .accessibilityLabel("Neuigkeiten")
+                .overlay(alignment: .topTrailing) {
+                    if hasUnseenNews {
+                        Circle()
+                            .fill(.red)
+                            .frame(width: 7, height: 7)
+                            .offset(x: -1, y: 1)
+                    }
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     showingEditSheet = true
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -87,6 +110,9 @@ struct UpNextView: View {
                 hiddenSmartListsRaw: $hiddenSmartListsRaw,
                 smartListOrderRaw: $smartListOrderRaw
             )
+        }
+        .sheet(isPresented: $showingNewsOverview) {
+            NewsOverviewView()
         }
         .sheet(item: $showingInfo) { smartList in
             SmartListInfoSheet(smartList: smartList)

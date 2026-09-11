@@ -1,12 +1,22 @@
 import Foundation
 
 struct CatalogUpdateBannerRecommendation: Equatable {
+    /// Wohin ein Tap auf das Banner führt (Paket 4, P4-G): neue Folgen und neue
+    /// Reihen öffnen `NewsOverviewView` mit dem passenden Fokus, ein
+    /// Entfernungs-Banner bleibt unverändert nicht antippbar.
+    enum Origin: Equatable {
+        case newEpisodes
+        case newCatalogs
+        case removed
+    }
+
     let missingEpisodeCount: Int
     let universeCount: Int
     let firstUniverseName: String
     let firstEpisodeTitle: String
     let iconName: String
     let iconColorName: String
+    let origin: Origin
     private let titleText: String
     private let messageText: String
     private let compactMessageText: String
@@ -23,6 +33,7 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         self.firstEpisodeTitle = firstEpisodeTitle
         self.iconName = "text.badge.plus"
         self.iconColorName = "green"
+        self.origin = .newEpisodes
         titleText = missingEpisodeCount == 1
             ? String(localized: "CatalogUpdate.NewEpisodes.Title.One", defaultValue: "1 neue Katalogfolge")
             : AppLocalization.format(
@@ -63,7 +74,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         firstUniverseName: String,
         firstEpisodeTitle: String,
         iconName: String = "text.badge.plus",
-        iconColorName: String = "green"
+        iconColorName: String = "green",
+        origin: Origin = .newEpisodes
     ) {
         self.missingEpisodeCount = missingEpisodeCount
         self.universeCount = universeCount
@@ -71,6 +83,7 @@ struct CatalogUpdateBannerRecommendation: Equatable {
         self.firstEpisodeTitle = firstEpisodeTitle
         self.iconName = iconName
         self.iconColorName = iconColorName
+        self.origin = origin
         titleText = title
         messageText = message
         compactMessageText = compactMessage
@@ -127,7 +140,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
             firstUniverseName: names[0],
             firstEpisodeTitle: names[0],
             iconName: "text.badge.minus",
-            iconColorName: "orange"
+            iconColorName: "orange",
+            origin: .removed
         )
     }
 
@@ -164,7 +178,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
             missingEpisodeCount: 0,
             universeCount: availability.count,
             firstUniverseName: firstName,
-            firstEpisodeTitle: firstName
+            firstEpisodeTitle: firstName,
+            origin: .newCatalogs
         )
     }
 
@@ -201,7 +216,8 @@ struct CatalogUpdateBannerRecommendation: Equatable {
             missingEpisodeCount: 0,
             universeCount: availability.count,
             firstUniverseName: firstName,
-            firstEpisodeTitle: firstName
+            firstEpisodeTitle: firstName,
+            origin: .newCatalogs
         )
     }
 
