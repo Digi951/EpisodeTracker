@@ -111,6 +111,13 @@ enum NewsReconciler {
     /// aber Revision anders (z. B. verschobener Termin) → bestehende Zeile
     /// in place aktualisiert und `seenAt` zurückgesetzt, keine Dublette
     /// (Datenvertrag §4.D3/D4).
+    ///
+    /// `upcoming_releases.json` wird automatisch erzeugt und garantiert keine
+    /// eindeutigen Zeilen je Ereignis-Identität (Datenvertrag §4.D4) — trägt
+    /// derselbe Lauf mehrere konfligierende Zeilen für dieselbe `id`, gewinnt
+    /// die letzte in Dokumentreihenfolge (= Rezenz), weil `candidates` der
+    /// Reihe nach verarbeitet wird und ein späterer Kandidat einen zuvor in
+    /// diesem Lauf geschriebenen Eintrag erneut in place überschreibt.
     static func reconcile(
         document: NewsStoreDocument,
         deltas: [CatalogEpisodeDelta],

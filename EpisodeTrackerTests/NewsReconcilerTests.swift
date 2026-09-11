@@ -250,6 +250,41 @@ final class NewsReconcilerTests: XCTestCase {
         XCTAssertEqual(result.events, document.events, "withdrawal must not delete or auto-release the existing row")
     }
 
+    func testConflictingSimultaneousUpcomingLinesAreResolvedByLastLineWins() {
+        // upcoming_releases.json ist automatisch erzeugt und garantiert keine
+        // eindeutigen Zeilen (Datenvertrag §4.D4) — zwei Zeilen für dieselbe
+        // Folge mit unterschiedlichem Termin im selben Lauf müssen zu genau
+        // einer Zeile mit dem Termin der letzten Dokumentzeile führen.
+        let earlierDate = Calendar.current.startOfDay(for: now)
+        let laterDate = Calendar.current.date(byAdding: .day, value: 3, to: earlierDate)!
+        let staleLine = UpcomingRelease(catalogID: catalogID, number: 246, title: "Alte Fassung", releaseDate: earlierDate)
+        let freshLine = UpcomingRelease(catalogID: catalogID, number: 246, title: "Der Pakt", releaseDate: laterDate)
+
+        var document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        document = NewsReconciler.reconcile(
+            document: document,
+            deltas: [],
+            availability: nil,
+            upcoming: [staleLine, freshLine],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        XCTAssertEqual(document.events.count, 1, "conflicting lines for the same event must collapse into one row")
+        XCTAssertEqual(document.events[0].title, "Der Pakt")
+        XCTAssertEqual(document.events[0].revision, CalendarDayFormatter.string(from: laterDate))
+    }
+
     func testNewCatalogAvailabilityProducesOneEventPerSource() {
         var document = NewsReconciler.establishBaselineIfNeeded(
             document: NewsStoreDocument(),
