@@ -119,22 +119,31 @@ final class EpisodeCatalog {
     ///
     /// Nebenläufige Aufrufe ohne `force` teilen sich einen laufenden Refresh
     /// (`inFlightRefresh`), damit Vordergrund-Rückkehr und ein manueller Aufruf
-    /// nicht denselben Fetch-Satz doppelt auslösen.
+    /// nicht denselben Fetch-Satz doppelt auslösen. Ein `force`-Aufruf teilt sich
+    /// diesen Lauf nicht (er braucht garantiert frische Daten, ein laufender
+    /// gedrosselter Refresh könnte intern selbst noch überspringen) — er wartet
+    /// aber den laufenden Refresh ab, bevor er seinen eigenen startet, damit nie
+    /// zwei Läufe gleichzeitig in dieselben Cache-Dateien schreiben.
     @discardableResult
     func refreshManagedCatalogsIfNeeded(force: Bool = false, ignoringThrottle: Bool = false) async -> CatalogRefreshOutcome {
-        if !force, let inFlightRefresh {
-            return await inFlightRefresh.value
+        if let inFlightRefresh {
+            let priorOutcome = await inFlightRefresh.value
+            if !force { return priorOutcome }
         }
 
         let task = Task { await self.performManagedCatalogsRefresh(force: force, ignoringThrottle: ignoringThrottle) }
-        let didRegister = !force
-        if didRegister { inFlightRefresh = task }
+        inFlightRefresh = task
         let outcome = await task.value
-        if didRegister { inFlightRefresh = nil }
+        inFlightRefresh = nil
         return outcome
     }
 
     private func performManagedCatalogsRefresh(force: Bool, ignoringThrottle: Bool) async -> CatalogRefreshOutcome {
+        // Hängt an keiner Manifest-Information, darf also parallel zum
+        // Manifest-Abruf selbst starten statt auf dessen Ergebnis zu warten —
+        // der `async let` startet sofort und wird erst am Ende abgeholt.
+        async let upcomingResult = refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
+
         let manifestResult = await refreshManifestIfNeeded(force: force, ignoringThrottle: ignoringThrottle)
         pruneOrphanedCatalogs()
 
@@ -142,44 +151,30 @@ final class EpisodeCatalog {
         let sourcesToRefresh = managedSources.filter { activeCatalogIDs.contains($0.id) }
 
         var sourceResults: [CatalogRefreshOutcome.SourceResult] = []
-        var upcomingResult: CatalogRefreshOutcome.SourceResult?
 
         // Child tasks stay MainActor-isolated, so the per-catalog disk writes (no
         // await inside them) still run to completion one at a time. Only the
         // network awaits overlap, which is the actual point of parallelizing.
-        await withTaskGroup(of: RefreshSlot.self) { group in
-            // Hängt an keiner Manifest-Information, darf also parallel zu den
-            // Katalogen laufen statt den Start der Gruppe zu verzögern.
-            group.addTask { @MainActor in
-                .upcoming(await self.refreshUpcomingReleasesIfNeeded(force: force, ignoringThrottle: ignoringThrottle))
-            }
+        await withTaskGroup(of: CatalogRefreshOutcome.SourceResult?.self) { group in
             for source in sourcesToRefresh {
                 group.addTask { @MainActor in
-                    .source(await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle))
+                    await self.refreshManagedCatalogIfNeeded(source: source, force: force, ignoringThrottle: ignoringThrottle)
                 }
             }
-            for await slot in group {
-                switch slot {
-                case .upcoming(let result): upcomingResult = result
-                case .source(let result): if let result { sourceResults.append(result) }
-                }
+            for await result in group {
+                if let result { sourceResults.append(result) }
             }
         }
         reload()
 
         let outcome = CatalogRefreshOutcome(
             manifest: manifestResult,
-            upcoming: upcomingResult,
+            upcoming: await upcomingResult,
             sources: sourceResults
         )
         lastRefreshOutcome = outcome
         lastRefreshError = Self.derivedRefreshError(from: outcome)
         return outcome
-    }
-
-    private enum RefreshSlot {
-        case source(CatalogRefreshOutcome.SourceResult?)
-        case upcoming(CatalogRefreshOutcome.SourceResult?)
     }
 
     @discardableResult
@@ -225,7 +220,13 @@ final class EpisodeCatalog {
             case .updated(let data, let eTag, let lastModified):
                 let previousSources = cacheStore.loadManifest()?.catalogs ?? CatalogSourceRegistry.fallbackManagedSources
                 let manifest = try parser.parseManifest(from: data)
-                let filteredCatalogs = manifest.catalogs.filter(\.matchesDeviceLanguage)
+                // Same projection as `visibleSources`, not the device-language-only
+                // `matchesDeviceLanguage`: a catalog only visible through an added
+                // catalog language must still trigger the "new catalogs" banner.
+                let filteredCatalogs = CatalogSourceRegistry.narrowed(
+                    manifest.catalogs,
+                    toLanguages: CatalogLanguageFilterStore().selectedLanguages
+                )
                 let newSources = newCatalogSources(in: filteredCatalogs, previousSources: previousSources)
                 updateNewCatalogAvailability(newSources.isEmpty ? nil : NewCatalogAvailability(sources: newSources))
                 try cacheStore.saveManifest(manifest)

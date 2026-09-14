@@ -360,7 +360,10 @@ enum AppDataBootstrapper {
 
         CatalogStyleReconciler.reconcile(
             universes: universes,
-            sources: CatalogSourceRegistry.managedSources
+            // allKnownSources, not the language-filtered managedSources: a
+            // collection can stay bound/active after its catalog language is
+            // deselected, and its style still needs to reconcile correctly.
+            sources: CatalogSourceRegistry.allKnownSources
         )
         try? context.save()
     }
@@ -397,6 +400,27 @@ enum AppDataBootstrapper {
         userDefaults.set(true, forKey: catalogBindingAdoptionKey)
     }
 
+    /// Ungegatete Variante von `adoptCatalogBindingsIfNeeded` für den
+    /// CloudKit-Reparaturpfad (`SyncCoordinator.repairIfNeeded`): das
+    /// einmalige Backfill-Flag kann schon verbraucht sein, bevor ein später
+    /// per CloudKit eintreffendes, noch unbound Duplikat von `EntityDeduplicator`
+    /// zusammengeführt wird — `CatalogBindingReconciler.reconcile` ist
+    /// idempotent und günstig (reines lokales Namensmatching, kein Netz-I/O),
+    /// darf also bei jeder Reparatur erneut laufen.
+    @MainActor
+    static func reconcileCatalogBindings(container: ModelContainer) {
+        let context = container.mainContext
+        guard let universes = try? context.fetch(FetchDescriptor<Universe>()), !universes.isEmpty else { return }
+
+        let result = CatalogBindingReconciler.reconcile(
+            universes: universes,
+            sources: CatalogSourceRegistry.allKnownSources
+        )
+        if result.bound > 0 {
+            try? context.save()
+        }
+    }
+
     /// Läuft, nachdem der vom Bootstrap entkoppelte Katalog-Refresh frische
     /// Manifest-/Katalogdaten geschrieben hat: gleicht Sonderfolgen-Slugs und
     /// Katalog-Stil erneut ab, damit ein neu geladener Anthologie-Katalog ohne
@@ -420,8 +444,11 @@ enum AppDataBootstrapper {
         cacheStore: CatalogCacheStore = CatalogCacheStore(),
         activeCatalogStore: ActiveCatalogStore = ActiveCatalogStore()
     ) {
+        // allKnownSources, not the language-filtered managedSources: an active/
+        // bound catalog whose language was later deselected must still resolve
+        // to its real name here instead of falling back to the raw catalog ID.
         let namesByCatalogID = Dictionary(
-            CatalogSourceRegistry.managedSources.map { ($0.id, $0.name) },
+            CatalogSourceRegistry.allKnownSources.map { ($0.id, $0.name) },
             uniquingKeysWith: { first, _ in first }
         )
         let activeCatalogIDs = activeCatalogStore.activeIDs

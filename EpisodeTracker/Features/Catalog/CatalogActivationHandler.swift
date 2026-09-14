@@ -37,6 +37,9 @@ final class CatalogActivationHandler {
     /// The in-flight refresh per source. Exposed only so tests can await a
     /// refresh deterministically; the view never reads it.
     private(set) var refreshTasks: [String: Task<Void, Never>] = [:]
+    /// Captured from the `modelContext` passed to `activate`, so `retry` (which
+    /// only gets the source) can still run the post-refresh reconciliation.
+    private var lastContainer: ModelContainer?
 
     init(refresher: any ManagedCatalogRefreshing = EpisodeCatalog.shared) {
         self.refresher = refresher
@@ -54,6 +57,7 @@ final class CatalogActivationHandler {
         modelContext: ModelContext,
         existingUniverses: [Universe]
     ) {
+        lastContainer = modelContext.container
         bind(source: source, modelContext: modelContext, existingUniverses: existingUniverses)
         startRefresh(sourceID: source.id, sourceName: source.name)
     }
@@ -87,6 +91,9 @@ final class CatalogActivationHandler {
         states[sourceID] = .running
         refreshTasks[sourceID] = Task {
             let outcome = await refresher.refreshManagedCatalog(universeName: sourceName, force: true)
+            if let lastContainer {
+                AppDataBootstrapper.reconcileAfterCatalogRefresh(container: lastContainer)
+            }
             states[sourceID] = Self.resultState(from: outcome, sourceID: sourceID, sourceName: sourceName)
         }
     }

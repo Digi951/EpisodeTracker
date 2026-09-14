@@ -306,6 +306,7 @@ struct CatalogManagementView: View {
         catalogStatusMessage = nil
         Task {
             await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
+            AppDataBootstrapper.reconcileAfterCatalogRefresh(container: modelContext.container)
             await MainActor.run {
                 isRefreshingCatalogs = false
                 if let error = EpisodeCatalog.shared.lastRefreshError {

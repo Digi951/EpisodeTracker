@@ -69,7 +69,10 @@ struct EpisodeTrackerApp: App {
                     if didRunInitialCatalogRefresh {
                         // Gedrosselt: kein ignoringThrottle, `shouldRefresh` (6h)
                         // entscheidet. Nebenläufige Aufrufe teilen sich den Lauf.
-                        Task { await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded() }
+                        Task { @MainActor in
+                            _ = await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded()
+                            AppDataBootstrapper.reconcileAfterCatalogRefresh(container: containerSet.primary)
+                        }
                     }
                 }
             }

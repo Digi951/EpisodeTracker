@@ -75,6 +75,10 @@ final class SyncCoordinator {
         if summary.hasChanges {
             logger.info("SyncCoordinator: repair completed with changes (\(summary.logDescription, privacy: .public))")
         }
+        // A CloudKit-merged duplicate collection can surface here after the
+        // one-shot bootstrap binding backfill already ran — reconcile bindings
+        // again so a newly-deduplicated survivor doesn't stay unbound forever.
+        AppDataBootstrapper.reconcileCatalogBindings(container: container)
 
         isRepairing = false
     }

@@ -21,4 +21,13 @@ enum CatalogStyle: String, Codable, Sendable, CaseIterable {
     var usesEpisodeNumbers: Bool {
         self == .numbered
     }
+
+    /// `numbered` is the implicit default (`resolve` falls back to it for a
+    /// missing/unknown raw value) — any other case is an explicitly declared,
+    /// more specific style. Merge/reconciliation logic should prefer a
+    /// declared style over the default rather than special-casing `.anthology`
+    /// by name, so a future third case keeps working here automatically.
+    var isDefault: Bool {
+        self == .numbered
+    }
 }

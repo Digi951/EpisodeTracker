@@ -177,8 +177,8 @@ enum EntityDeduplicator {
     /// `numbered` kann „nie gesetzt" bedeuten, `anthology` ist immer eine
     /// bewusste Deklaration aus dem Manifest.
     static func mergeUniverseStyle(from loser: Universe, into winner: Universe) {
-        if loser.style == .anthology {
-            winner.style = .anthology
+        if winner.style.isDefault, !loser.style.isDefault {
+            winner.style = loser.style
         }
     }
 
