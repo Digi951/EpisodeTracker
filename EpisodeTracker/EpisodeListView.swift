@@ -496,9 +496,22 @@ private struct EmptyLibraryOnboardingView: View {
             .padding(.vertical, 4)
 
             Button(action: onAddFirstEpisode) {
-                Label("Erste Folge anlegen", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
+                // Text unabhängig vom Icon zentrieren: ein Label als Block zu
+                // zentrieren (z. B. via .frame(maxWidth: .infinity) auf dem
+                // Label) zentriert Icon+Text zusammen, wodurch der Text durch
+                // das linke Icon optisch nach rechts verschoben wirkt. Der
+                // ZStack zentriert nur den Text; das Icon liegt unabhängig
+                // davon links.
+                ZStack {
+                    Text("Erste Folge anlegen")
+                        .font(.headline)
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.headline)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
