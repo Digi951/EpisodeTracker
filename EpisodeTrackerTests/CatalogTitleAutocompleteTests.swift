@@ -82,6 +82,38 @@ final class CatalogTitleAutocompleteTests: XCTestCase {
         XCTAssertEqual(suggestions.last?.number, 12)
     }
 
+    func testSuggestionsMatchTitlesRegardlessOfDiacritics() {
+        let entries = [
+            entry(nil, "Astérix chez les Bretons", "Astérix", slug: "asterix-chez-les-bretons")
+        ]
+
+        let suggestions = CatalogTitleAutocomplete.suggestions(
+            for: "Asterix",
+            entries: entries,
+            activeCollectionNames: ["astérix"],
+            selectedCollectionName: "Astérix",
+            existingEpisodeNumbersByCollection: [:]
+        )
+
+        XCTAssertEqual(suggestions.map(\.title), ["Astérix chez les Bretons"])
+    }
+
+    private func entry(
+        _ number: Int?,
+        _ title: String,
+        _ collectionName: String,
+        slug: String? = nil
+    ) -> CatalogEntry {
+        CatalogEntry(
+            number: number,
+            kind: slug == nil ? .regular : .special,
+            slug: slug,
+            title: title,
+            releaseYear: 2020,
+            collectionName: collectionName
+        )
+    }
+
     private func entry(_ number: Int, _ title: String, _ collectionName: String) -> CatalogEntry {
         CatalogEntry(
             number: number,

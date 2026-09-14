@@ -30,7 +30,11 @@ enum CatalogTitleAutocomplete {
                 guard !alreadyInLibraryByNumber else {
                     return false
                 }
-                return entry.title.localizedCaseInsensitiveContains(normalizedQuery)
+                return entry.title.range(
+                    of: normalizedQuery,
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    locale: .current
+                ) != nil
             }
             .sorted {
                 let leftCollection = $0.collectionName ?? ""

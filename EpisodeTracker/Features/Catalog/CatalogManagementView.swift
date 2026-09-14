@@ -223,6 +223,12 @@ struct CatalogManagementView: View {
             await performCatalogRefresh()
         }
         .onAppear {
+            // A background manifest refresh (bootstrap, or an earlier visit to
+            // this screen) can complete after `CatalogSourceRegistry`'s static
+            // cache was already populated from an older disk read; invalidating
+            // here guarantees this screen always reflects the current manifest
+            // instead of whatever was cached first in this app session.
+            CatalogSourceRegistry.invalidateManagedSourcesCache()
             activeCatalogIDs = activeCatalogStore.activeIDs
             selectedCatalogLanguages = languageFilterStore.selectedLanguages
         }
