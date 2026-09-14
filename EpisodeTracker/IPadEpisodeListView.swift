@@ -176,7 +176,7 @@ private struct IPadEpisodeListView: View {
                     Button {
                         showingNewsOverview = true
                     } label: {
-                        Image(systemName: "calendar")
+                        Image(systemName: "sparkles")
                     }
                     .accessibilityLabel("Bald verf\u{00FC}gbar")
                     .overlay(alignment: .topTrailing) {

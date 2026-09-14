@@ -137,7 +137,7 @@ struct EpisodeListView: View {
                         // Eingebautes Symbol-Badge statt eines eigenen Overlays: das
                         // sitzt immer am Glyph, egal wie groß der Button-Rahmen ist,
                         // und skaliert mit Dynamic Type mit.
-                        Image(systemName: "calendar")
+                        Image(systemName: "sparkles")
                     }
                     .accessibilityLabel("Bald verf\u{00FC}gbar")
                     // Das Overlay hängt außen am Button - innerhalb des label-Closures
