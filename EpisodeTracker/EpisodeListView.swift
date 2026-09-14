@@ -83,10 +83,12 @@ struct EpisodeListView: View {
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
-    /// Badge am Kalender-Symbol: unabhängig vom `NewsOverviewView`, das seine
-    /// eigenen Ereignisse erst beim Öffnen als gesehen markiert.
-    private var hasUnseenUpcomingNews: Bool {
-        NewsStore().load().events.contains { $0.kind == .upcoming && $0.seenAt == nil }
+    /// Badge am Neuigkeiten-Symbol: unabhängig vom `NewsOverviewView`, das seine
+    /// eigenen Ereignisse erst beim Öffnen als gesehen markiert. Gleiche
+    /// "irgendeine ungesehene Neuigkeit"-Regel wie in `UpNextView` — beide
+    /// Einstiege öffnen dieselbe Ansicht, also auch dasselbe Badge-Kriterium.
+    private var hasUnseenNews: Bool {
+        NewsStore().load().events.contains { $0.seenAt == nil }
     }
 
     var body: some View {
@@ -145,7 +147,7 @@ struct EpisodeListView: View {
                     // damit der Punkt am Symbol klebt und nicht frei zwischen den
                     // Toolbar-Symbolen schwebt.
                     .overlay(alignment: .topTrailing) {
-                        if hasUnseenUpcomingNews {
+                        if hasUnseenNews {
                             Circle()
                                 .fill(.red)
                                 .frame(width: 7, height: 7)
