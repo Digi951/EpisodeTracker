@@ -149,7 +149,7 @@ struct EpisodeListView: View {
                             Circle()
                                 .fill(.red)
                                 .frame(width: 7, height: 7)
-                                .offset(x: -1, y: 1)
+                                .offset(x: -6, y: 6)
                         }
                     }
                 }
