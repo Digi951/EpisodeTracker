@@ -83,9 +83,17 @@ enum NewsReconciler {
 
     /// Läuft genau einmal (gegated über `hasEstablishedBaseline`, nicht nur
     /// über "Datei fehlt"): merkt sich die aktuellen Revisionen, erzeugt aber
-    /// **keine** Ereignisse — sonst würde jede Alt-Installation beim ersten
-    /// Start nach dem Update einen Benachrichtigungssturm auslösen
-    /// (Datenvertrag §4.D2).
+    /// für `.newEpisode`/`.newCatalog` **keine** Ereignisse — sonst würde
+    /// jede Alt-Installation beim ersten Start nach dem Update einen
+    /// Benachrichtigungssturm auslösen (Datenvertrag §4.D2).
+    ///
+    /// `.upcoming` ist davon ausgenommen: "Bald verfügbar" ist die einzige
+    /// Stelle in der App, an der Vorab-Termine überhaupt angezeigt werden
+    /// (kein separater Kalender) — sie wie die anderen Arten zu verschlucken
+    /// würde keinen Ereignissturm verhindern, sondern Termine dauerhaft
+    /// verstecken, die der Nutzer bei einem bereits gefüllten Katalog
+    /// erwartet. Die Zeile wird direkt als gesehen angelegt (`seenAt = now`),
+    /// damit trotzdem kein Unseen-/Badge-Sturm entsteht.
     static func establishBaselineIfNeeded(
         document: NewsStoreDocument,
         deltas: [CatalogEpisodeDelta],
@@ -108,6 +116,11 @@ enum NewsReconciler {
         )
         for candidate in candidates {
             result.lastReconciledRevisions[candidate.id] = candidate.revision
+            if candidate.kind == .upcoming {
+                var seenCandidate = candidate
+                seenCandidate.seenAt = now
+                result.events.append(seenCandidate)
+            }
         }
         result.hasEstablishedBaseline = true
         return result

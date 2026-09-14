@@ -27,7 +27,7 @@ final class NewsReconcilerTests: XCTestCase {
 
     // MARK: Baseline
 
-    func testBaselineCreatesNoEventsButRecordsRevisions() {
+    func testBaselineCreatesNoEventsForNewEpisodesButRecordsRevisions() {
         let delta = makeDelta(currentVersion: 5, addedNumbers: [241])
         let document = NewsReconciler.establishBaselineIfNeeded(
             document: NewsStoreDocument(),
@@ -42,6 +42,56 @@ final class NewsReconcilerTests: XCTestCase {
         XCTAssertTrue(document.hasEstablishedBaseline)
         XCTAssertEqual(document.events, [])
         XCTAssertEqual(document.lastReconciledRevisions.count, 1)
+    }
+
+    /// "Bald verfügbar" ist die einzige Stelle, an der Vorab-Termine
+    /// angezeigt werden — anders als `.newEpisode`/`.newCatalog` darf die
+    /// Baseline diese nicht verschlucken, sonst zeigt der Kalender nach
+    /// Erstinstallation/Upgrade nie die schon bekannten Termine.
+    func testBaselineAddsUpcomingReleasesAsAlreadySeenInsteadOfSwallowingThem() {
+        let release = UpcomingRelease(catalogID: catalogID, number: 244, title: "Die Spur", releaseDate: now)
+        let document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [release],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        XCTAssertTrue(document.hasEstablishedBaseline)
+        XCTAssertEqual(document.events.count, 1)
+        XCTAssertEqual(document.events[0].kind, .upcoming)
+        XCTAssertEqual(document.events[0].seenAt, now, "must be pre-seen so it doesn't trigger the unseen badge")
+        XCTAssertEqual(document.lastReconciledRevisions.count, 1)
+    }
+
+    /// Ein Reconcile direkt nach der Baseline mit unveränderter Revision darf
+    /// die baseline-eingefügte Zeile nicht duplizieren.
+    func testReconcileAfterBaselineDoesNotDuplicateUnchangedUpcomingRelease() {
+        let release = UpcomingRelease(catalogID: catalogID, number: 244, title: "Die Spur", releaseDate: now)
+        var document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [release],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        document = NewsReconciler.reconcile(
+            document: document,
+            deltas: [],
+            availability: nil,
+            upcoming: [release],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+
+        XCTAssertEqual(document.events.count, 1)
     }
 
     func testBaselineIsANoOpWhenAlreadyEstablished() {
