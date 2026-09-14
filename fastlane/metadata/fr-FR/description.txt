@@ -1,0 +1,9 @@
+AudioPlayLog t'aide à organiser tes épisodes de fictions audio de façon claire.
+
+Marque les épisodes comme écoutés, attribue des notes, ajoute tes impressions personnelles et filtre ta collection par catalogue, humeur ou statut d'écoute.
+
+Les listes d'épisodes de nombreuses séries populaires sont déjà prêtes – parmi lesquelles Die drei ???, TKKG, Bibi Blocksberg, Benjamin Blümchen et Fünf Freunde. Ces catalogues peuvent être activés individuellement et sont mis à jour via des listes JSON publiques, ce qui rend disponibles de nouvelles séries et de nouveaux épisodes sans mise à jour de l'application.
+
+Chaque épisode peut s'ouvrir d'un simple geste directement dans Spotify ou Apple Music – pour de nombreux épisodes, les liens correspondants sont déjà renseignés. Tu choisis le service préféré dans les réglages.
+
+L'application ne fournit elle-même aucun contenu audio, ne diffuse aucune fiction audio et n'est affiliée à aucun éditeur ou détenteur de marque. Tes propres entrées, notes, remarques et sauvegardes restent sur ton appareil, sauf si tu les exportes toi-même.

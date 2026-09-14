@@ -1,0 +1,7 @@
+Cette version te donne les nouveautés en un coup d'œil, et une troisième langue.
+
+• Nouveautés : ce qui n'affichait jusqu'ici, depuis la 1.17, que « Bientôt disponible » est maintenant une vue d'ensemble complète : les épisodes nouvellement sortis, les dates annoncées et les nouvelles séries se retrouvent regroupés sous une seule icône, avec une action directe pour les mettre de côté depuis la liste.
+
+• Maintenant aussi en français : AudioPlayLog parle désormais français, avec deux séries de fictions audio françaises sélectionnées pour le lancement. Dans les réglages des catalogues, tu peux t'abonner à plusieurs langues à la fois.
+
+Bonne écoute !

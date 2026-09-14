@@ -1,7 +1,7 @@
-This version shows you which episodes are coming next, before they're even out.
+This version gives you news at a glance and a third language.
 
-• Coming soon: Tap the calendar icon in the top right and you'll see every announced episode with its release date, neatly sorted by day. You'll only see what matches the catalogs you've enabled. A small red dot points you to new announcements, and once an episode is out, it drops off the list again.
+• News: What used to be just "Coming soon" since 1.17 is now a complete overview: newly released episodes, announced release dates, and new series are now gathered under one icon, including a bookmark action right from the list.
 
-• New episodes, spotted sooner: Your catalogs are now checked for new episodes on every launch. That makes the hint about fresh episodes reach you more reliably than before.
+• Now also in French: AudioPlayLog now speaks French, including two curated French audio drama series to start. In the catalog settings, you can subscribe to multiple languages at once.
 
 Enjoy your listening!

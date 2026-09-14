@@ -1,7 +1,7 @@
-Diese Version zeigt dir, welche Folgen als Nächstes erscheinen, schon bevor sie da sind.
+Diese Version bringt dir Neuigkeiten auf einen Blick und eine dritte Sprache.
 
-• Bald verfügbar: Tippe oben rechts auf das Kalender-Symbol und du siehst alle angekündigten Folgen mit ihrem Erscheinungstermin, übersichtlich nach Datum sortiert. Angezeigt wird dabei nur, was zu deinen aktivierten Katalogen passt. Ein kleiner roter Punkt weist dich auf neue Ankündigungen hin, und sobald eine Folge erschienen ist, verschwindet sie wieder aus der Liste.
+• Neuigkeiten: Was seit 1.17 nur „Bald verfügbar" zeigte, ist jetzt ein vollständiger Überblick: neu erschienene Folgen, angekündigte Termine und neue Reihen findest du gesammelt unter einem Symbol, inklusive Merkliste-Aktion direkt aus der Liste.
 
-• Neue Folgen schneller im Blick: Deine Kataloge werden jetzt bei jedem Start auf Nachschub geprüft. Der Hinweis auf neue Folgen erreicht dich dadurch zuverlässiger als bisher.
+• Jetzt auch auf Französisch: HörspielLog spricht jetzt Französisch, inklusive zweier kuratierter französischer Hörspielreihen zum Start. In den Katalogeinstellungen kannst du mehrere Sprachen gleichzeitig abonnieren.
 
 Viel Freude beim Hören!
