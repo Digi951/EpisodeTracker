@@ -253,10 +253,24 @@ private struct NewsEventRow: View {
 
 /// Schlanke Vorschau für Ereignisse ohne passende Bibliotheksfolge — bewusst
 /// NICHT die vollständige "Reihenvorschau" aus Paket 6 (Datenvertrag §4.D6).
+/// Zeigt die von D6 verlangten Felder Name/Reihe/Datum/Status; bei
+/// `.newCatalog` sind Name und Reihe identisch (die Meldung betrifft die
+/// Reihe selbst), daher entfällt dort die doppelte Zeile zugunsten eines
+/// Links zu "Kataloge verwalten".
 private struct NewsCatalogPreviewSheet: View {
     let event: NewsEvent
 
     @Environment(\.dismiss) private var dismiss
+
+    private var statusText: String {
+        switch event.kind {
+        case .newEpisode: "Neu erschienen"
+        case .upcoming: "Bald verfügbar"
+        case .newCatalog: "Neue Reihe"
+        case .dateChanged: "Termin geändert"
+        case .unknown: ""
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -264,11 +278,25 @@ private struct NewsCatalogPreviewSheet: View {
                 Section {
                     Text(event.title)
                         .font(.headline)
-                    Text(event.universeName)
-                        .foregroundStyle(.secondary)
+                    if event.kind != .newCatalog {
+                        Text(event.universeName)
+                            .foregroundStyle(.secondary)
+                    }
                     if let releaseDate = CalendarDayFormatter.date(from: event.revision), event.kind == .upcoming {
                         Text(releaseDate.formatted(date: .long, time: .omitted))
                             .foregroundStyle(.secondary)
+                    }
+                    Text(statusText)
+                        .foregroundStyle(.secondary)
+                }
+
+                if event.kind == .newCatalog {
+                    Section {
+                        NavigationLink {
+                            CatalogManagementView()
+                        } label: {
+                            Label("Kataloge verwalten", systemImage: "books.vertical")
+                        }
                     }
                 }
             }
