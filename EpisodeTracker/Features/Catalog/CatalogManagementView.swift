@@ -219,6 +219,9 @@ struct CatalogManagementView: View {
         }
         .navigationTitle("Kataloge")
         .searchable(text: $searchText, prompt: "Katalog suchen")
+        .refreshable {
+            await performCatalogRefresh()
+        }
         .onAppear {
             activeCatalogIDs = activeCatalogStore.activeIDs
             selectedCatalogLanguages = languageFilterStore.selectedLanguages
@@ -302,21 +305,27 @@ struct CatalogManagementView: View {
     }
 
     private func refreshAllManagedCatalogs() {
+        Task {
+            await performCatalogRefresh()
+        }
+    }
+
+    // Gemeinsam für den "Alle aktualisieren"-Button und `.refreshable`
+    // (Wisch-Geste): beide sollen denselben Refresh inklusive
+    // News-Reconciliation auslösen, nicht nur den Katalog-Fetch.
+    @MainActor
+    private func performCatalogRefresh() async {
         isRefreshingCatalogs = true
         catalogStatusMessage = nil
-        Task {
-            await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
-            AppDataBootstrapper.reconcileAfterCatalogRefresh(container: modelContext.container)
-            await MainActor.run {
-                isRefreshingCatalogs = false
-                if let error = EpisodeCatalog.shared.lastRefreshError {
-                    catalogStatusIsError = true
-                    catalogStatusMessage = error
-                } else {
-                    catalogStatusIsError = false
-                    catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
-                }
-            }
+        await EpisodeCatalog.shared.refreshManagedCatalogsIfNeeded(force: true)
+        AppDataBootstrapper.reconcileAfterCatalogRefresh(container: modelContext.container)
+        isRefreshingCatalogs = false
+        if let error = EpisodeCatalog.shared.lastRefreshError {
+            catalogStatusIsError = true
+            catalogStatusMessage = error
+        } else {
+            catalogStatusIsError = false
+            catalogStatusMessage = "Aktive Kataloge wurden aktualisiert."
         }
     }
 }
