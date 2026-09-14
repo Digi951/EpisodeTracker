@@ -7,3 +7,19 @@ Les listes d'épisodes de nombreuses séries populaires sont déjà prêtes – 
 Chaque épisode peut s'ouvrir d'un simple geste directement dans Spotify ou Apple Music – pour de nombreux épisodes, les liens correspondants sont déjà renseignés. Tu choisis le service préféré dans les réglages.
 
 L'application ne fournit elle-même aucun contenu audio, ne diffuse aucune fiction audio et n'est affiliée à aucun éditeur ou détenteur de marque. Tes propres entrées, notes, remarques et sauvegardes restent sur ton appareil, sauf si tu les exportes toi-même.
+
+Fonctionnalités clés :
+
+– Nouveautés : épisodes nouvellement sortis, dates annoncées et nouvelles séries en un coup d'œil
+
+– Importer des catalogues maintenus et enrichis sans mise à jour de l'application
+
+– Listes intelligentes pour un aperçu rapide
+
+– Personnalisation via les couleurs d'accentuation et les icônes
+
+– Recadrer et redresser les pochettes directement dans l'application
+
+– Accès direct depuis l'application vers ton service de streaming
+
+– Catégorisation détaillée de chaque épisode

@@ -8,6 +8,8 @@ Die App stellt selbst keine Audioinhalte bereit, spielt keine Hörspiele ab und 
 
 Kernfeatures:
 
+– Neuigkeiten: neu erschienene Folgen, angekündigte Termine und neue Reihen auf einen Blick
+
 – Kataloge importieren, die ohne Update gepflegt und erweitert werden
 
 – SmartLists für schnellen Überblick

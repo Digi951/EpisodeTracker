@@ -8,6 +8,8 @@ The app does not provide any audio content itself, does not play audio dramas, a
 
 Key features:
 
+– News: newly released episodes, announced release dates, and new series at a glance
+
 – Import catalogs that are maintained and expanded without app updates
 
 – SmartLists for a quick overview
