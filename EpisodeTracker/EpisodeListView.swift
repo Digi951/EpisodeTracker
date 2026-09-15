@@ -141,7 +141,7 @@ struct EpisodeListView: View {
                         // und skaliert mit Dynamic Type mit.
                         Image(systemName: "sparkles")
                     }
-                    .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    .accessibilityLabel("Neuigkeiten")
                     // Das Overlay hängt außen am Button - innerhalb des label-Closures
                     // verschluckt die Toolbar es. Der Versatz ist knapp gehalten,
                     // damit der Punkt am Symbol klebt und nicht frei zwischen den

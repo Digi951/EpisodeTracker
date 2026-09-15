@@ -180,7 +180,7 @@ private struct IPadEpisodeListView: View {
                     } label: {
                         Image(systemName: "sparkles")
                     }
-                    .accessibilityLabel("Bald verf\u{00FC}gbar")
+                    .accessibilityLabel("Neuigkeiten")
                     .overlay(alignment: .topTrailing) {
                         if hasUnseenNews {
                             Circle()

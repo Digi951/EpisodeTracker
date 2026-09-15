@@ -1,9 +1,10 @@
 import SwiftData
 import SwiftUI
 
-/// Welcher der drei Bereiche beim Öffnen zuerst sichtbar sein soll. Der
-/// Kalender-Einstieg (P4-G) öffnet mit `.baldVerfuegbar`, der "Neuigkeiten"-
-/// Eintrag in "Als nächstes" mit `.neuErschienen` (Datenvertrag §4.D6).
+/// Welcher der drei Bereiche beim Öffnen zuerst sichtbar sein soll — reine
+/// Scroll-Anchor-Angabe, kein Inhaltsfilter. Alle Einstiege (Folgen, Als
+/// nächstes, iPad) zeigen denselben vollständigen Drei-Bereiche-Inhalt und
+/// öffnen aktuell einheitlich mit `.neuErschienen`.
 enum NewsOverviewSection: Hashable {
     case neuErschienen
     case baldVerfuegbar

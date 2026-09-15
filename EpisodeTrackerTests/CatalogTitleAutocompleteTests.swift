@@ -113,13 +113,4 @@ final class CatalogTitleAutocompleteTests: XCTestCase {
             collectionName: collectionName
         )
     }
-
-    private func entry(_ number: Int, _ title: String, _ collectionName: String) -> CatalogEntry {
-        CatalogEntry(
-            number: number,
-            title: title,
-            releaseYear: 2020,
-            collectionName: collectionName
-        )
-    }
 }
