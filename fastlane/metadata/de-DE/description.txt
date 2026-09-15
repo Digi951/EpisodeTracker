@@ -10,6 +10,8 @@ Kernfeatures:
 
 – Neuigkeiten: neu erschienene Folgen, angekündigte Termine und neue Reihen auf einen Blick
 
+– Jetzt auch auf Französisch, inklusive kuratierter französischer Hörspielreihen
+
 – Kataloge importieren, die ohne Update gepflegt und erweitert werden
 
 – SmartLists für schnellen Überblick

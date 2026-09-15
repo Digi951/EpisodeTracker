@@ -12,6 +12,8 @@ Fonctionnalités clés :
 
 – Nouveautés : épisodes nouvellement sortis, dates annoncées et nouvelles séries en un coup d'œil
 
+– Maintenant aussi en français, avec des séries de fictions audio françaises sélectionnées
+
 – Importer des catalogues maintenus et enrichis sans mise à jour de l'application
 
 – Listes intelligentes pour un aperçu rapide
