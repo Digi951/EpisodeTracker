@@ -664,7 +664,7 @@ private struct CatalogGroupDisclosureChevron: View {
     }
 }
 
-private struct CatalogEntryRow: View {
+struct CatalogEntryRow: View {
     let universeName: String
     let entry: CatalogEntry
     var onAdd: () -> Void

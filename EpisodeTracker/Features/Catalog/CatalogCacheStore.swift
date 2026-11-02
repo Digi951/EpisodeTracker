@@ -188,17 +188,7 @@ struct CatalogCacheStore {
             return []
         }
 
-        return decoded.map {
-            CatalogEntry(
-                number: $0.number,
-                kind: $0.kind,
-                slug: $0.slug,
-                title: $0.title,
-                releaseYear: $0.releaseYear,
-                collectionName: CatalogSourceRegistry.bundledCollectionName,
-                links: $0.links
-            )
-        }
+        return decoded.map { $0.withCollectionName(CatalogSourceRegistry.bundledCollectionName) }
     }
 
     private func readStoredCatalogs() throws -> StoredCatalogs {

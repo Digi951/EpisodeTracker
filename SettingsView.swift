@@ -345,13 +345,14 @@ private struct SettingsPersonalizationSection: View {
     let statusIsError: Bool
     let isChangingIcon: Bool
     let onSelectIcon: (AppIconChoice) -> Void
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
 
     private var appearanceMode: AppearanceMode {
         AppearanceMode(rawValue: appearanceModeRawValue) ?? .system
     }
 
     var body: some View {
-        Section("Darstellung") {
+        Section {
             AccentColorPickerRow(selection: $appAccentColorRawValue)
 
             Picker(selection: $appearanceModeRawValue) {
@@ -388,6 +389,14 @@ private struct SettingsPersonalizationSection: View {
             Toggle(isOn: $showsLibrarySnapshot) {
                 SettingsIconLabel("Hörstand anzeigen", systemImage: "chart.bar.fill")
             }
+
+            Toggle(isOn: $seasonalAccentsEnabled) {
+                SettingsIconLabel("Saisonale Akzente", systemImage: "snowflake")
+            }
+        } header: {
+            Text("Darstellung")
+        } footer: {
+            Text("Im Dezember zeigt „Als nächstes“ deine Weihnachtsfolgen.")
         }
     }
 }

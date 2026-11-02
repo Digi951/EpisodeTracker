@@ -5,6 +5,7 @@ struct UpNextView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage(SmartListPreferences.hiddenStorageKey) private var hiddenSmartListsRaw = ""
     @AppStorage(SmartListPreferences.orderStorageKey) private var smartListOrderRaw = ""
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
     @Environment(SavedFilterStore.self) private var savedFilterStore
     @Query private var episodes: [Episode]
     @Query(sort: \Mood.name) private var moods: [Mood]
@@ -40,6 +41,21 @@ struct UpNextView: View {
     /// seine Ereignisse erst beim Öffnen als gesehen markiert.
     private var hasUnseenNews: Bool {
         NewsStore().load().events.contains { $0.seenAt == nil }
+    }
+
+    /// Saison-Liste, nur in der Saison, mit Inhalt und eingeschaltetem
+    /// Schalter „Saisonale Akzente“.
+    private var seasonalContent: SeasonalEpisodes? {
+        guard seasonalAccentsEnabled,
+              let season = SeasonalContext.activeSeason(on: SeasonalContext.referenceDate)
+        else { return nil }
+        let content = SeasonalEpisodes.make(
+            season: season,
+            entries: EpisodeCatalog.shared.allEntries,
+            activeCollectionNames: CatalogEpisodeSearch.activeCollectionNames(),
+            libraryEpisodes: episodes
+        )
+        return content.isEmpty ? nil : content
     }
 
     private var recommendationCandidates: [UpNextRecommendation] {
@@ -78,6 +94,12 @@ struct UpNextView: View {
             }
 
             recommendationRow
+
+            if let seasonalContent {
+                Section {
+                    seasonalRow(seasonalContent)
+                }
+            }
 
             let visibleLists = SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)
             let filledLists = visibleLists.filter(hasItems)
@@ -146,6 +168,13 @@ struct UpNextView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
+            }
+        }
+        .onChange(of: seasonalAccentsEnabled) { _, isEnabled in
+            // iPad: Sonst bleibt die Saison-Liste rechts offen, obwohl ihre
+            // Zeile links verschwunden ist.
+            if !isEnabled, case .seasonal = iPadNavSelection {
+                iPadNavSelection = nil
             }
         }
         .navigationDestination(item: $openedEpisode) { episode in
@@ -285,6 +314,38 @@ struct UpNextView: View {
     }
 
     @ViewBuilder
+    private func seasonalRow(_ content: SeasonalEpisodes) -> some View {
+        let navValue = SmartListNavigation.seasonal(content.season)
+        let teaser = content.libraryEpisodes.first { !$0.isListened }.map { SmartListDefinition.teaserText(for: $0) }
+            ?? content.catalogEntries.first.map { SmartListDefinition.catalogTeaserText(for: $0.entry) }
+            ?? content.libraryEpisodes.first.map { SmartListDefinition.teaserText(for: $0) }
+        let row = SeasonalRowContent(
+            title: content.season.listTitle,
+            systemImage: content.season.systemImage,
+            teaser: teaser,
+            count: content.libraryEpisodes.count + content.catalogEntries.count
+        )
+
+        if usesSelectionMode {
+            Button {
+                iPadNavSelection = navValue
+            } label: {
+                row
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(
+                iPadNavSelection == navValue
+                    ? Color.accentColor.opacity(0.12)
+                    : nil
+            )
+        } else {
+            NavigationLink(value: navValue) {
+                row
+            }
+        }
+    }
+
+    @ViewBuilder
     private func savedFilterRow(_ filter: SavedFilter) -> some View {
         let navValue = SmartListNavigation.savedFilter(filter)
 
@@ -410,6 +471,44 @@ private struct SmartListRowContent: View {
                     .font(.subheadline.weight(.medium).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// Wie `SmartListRowContent`, aber für die Saison-Liste, die keine
+/// `SmartListDefinition` ist: Sie lässt sich nicht ausblenden oder sortieren,
+/// sondern erscheint nur in der Saison.
+private struct SeasonalRowContent: View {
+    let title: String
+    let systemImage: String
+    let teaser: String?
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 34, height: 34)
+                .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                if let teaser {
+                    Text(teaser)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            Text("\(count)")
+                .font(.subheadline.weight(.medium).monospacedDigit())
+                .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }

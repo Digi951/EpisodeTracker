@@ -19,6 +19,9 @@ struct CatalogEntry: Codable, Equatable {
     let releaseStatus: CatalogReleaseStatus
     let sourceCheckedAt: Date?
     let changedAt: Date?
+    /// Saison-Markierung („christmas“), additiv zum Datenvertrag. Ältere
+    /// App-Versionen ignorieren den Key, unbekannte Werte werden zu `nil`.
+    let season: CatalogSeason?
 
     private enum CodingKeys: String, CodingKey {
         case number
@@ -32,6 +35,7 @@ struct CatalogEntry: Codable, Equatable {
         case releaseStatus
         case sourceCheckedAt
         case changedAt
+        case season
         // Legacy-Felder: werden weiterhin gelesen, aber nicht mehr geschrieben.
         case spotifyURL
         case appleMusicURL
@@ -50,7 +54,8 @@ struct CatalogEntry: Codable, Equatable {
         releaseDate: Date? = nil,
         releaseStatus: CatalogReleaseStatus = .unknown,
         sourceCheckedAt: Date? = nil,
-        changedAt: Date? = nil
+        changedAt: Date? = nil,
+        season: CatalogSeason? = nil
     ) {
         self.number = number
         self.kind = kind
@@ -63,6 +68,7 @@ struct CatalogEntry: Codable, Equatable {
         self.releaseStatus = releaseStatus
         self.sourceCheckedAt = sourceCheckedAt
         self.changedAt = changedAt
+        self.season = season
     }
 
     /// Convenience-Init mit den historischen benannten Feldern. Bleibt erhalten,
@@ -81,7 +87,8 @@ struct CatalogEntry: Codable, Equatable {
         releaseDate: Date? = nil,
         releaseStatus: CatalogReleaseStatus = .unknown,
         sourceCheckedAt: Date? = nil,
-        changedAt: Date? = nil
+        changedAt: Date? = nil,
+        season: CatalogSeason? = nil
     ) {
         self.init(
             number: number,
@@ -99,7 +106,8 @@ struct CatalogEntry: Codable, Equatable {
             releaseDate: releaseDate,
             releaseStatus: releaseStatus,
             sourceCheckedAt: sourceCheckedAt,
-            changedAt: changedAt
+            changedAt: changedAt,
+            season: season
         )
     }
 
@@ -140,6 +148,10 @@ struct CatalogEntry: Codable, Equatable {
         releaseStatus = CatalogReleaseStatus.resolve(
             try container.decodeIfPresent(String.self, forKey: .releaseStatus)
         )
+        // Unbekannte Saison kein Fehler: neue Saisons im Katalog dürfen ältere
+        // Apps nicht den ganzen Payload verwerfen lassen.
+        season = try container.decodeIfPresent(String.self, forKey: .season)
+            .flatMap { CatalogSeason(rawValue: $0.lowercased()) }
     }
 
     private static func decodeCalendarDay(
@@ -184,6 +196,7 @@ struct CatalogEntry: Codable, Equatable {
             changedAt.map(CalendarDayFormatter.string(from:)),
             forKey: .changedAt
         )
+        try container.encodeIfPresent(season?.rawValue, forKey: .season)
     }
 
     private static func linksFromLegacyFields(
@@ -253,7 +266,8 @@ extension CatalogEntry {
             releaseDate: releaseDate,
             releaseStatus: releaseStatus,
             sourceCheckedAt: sourceCheckedAt,
-            changedAt: changedAt
+            changedAt: changedAt,
+            season: season
         )
     }
 
@@ -273,9 +287,14 @@ extension CatalogEntry {
             releaseDate: releaseDate,
             releaseStatus: releaseStatus,
             sourceCheckedAt: sourceCheckedAt,
-            changedAt: changedAt
+            changedAt: changedAt,
+            season: season
         )
     }
+}
+
+enum CatalogSeason: String, Codable, Equatable {
+    case christmas
 }
 
 struct CatalogManifest: Codable {

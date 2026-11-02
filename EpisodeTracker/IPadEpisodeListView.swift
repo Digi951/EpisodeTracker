@@ -154,6 +154,8 @@ private struct IPadEpisodeListView: View {
                 )
             case .savedFilter(let filter):
                 SavedFilterDetailView(filter: filter)
+            case .seasonal(let season):
+                SeasonalListView(season: season, iPadSelection: $selection)
             }
         }
         .toolbar {

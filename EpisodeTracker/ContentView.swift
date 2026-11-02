@@ -131,6 +131,8 @@ private struct PhoneEpisodesRoot: View {
                         SmartListDetailView(smartList: .randomByMood, mood: mood)
                     case .savedFilter(let filter):
                         SavedFilterDetailView(filter: filter)
+                    case .seasonal(let season):
+                        SeasonalListView(season: season)
                     }
                 }
                 .navigationTitle(libraryTitle)
@@ -155,6 +157,8 @@ private struct PhoneUpNextRoot: View {
                         SmartListDetailView(smartList: .randomByMood, mood: mood)
                     case .savedFilter(let filter):
                         SavedFilterDetailView(filter: filter)
+                    case .seasonal(let season):
+                        SeasonalListView(season: season)
                     }
                 }
                 .navigationTitle("Als nächstes")
@@ -231,6 +235,8 @@ private struct UpNextSplitView: View {
             SmartListDetailView(smartList: .randomByMood, mood: mood)
         case .savedFilter(let filter):
             SavedFilterDetailView(filter: filter)
+        case .seasonal(let season):
+            SeasonalListView(season: season)
         }
     }
 }

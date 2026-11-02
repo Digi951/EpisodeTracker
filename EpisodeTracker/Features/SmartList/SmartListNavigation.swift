@@ -5,4 +5,5 @@ enum SmartListNavigation: Hashable {
     case moodPicker
     case moodDetail(Mood)
     case savedFilter(SavedFilter)
+    case seasonal(CatalogSeason)
 }

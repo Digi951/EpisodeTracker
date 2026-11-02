@@ -23,12 +23,7 @@ struct NewEpisodeView: View {
     }
 
     private var activeCollectionNames: Set<String> {
-        let activeIDs = ActiveCatalogStore().activeIDs
-        return Set(
-            EpisodeCatalog.shared.managedSources
-                .filter { activeIDs.contains($0.id) }
-                .map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) }
-        )
+        CatalogEpisodeSearch.activeCollectionNames()
     }
 
     private var results: [CatalogEpisodeSearch.Result] {

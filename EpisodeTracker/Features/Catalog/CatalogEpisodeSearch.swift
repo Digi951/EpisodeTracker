@@ -9,6 +9,17 @@ enum CatalogEpisodeSearch {
         let entry: CatalogEntry
     }
 
+    /// Normalisierte Namen der aktiven Kataloge, passend zu `results(for:)`.
+    @MainActor
+    static func activeCollectionNames() -> Set<String> {
+        let activeIDs = ActiveCatalogStore().activeIDs
+        return Set(
+            EpisodeCatalog.shared.managedSources
+                .filter { activeIDs.contains($0.id) }
+                .map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) }
+        )
+    }
+
     nonisolated static func results(
         for query: String,
         entries: [CatalogEntry],
