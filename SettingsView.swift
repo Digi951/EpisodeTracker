@@ -379,7 +379,7 @@ private struct SettingsPersonalizationSection: View {
                     SettingsNavigationRow(
                         title: "App-Icon",
                         subtitle: AppIconChoice.resolved(from: selectedIconName).title,
-                        systemImage: "app.fill"
+                        systemImage: "apps.iphone"
                     )
                 }
             }
@@ -396,34 +396,40 @@ private struct AccentColorPickerRow: View {
     @Binding var selection: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsIconLabel("Akzentfarbe", systemImage: "paintpalette.fill")
+        // Farbkreise unter dem Text statt unter der Kachel: deshalb im
+        // Titel-Teil des Labels, nicht als eigene Zeile darunter.
+        Label {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Akzentfarbe")
 
-            HStack(spacing: 14) {
-                ForEach(AppAccentColor.allCases) { accentColor in
-                    Button {
-                        selection = accentColor.rawValue
-                    } label: {
-                        Circle()
-                            .fill(accentColor.color)
-                            .frame(width: 30, height: 30)
-                            .overlay {
-                                if selection == accentColor.rawValue {
-                                    Image(systemName: "checkmark")
-                                        .font(.caption.weight(.bold))
-                                        .foregroundStyle(.white)
+                HStack(spacing: 10) {
+                    ForEach(AppAccentColor.allCases) { accentColor in
+                        Button {
+                            selection = accentColor.rawValue
+                        } label: {
+                            Circle()
+                                .fill(accentColor.color)
+                                .frame(width: 26, height: 26)
+                                .overlay {
+                                    if selection == accentColor.rawValue {
+                                        Image(systemName: "checkmark")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(.white)
+                                    }
                                 }
-                            }
-                            .overlay(
-                                Circle()
-                                    .stroke(selection == accentColor.rawValue ? Color.primary : Color.secondary.opacity(0.22), lineWidth: selection == accentColor.rawValue ? 2 : 1)
-                            )
+                                .overlay(
+                                    Circle()
+                                        .stroke(selection == accentColor.rawValue ? Color.primary : Color.secondary.opacity(0.22), lineWidth: selection == accentColor.rawValue ? 2 : 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(accentColor.title)
+                        .accessibilityAddTraits(selection == accentColor.rawValue ? .isSelected : [])
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(accentColor.title)
-                    .accessibilityAddTraits(selection == accentColor.rawValue ? .isSelected : [])
                 }
             }
+        } icon: {
+            SettingsIconTile(systemImage: "paintpalette.fill")
         }
         .padding(.vertical, 4)
     }
@@ -670,7 +676,7 @@ private struct SettingsAdvancedSection: View {
                         localized: "Settings.Advanced.CatalogProgressSubtitle",
                         defaultValue: "Fortschritt gegen den ganzen Katalog statt nur gegen deine Bibliothek"
                     ),
-                    systemImage: "percent"
+                    systemImage: "chart.pie.fill"
                 )
             }
 
@@ -963,21 +969,20 @@ private struct SettingsActionRow: View {
     }
 }
 
-/// Einheitliche Icon-Kachel wie in den iOS-Einstellungen: weißes Symbol auf
-/// einer Fläche in der Akzentfarbe (Design Review 2026-11, Befund 7).
+/// Einheitliche, getönte Icon-Kachel (Design Review 2026-11, Befund 7):
+/// Symbol in der Akzentfarbe auf heller Fläche, wie Banner und
+/// Initialen-Kacheln der App. Volle Farbflächen waren in jeder Zeile zu laut.
 private struct SettingsIconTile: View {
     let systemImage: String
     var color: Color? = nil
 
     var body: some View {
+        let style = color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.tint)
         Image(systemName: systemImage)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 28, height: 28)
-            .background(
-                color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.tint),
-                in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-            )
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(style)
+            .frame(width: 26, height: 26)
+            .background(style.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             .accessibilityHidden(true)
     }
 }
