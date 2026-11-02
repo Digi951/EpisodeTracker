@@ -106,6 +106,16 @@ struct NewEpisodeView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: Text(String(localized: "NewEpisode.Search.Prompt", defaultValue: "Nummer oder Titel"))
         )
+        // Die Suche ist beim Öffnen aktiv; iOS blendet dabei Titel und
+        // „Abbrechen“ aus und zeigt nur das X der Suche. Das X beendete bloß
+        // die Suche, danach tauchte „Abbrechen“ auf. Jetzt schließt es das
+        // Sheet wie „Abbrechen“. Nicht beim Wechsel ins Formular: Da endet
+        // die Suche auch, aber `selection` ist dann schon gesetzt.
+        .onChange(of: isSearchPresented) { _, isPresented in
+            if !isPresented, selection == nil {
+                dismiss()
+            }
+        }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

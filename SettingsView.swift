@@ -279,9 +279,12 @@ private struct SettingsLibrarySection: View {
             // Text aussah (Design Review 2026-11, Befund 7).
             // HStack statt LabeledContent: Mit der Icon-Kachel brach der Wert
             // sonst in eine zweite Zeile um.
+            // Kurz „Name“: Die Abschnittsüberschrift sagt schon „Bibliothek“,
+            // und die lange Beschriftung ließ dem Feld so wenig Platz, dass
+            // der Name vorn abgeschnitten war.
             HStack(spacing: 12) {
                 SettingsIconLabel(
-                    String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek"),
+                    String(localized: "Settings.Library.NameLabel", defaultValue: "Name"),
                     systemImage: "character.cursor.ibeam"
                 )
                 .lineLimit(1)
@@ -783,9 +786,62 @@ private struct SettingsMenuSelectionRow<MenuContent: View>: View {
     }
 }
 
+/// „Über“ nach dem iOS Playbook (Settings Patterns, About Section): Feedback,
+/// Bewerten, Datenschutz, Version — wie in PuzzleLog und BoardGameLog. Die
+/// Adressen sind dieselben wie in den Store-Metadaten und auf der Support-Seite.
 private struct SettingsAboutSection: View {
+    @Environment(\.openURL) private var openURL
+
+    private enum Links {
+        static let feedbackAddress = "gibbons.22.puls@icloud.com"
+        static let support = URL(string: "https://digi951.github.io/hoerspiellog-site/support/")!
+        static let privacy = URL(string: "https://digi951.github.io/hoerspiellog-site/privacy/")!
+        // itms-apps öffnet den App Store direkt; der https-Link geht über den
+        // Universal Link und zeigt beim Kaltstart oft nur die Produktseite.
+        static let review = URL(string: "itms-apps://apps.apple.com/app/id6767042220?action=write-review")!
+        static let reviewWeb = URL(string: "https://apps.apple.com/app/id6767042220?action=write-review")!
+    }
+
+    private var feedbackURL: URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = Links.feedbackAddress
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "HörspielLog Feedback (\(Bundle.main.appVersionDisplay))")
+        ]
+        return components.url
+    }
+
     var body: some View {
         Section {
+            Button {
+                // Ohne Mail-Konto lässt sich mailto nicht öffnen; die
+                // Support-Seite nennt die Adresse.
+                guard let feedbackURL else { return openURL(Links.support) }
+                openURL(feedbackURL) { accepted in
+                    if !accepted { openURL(Links.support) }
+                }
+            } label: {
+                SettingsIconLabel("Feedback senden", systemImage: "envelope")
+            }
+            .foregroundStyle(.primary)
+
+            // Nicht SKStoreReviewController: der wird vom System gedrosselt
+            // und zeigt auf einen Tipp oft nichts.
+            Button {
+                openURL(Links.review) { accepted in
+                    if !accepted { openURL(Links.reviewWeb) }
+                }
+            } label: {
+                SettingsIconLabel("App bewerten", systemImage: "star")
+            }
+            .foregroundStyle(.primary)
+
+            Link(destination: Links.privacy) {
+                SettingsIconLabel("Datenschutz", systemImage: "hand.raised")
+            }
+            .foregroundStyle(.primary)
+
             SettingsValueRow(label: "Version", value: Bundle.main.appVersionDisplay)
         } header: {
             Text("Über")
