@@ -17,6 +17,21 @@ enum CatalogLibraryMatcher {
         .mapValues { episodes in Set(episodes.map(\.episodeNumber)) }
     }
 
+    /// Nur reguläre Folgen. Sonderfolgen können eine Nummer tragen (TKKG-Adventskalender
+    /// Nr. 4), die sonst die reguläre Folge 4 als „vorhanden“ verdecken würde.
+    nonisolated static func existingRegularNumbersByCollection(libraryEpisodes: [Episode]) -> [String: Set<Int>] {
+        existingNumbersByCollection(libraryEpisodes: libraryEpisodes.filter { !$0.isSpecial })
+    }
+
+    /// Titel der Sonderfolgen ohne Katalog-Slug, kleingeschrieben. Abgleich für
+    /// Katalog-Sonderfolgen, die selbst keinen Slug haben.
+    nonisolated static func existingUnsluggedSpecialTitlesByCollection(libraryEpisodes: [Episode]) -> [String: Set<String>] {
+        Dictionary(grouping: libraryEpisodes.filter { $0.isSpecial && ($0.catalogSlug?.isEmpty ?? true) }) {
+            normalizedCollectionKey($0.universe?.name ?? "")
+        }
+        .mapValues { episodes in Set(episodes.map { $0.title.lowercased() }) }
+    }
+
     nonisolated static func existingSpecialSlugsByCollection(libraryEpisodes: [Episode]) -> [String: Set<String>] {
         Dictionary(grouping: libraryEpisodes.filter { $0.isSpecial && ($0.catalogSlug?.isEmpty == false) }) {
             normalizedCollectionKey($0.universe?.name ?? "")
@@ -30,6 +45,7 @@ enum CatalogLibraryMatcher {
     ) -> [(universeName: String, entry: CatalogEntry)] {
         let trackedLibrary = libraryEpisodes.filter { $0.universe != nil }
         let libraryByCollection = existingNumbersByCollection(libraryEpisodes: trackedLibrary)
+        let regularByCollection = existingRegularNumbersByCollection(libraryEpisodes: trackedLibrary)
         let librarySlugsByCollection = existingSpecialSlugsByCollection(libraryEpisodes: trackedLibrary)
         let catalogByCollection = Dictionary(grouping: catalogEntries.filter { $0.collectionName != nil }) {
             normalizedCollectionKey($0.collectionName ?? "")
@@ -51,8 +67,9 @@ enum CatalogLibraryMatcher {
                 guard entry.kind == .regular, let number = entry.number else { return false }
                 return seenNumbers.insert(number).inserted
             }
+            let regularNumbers = regularByCollection[collectionKey] ?? []
             let missingRegular = uniqueRegular.filter { entry in
-                entry.number.map { !libraryNumbers.contains($0) } ?? false
+                entry.number.map { !regularNumbers.contains($0) } ?? false
             }
             for entry in missingRegular {
                 results.append((displayName, entry))

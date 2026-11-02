@@ -54,7 +54,6 @@ final class SeasonalEpisodesTests: XCTestCase {
         )
 
         XCTAssertEqual(content.libraryEpisodes.map(\.episodeNumber), [165, 134], "Ungehörte zuerst, Ausgeblendete nie")
-        XCTAssertEqual(content.unlistenedCount, 1)
         XCTAssertEqual(
             content.catalogEntries.map(\.entry.title),
             ["Die Weihnachtsgeiseln (Adventskalender)"],
@@ -94,6 +93,53 @@ final class SeasonalEpisodesTests: XCTestCase {
 
         XCTAssertEqual(content.libraryEpisodes.count, 1)
         XCTAssertTrue(content.catalogEntries.isEmpty)
+    }
+
+    /// Eine Sonderfolge mit Nummer (TKKG-Adventskalender Nr. 4) darf die
+    /// reguläre Folge 4 nicht als „vorhanden“ verdecken.
+    func testNumberedSpecialDoesNotHideRegularEpisodeWithSameNumber() {
+        let tkkg = Universe(name: "TKKG")
+        let special = Episode(
+            episodeNumber: 134,
+            title: "Sonderfolge",
+            releaseYear: 2020,
+            kind: .special,
+            catalogSlug: "sonderfolge-2020",
+            universe: tkkg
+        )
+
+        let content = SeasonalEpisodes.make(
+            season: .christmas,
+            entries: [entry(134, "Wer stoppt die Weihnachts-Gangster", year: 2002, season: .christmas)],
+            activeCollectionNames: active,
+            libraryEpisodes: [special]
+        )
+
+        XCTAssertTrue(content.libraryEpisodes.isEmpty)
+        XCTAssertEqual(content.catalogEntries.map(\.entry.number), [134])
+    }
+
+    /// Katalog-Sonderfolgen ohne Slug werden über den Titel zugeordnet,
+    /// sonst stünden sie nach dem Anlegen weiter als „fehlt“ in der Liste.
+    func testUnsluggedSpecialMatchesByTitle() {
+        let tkkg = Universe(name: "TKKG")
+        let owned = Episode(
+            episodeNumber: 0,
+            title: "Weihnachtsmenü",
+            releaseYear: 2018,
+            kind: .special,
+            universe: tkkg
+        )
+        let entries = [
+            CatalogEntry(number: nil, kind: .special, title: "Weihnachtsmenü", releaseYear: 2018, collectionName: "TKKG", links: [:], season: .christmas)
+        ]
+
+        let before = SeasonalEpisodes.make(season: .christmas, entries: entries, activeCollectionNames: active, libraryEpisodes: [])
+        let after = SeasonalEpisodes.make(season: .christmas, entries: entries, activeCollectionNames: active, libraryEpisodes: [owned])
+
+        XCTAssertEqual(before.catalogEntries.count, 1)
+        XCTAssertTrue(after.catalogEntries.isEmpty)
+        XCTAssertEqual(after.libraryEpisodes.map(\.title), ["Weihnachtsmenü"])
     }
 
     func testSeasonDecodesAndUnknownSeasonIsIgnored() throws {

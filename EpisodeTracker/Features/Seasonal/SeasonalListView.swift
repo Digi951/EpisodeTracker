@@ -57,6 +57,11 @@ struct SeasonalListView: View {
                             } label: {
                                 EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                             }
+                            .listRowBackground(
+                                iPadSelection.wrappedValue == episode
+                                    ? Color.accentColor.opacity(0.12)
+                                    : nil
+                            )
                         } else {
                             NavigationLink(value: episode) {
                                 EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
@@ -68,7 +73,7 @@ struct SeasonalListView: View {
 
             if !content.catalogEntries.isEmpty {
                 Section(String(localized: "Seasonal.Section.Catalog", defaultValue: "Noch nicht in deiner Bibliothek")) {
-                    ForEach(content.catalogEntries, id: \.rowID) { result in
+                    ForEach(content.catalogEntries, id: \.identity) { result in
                         CatalogEntryRow(
                             universeName: AppLocalization.displayName(forUniverseName: result.universeName),
                             entry: result.entry,
@@ -89,12 +94,5 @@ struct SeasonalListView: View {
                 )
             }
         }
-    }
-}
-
-private extension CatalogEpisodeSearch.Result {
-    var rowID: String {
-        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
-        return "\(key)#\(entry.number.map(String.init) ?? "special:\(entry.slug ?? entry.title)")"
     }
 }

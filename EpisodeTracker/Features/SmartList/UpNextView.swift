@@ -78,6 +78,9 @@ struct UpNextView: View {
     }
 
     var body: some View {
+        // Einmal pro Durchlauf: durchsucht den ganzen Katalog.
+        let seasonal = seasonalContent
+
         List {
             if horizontalSizeClass == .regular {
                 UpNextSidebarIntro()
@@ -95,9 +98,9 @@ struct UpNextView: View {
 
             recommendationRow
 
-            if let seasonalContent {
+            if let seasonal {
                 Section {
-                    seasonalRow(seasonalContent)
+                    seasonalRow(seasonal)
                 }
             }
 
@@ -170,10 +173,10 @@ struct UpNextView: View {
                 }
             }
         }
-        .onChange(of: seasonalAccentsEnabled) { _, isEnabled in
-            // iPad: Sonst bleibt die Saison-Liste rechts offen, obwohl ihre
-            // Zeile links verschwunden ist.
-            if !isEnabled, case .seasonal = iPadNavSelection {
+        .onChange(of: seasonal?.season) { _, activeSeason in
+            // iPad: Verschwindet die Zeile (Schalter aus, Saison vorbei, keine
+            // Kataloge mehr), darf die Liste rechts nicht offen bleiben.
+            if case .seasonal(let selected) = iPadNavSelection, selected != activeSeason {
                 iPadNavSelection = nil
             }
         }
@@ -319,11 +322,12 @@ struct UpNextView: View {
         let teaser = content.libraryEpisodes.first { !$0.isListened }.map { SmartListDefinition.teaserText(for: $0) }
             ?? content.catalogEntries.first.map { SmartListDefinition.catalogTeaserText(for: $0.entry) }
             ?? content.libraryEpisodes.first.map { SmartListDefinition.teaserText(for: $0) }
-        let row = SeasonalRowContent(
+        let row = SmartListRowContent(
             title: content.season.listTitle,
             systemImage: content.season.systemImage,
-            teaser: teaser,
-            count: content.libraryEpisodes.count + content.catalogEntries.count
+            emptyMessage: "",
+            count: content.libraryEpisodes.count + content.catalogEntries.count,
+            teaser: teaser
         )
 
         if usesSelectionMode {
@@ -425,17 +429,41 @@ private struct AdaptiveUpNextListStyle: ViewModifier {
     }
 }
 
+/// Zeile einer Liste in „Als nächstes“: Smart Lists und die Saison-Liste,
+/// die keine `SmartListDefinition` ist.
 private struct SmartListRowContent: View {
-    let smartList: SmartListDefinition
+    let title: String
+    let systemImage: String
+    let emptyMessage: String
     var count: Int = 0
     var teaser: String?
     var onInfoTap: (() -> Void)?
+
+    init(title: String, systemImage: String, emptyMessage: String, count: Int = 0, teaser: String? = nil, onInfoTap: (() -> Void)? = nil) {
+        self.title = title
+        self.systemImage = systemImage
+        self.emptyMessage = emptyMessage
+        self.count = count
+        self.teaser = teaser
+        self.onInfoTap = onInfoTap
+    }
+
+    init(smartList: SmartListDefinition, count: Int = 0, teaser: String? = nil, onInfoTap: (() -> Void)? = nil) {
+        self.init(
+            title: smartList.displayName,
+            systemImage: smartList.icon,
+            emptyMessage: smartList.emptyStateMessage,
+            count: count,
+            teaser: teaser,
+            onInfoTap: onInfoTap
+        )
+    }
 
     var body: some View {
         HStack(spacing: 14) {
             // Einheitlich in der Akzentfarbe: neun Signalfarben konkurrierten
             // mit der gewählten Akzentfarbe (Design Review 2026-11, Befund 4).
-            Image(systemName: smartList.icon)
+            Image(systemName: systemImage)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.tint)
                 .frame(width: 34, height: 34)
@@ -443,7 +471,7 @@ private struct SmartListRowContent: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(smartList.displayName)
+                    Text(title)
                         .font(.body.weight(.semibold))
 
                     if let onInfoTap {
@@ -458,7 +486,7 @@ private struct SmartListRowContent: View {
                     }
                 }
 
-                Text(teaser ?? smartList.emptyStateMessage)
+                Text(teaser ?? emptyMessage)
                     .font(.caption)
                     .foregroundStyle(teaser != nil ? .secondary : .tertiary)
                     .lineLimit(1)
@@ -471,44 +499,6 @@ private struct SmartListRowContent: View {
                     .font(.subheadline.weight(.medium).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-/// Wie `SmartListRowContent`, aber für die Saison-Liste, die keine
-/// `SmartListDefinition` ist: Sie lässt sich nicht ausblenden oder sortieren,
-/// sondern erscheint nur in der Saison.
-private struct SeasonalRowContent: View {
-    let title: String
-    let systemImage: String
-    let teaser: String?
-    let count: Int
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.tint)
-                .frame(width: 34, height: 34)
-                .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                if let teaser {
-                    Text(teaser)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer()
-
-            Text("\(count)")
-                .font(.subheadline.weight(.medium).monospacedDigit())
-                .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }

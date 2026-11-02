@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage("appearanceMode") private var appearanceModeRawValue: String = AppearanceMode.system.rawValue
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
     @AppStorage("showsLibrarySnapshot") private var showsLibrarySnapshot = true
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
     @AppStorage("prefersCatalogProgressTotals") private var prefersCatalogProgressTotals = true
     @AppStorage(AppModelContainerFactory.cloudSyncPreferenceKey) private var prefersICloudSync = false
     @AppStorage(AppModelContainerFactory.runtimeModeDebugTitleKey) private var runtimeModeDebugTitle = "Unbekannt"
@@ -224,6 +225,7 @@ struct SettingsView: View {
         appearanceModeRawValue = AppearanceMode.system.rawValue
         appAccentColorRawValue = AppAccentColor.defaultValue.rawValue
         showsLibrarySnapshot = true
+        seasonalAccentsEnabled = true
         prefersCatalogProgressTotals = true
     }
 

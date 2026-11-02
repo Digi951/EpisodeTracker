@@ -43,7 +43,6 @@ struct SeasonalEpisodes {
     let catalogEntries: [CatalogEpisodeSearch.Result]
 
     var isEmpty: Bool { libraryEpisodes.isEmpty && catalogEntries.isEmpty }
-    var unlistenedCount: Int { libraryEpisodes.filter { !$0.isListened }.count }
 
     nonisolated static func make(
         season: CatalogSeason,
@@ -55,24 +54,33 @@ struct SeasonalEpisodes {
 
         var taggedNumbers: [String: Set<Int>] = [:]
         var taggedSlugs: [String: Set<String>] = [:]
+        var taggedUnsluggedTitles: [String: Set<String>] = [:]
         for entry in tagged {
             let key = CatalogLibraryMatcher.normalizedCollectionKey(entry.collectionName ?? "")
             switch entry.kind {
             case .regular:
                 if let number = entry.number { taggedNumbers[key, default: []].insert(number) }
             case .special:
-                if let slug = entry.slug?.lowercased() { taggedSlugs[key, default: []].insert(slug) }
+                if let slug = entry.slug?.lowercased(), !slug.isEmpty {
+                    taggedSlugs[key, default: []].insert(slug)
+                } else {
+                    taggedUnsluggedTitles[key, default: []].insert(entry.title.lowercased())
+                }
             }
         }
 
         // Eigene Folgen über den Katalog ihrer Reihe zuordnen, auch wenn der
-        // Katalog gerade nicht aktiv ist.
+        // Katalog gerade nicht aktiv ist. Spiegelbild von
+        // `CatalogEpisodeSearch.missingEntries`: was dort als vorhanden gilt,
+        // steht hier in der Bibliothek.
         let owned = libraryEpisodes.filter { episode in
             guard !episode.isHidden, let universeName = episode.universe?.name else { return false }
             let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
             if episode.isSpecial {
-                guard let slug = episode.catalogSlug?.lowercased() else { return false }
-                return taggedSlugs[key]?.contains(slug) == true
+                if let slug = episode.catalogSlug?.lowercased(), !slug.isEmpty {
+                    return taggedSlugs[key]?.contains(slug) == true
+                }
+                return taggedUnsluggedTitles[key]?.contains(episode.title.lowercased()) == true
             }
             return taggedNumbers[key]?.contains(episode.episodeNumber) == true
         }
@@ -87,29 +95,11 @@ struct SeasonalEpisodes {
             return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
         }
 
-        let existingNumbers = CatalogLibraryMatcher.existingNumbersByCollection(libraryEpisodes: libraryEpisodes)
-        let existingSlugs = CatalogLibraryMatcher.existingSpecialSlugsByCollection(libraryEpisodes: libraryEpisodes)
-        var seen = Set<String>()
-        let missing = tagged.compactMap { entry -> CatalogEpisodeSearch.Result? in
-            guard let collectionName = entry.collectionName else { return nil }
-            let key = CatalogLibraryMatcher.normalizedCollectionKey(collectionName)
-            guard activeCollectionNames.contains(key) else { return nil }
-
-            let identity: String
-            switch entry.kind {
-            case .regular:
-                guard let number = entry.number,
-                      existingNumbers[key]?.contains(number) != true
-                else { return nil }
-                identity = String(number)
-            case .special:
-                let slug = entry.slug?.lowercased()
-                if let slug, existingSlugs[key]?.contains(slug) == true { return nil }
-                identity = "special:\(slug ?? entry.title)"
-            }
-            guard seen.insert("\(key)#\(identity)").inserted else { return nil }
-            return CatalogEpisodeSearch.Result(universeName: collectionName, entry: entry)
-        }
+        let missing = CatalogEpisodeSearch.missingEntries(
+            entries: tagged,
+            activeCollectionNames: activeCollectionNames,
+            libraryEpisodes: libraryEpisodes
+        )
         .sorted { lhs, rhs in
             if lhs.universeName != rhs.universeName {
                 return lhs.universeName.localizedStandardCompare(rhs.universeName) == .orderedAscending

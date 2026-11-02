@@ -156,10 +156,3 @@ struct NewEpisodeView: View {
         .contentShape(Rectangle())
     }
 }
-
-private extension CatalogEpisodeSearch.Result {
-    var identity: String {
-        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
-        return "\(key)#\(entry.number.map(String.init) ?? "special:\(entry.slug ?? entry.title)")"
-    }
-}
