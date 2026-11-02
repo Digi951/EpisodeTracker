@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import os.log
+import UIKit
 
 #if DEBUG
 enum DemoDataProvider {
@@ -131,10 +132,43 @@ enum DemoDataProvider {
             )
         }
 
+        // Die erfundenen Reihen stehen in keinem Katalog. Ein direkter Link
+        // zeigt trotzdem den Streaming-Button in Detail und Empfehlung.
+        let allEpisodes = [d1, d2, d3, d4, d5, d6, d7, t1, t2, t3, t4, t5, f1, f2, f3]
+        allEpisodes.forEach { $0.streamingURL = "https://open.spotify.com/" }
+
+        attachCovers(to: [d1, d2, d3, f3, d5, d6, t1, t3, f1, d4, d7, t2])
+
         do {
             try context.save()
         } catch {
             logger.error("Demo seeding failed to save: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    /// Launch-Argument `-demoCoverDirectory /Pfad`: Bilder aus dem Ordner
+    /// (alphabetisch) werden der Reihe nach Cover der übergebenen Folgen.
+    /// Nur für Store-Screenshots; ohne das Argument bleibt alles ohne Cover.
+    static let coverDirectoryKey = "demoCoverDirectory"
+
+    private static func attachCovers(to episodes: [Episode]) {
+        guard let path = UserDefaults.standard.string(forKey: coverDirectoryKey) else { return }
+        let directory = URL(fileURLWithPath: path, isDirectory: true)
+        let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "heic"]
+        let files = ((try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
+            .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        let store = CoverImageStore()
+        for (index, (episode, file)) in zip(episodes, files).enumerated() {
+            guard let image = UIImage(contentsOfFile: file.path) else { continue }
+            let name = "demo-cover-\(index + 1)"
+            do {
+                try store.save(image, name: name)
+                CoverImageCache.shared.removeImage(named: name)
+                episode.coverImageName = name
+            } catch {
+                logger.error("Demo cover \(file.lastPathComponent, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+            }
         }
     }
 }
