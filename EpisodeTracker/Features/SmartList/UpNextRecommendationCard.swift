@@ -12,7 +12,13 @@ struct UpNextRecommendationCard: View {
     @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private var episode: Episode { recommendation.episode }
+
+    private var stacksButtons: Bool {
+        isCompact || dynamicTypeSize >= .xxLarge
+    }
 
     private var streamingService: StreamingService {
         let profile = StreamingMarketProfile.current
@@ -42,25 +48,12 @@ struct UpNextRecommendationCard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
-            HStack(spacing: 10) {
-                if let streamingLink {
-                    Link(destination: streamingLink.url) {
-                        Label(streamingLink.label, systemImage: streamingLink.systemImage)
-                            .font(.body.weight(.semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-
-                Button(action: markListened) {
-                    Label("Gehört", systemImage: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: streamingLink == nil ? .infinity : nil)
-                }
-                .buttonStyle(.bordered)
-            }
+            // In der schmalen iPad-Sidebar und bei großer Schrift passen beide
+            // Beschriftungen nicht nebeneinander, dort untereinander.
+            let layout = stacksButtons
+                ? AnyLayout(VStackLayout(spacing: 10))
+                : AnyLayout(HStackLayout(spacing: 10))
+            layout { actionButtons(stacked: stacksButtons) }
             .buttonBorderShape(.capsule)
             .controlSize(.large)
 
@@ -75,6 +68,31 @@ struct UpNextRecommendationCard: View {
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func actionButtons(stacked: Bool) -> some View {
+        if let streamingLink {
+            Link(destination: streamingLink.url) {
+                Label(streamingLink.label, systemImage: streamingLink.systemImage)
+                    .font(.body.weight(.semibold))
+                    // In der Liste färbt der Zeilen-Tint das Symbol sonst in
+                    // Button-Blau, es verschwindet.
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+
+        Button(action: markListened) {
+            Label("Gehört", systemImage: "checkmark")
+                .font(.body.weight(.semibold))
+                .lineLimit(1)
+                .frame(maxWidth: stacked || streamingLink == nil ? .infinity : nil)
+        }
+        .buttonStyle(.bordered)
     }
 
     @ViewBuilder

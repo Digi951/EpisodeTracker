@@ -155,6 +155,7 @@ struct EpisodeListView: View {
                 }
             }
         }
+        .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: filteredEpisodes))
         .searchable(text: $controls.searchText, prompt: "Folge suchen...")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -349,6 +350,9 @@ struct EpisodeListView: View {
                         requestDeleteEpisodes(group.episodes, at: offsets)
                     }
                     .deleteDisabled(isEditing)
+                    // Spaltenbreite pro Reihe: Folge 127 einer Reihe schiebt
+                    // die einstelligen Nummern der anderen nicht nach rechts.
+                    .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: group.episodes))
                 }
             } header: {
                 EpisodeGroupHeader(

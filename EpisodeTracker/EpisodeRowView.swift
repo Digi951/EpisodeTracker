@@ -1,5 +1,31 @@
 import SwiftUI
 
+/// Breite der Nummernspalte für alle Zeilen einer Liste: so viele Stellen wie
+/// die längste Nummer, mindestens Platz für Favoritenkreis oder ✨, wenn einer
+/// vorkommt. Listen ohne Angabe rechnen mit drei Stellen und Kreis.
+struct EpisodeNumberColumn: Equatable {
+    var digits = 3
+    var hasBadge = true
+
+    init() {}
+
+    init(episodes: [Episode]) {
+        digits = String(episodes.map(\.episodeNumber).max() ?? 1).count
+        hasBadge = episodes.contains { $0.isFavorite || $0.showsSpecialBadge }
+    }
+}
+
+private struct EpisodeNumberColumnKey: EnvironmentKey {
+    static let defaultValue = EpisodeNumberColumn()
+}
+
+extension EnvironmentValues {
+    var episodeNumberColumn: EpisodeNumberColumn {
+        get { self[EpisodeNumberColumnKey.self] }
+        set { self[EpisodeNumberColumnKey.self] = newValue }
+    }
+}
+
 struct EpisodeRowView: View {
     let episode: Episode
     let anyEpisodeHasCover: Bool
@@ -8,6 +34,14 @@ struct EpisodeRowView: View {
     /// Reihenname vorne am Titel nur die Überschrift und wird gekürzt.
     var omitsSeriesPrefix: Bool = false
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+    @Environment(\.episodeNumberColumn) private var numberColumn
+    @ScaledMetric(relativeTo: .headline) private var digitWidth: CGFloat = 10.5
+    @ScaledMetric(relativeTo: .headline) private var badgeWidth: CGFloat = 30
+
+    /// Nicht breiter als nötig: Jeder Punkt hier fehlt dem Titel.
+    private var numberSlotWidth: CGFloat {
+        max(CGFloat(numberColumn.digits) * digitWidth, numberColumn.hasBadge ? badgeWidth : 0)
+    }
 
     private var notePreview: String? {
         guard let note = episode.personalNote?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty else {
@@ -63,7 +97,7 @@ struct EpisodeRowView: View {
     // bewusst nur noch in der Detailansicht.
     @ViewBuilder
     private var numberSlot: some View {
-        let slotWidth: CGFloat = isInSidebar ? 26 : 40
+        let slotWidth: CGFloat = isInSidebar ? 26 : numberSlotWidth
         if episode.isFavorite {
             let circleSize: CGFloat = isInSidebar ? 24 : 30
             numberSlotContent
@@ -81,25 +115,28 @@ struct EpisodeRowView: View {
                         .background(.background, in: Circle())
                         .offset(x: 3, y: -3)
                 }
-                .frame(width: slotWidth, alignment: .center)
+                .frame(width: slotWidth, alignment: .trailing)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(episode.isSpecial ? "\(specialAccessibilityLabel), Favorit" : "Folge \(episode.episodeNumber), Favorit"))
         } else if episode.showsSpecialBadge {
             numberSlotContent
                 .font(.headline)
                 .foregroundStyle(appAccentColor.color)
-                .frame(width: slotWidth, alignment: .center)
+                .frame(width: slotWidth, alignment: .trailing)
                 .accessibilityLabel(Text(specialAccessibilityLabel))
         } else {
             numberSlotContent
                 .font(.headline)
                 .foregroundStyle(.secondary)
-                .frame(width: slotWidth, alignment: .center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                // Rechtsbündig wie eine Nummernspalte: 1 und 240 stehen untereinander.
+                .frame(width: slotWidth, alignment: .trailing)
         }
     }
 
     var body: some View {
-        HStack(spacing: isInSidebar ? 8 : 12) {
+        HStack(spacing: isInSidebar ? 8 : 13) {
             numberSlot
 
             if let coverName = episode.coverImageName, !coverName.isEmpty {
@@ -157,8 +194,11 @@ struct EpisodeRowView: View {
                 }
             }
             .layoutPriority(1)
+            // Trennlinie ab dem Titel, sonst springt sie mit der Stellenzahl.
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
 
-            Spacer()
+            // Ohne Mindestbreite: Der Titel darf bis an Häkchen oder Pille reichen.
+            Spacer(minLength: 0)
 
             if episode.isListened {
                 Image(systemName: "checkmark")
@@ -179,6 +219,9 @@ struct EpisodeRowView: View {
                     .transition(.opacity)
             }
         }
+        // Der Standard-Zeileneinzug (20 pt) ist links doppelt so breit wie der
+        // Abstand zum Cover; so steht die Nummer mittig zwischen Rand und Cover.
+        .padding(.leading, isInSidebar ? 0 : -7)
     }
 }
 
