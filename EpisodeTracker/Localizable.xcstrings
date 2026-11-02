@@ -9244,6 +9244,28 @@
         }
       }
     },
+    "Seasonal.Christmas.EmptyHint" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeit für ein Weihnachtshörspiel?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time for a Christmas episode?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envie d’un épisode de Noël ?"
+          }
+        }
+      }
+    },
     "Seasonal.Section.Library" : {
       "localizations" : {
         "de" : {

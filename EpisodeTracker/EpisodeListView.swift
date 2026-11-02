@@ -458,6 +458,8 @@ private struct EmptyFilteredEpisodesView: View {
 private struct EmptyLibraryOnboardingView: View {
     let onAddFirstEpisode: () -> Void
 
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
+
     // Bewusst keine eigene ScrollView: diese View ist bereits eine Zeile in
     // der äußeren `List` (siehe `contentRows`) und nimmt damit automatisch
     // an deren Scrollen und an `.contentMargins(.bottom, ...)` teil. Eine
@@ -465,16 +467,33 @@ private struct EmptyLibraryOnboardingView: View {
     // lässt den Fußtext hinter der Tab-Bar verschwinden (Paket 6, P6-A;
     // Review vom 08.09.2026, `docs/reviews/2026-09-08/01-erststart.png`).
     var body: some View {
+        let accent = SeasonalAccent.current(enabled: seasonalAccentsEnabled)
+
         VStack(spacing: 24) {
             Image(systemName: "headphones.circle.fill")
                 .font(.system(size: 72))
                 .foregroundStyle(.tint)
                 .symbolRenderingMode(.hierarchical)
+                .overlay(alignment: .topTrailing) {
+                    if let accent {
+                        Image(systemName: accent.symbol)
+                            .font(.system(size: 22))
+                            .foregroundStyle(accent.tint)
+                            .offset(x: 6, y: -4)
+                            .accessibilityHidden(true)
+                    }
+                }
 
             VStack(spacing: 8) {
                 Text("Dein HörspielLog ist bereit")
                     .font(.title2.weight(.semibold))
                     .multilineTextAlignment(.center)
+                if let accent {
+                    Text(accent.emptyStateHint)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 Text("Lege deine erste Folge an. Such sie in deinen Katalogen oder trag sie selbst ein.")
                     .font(.body)
                     .foregroundStyle(.secondary)

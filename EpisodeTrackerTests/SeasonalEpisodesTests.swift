@@ -19,6 +19,16 @@ final class SeasonalEpisodesTests: XCTestCase {
         XCTAssertNil(season(12, 27))
     }
 
+    func testAccentOnlyInSeasonAndWhenEnabled() {
+        let calendar = Calendar(identifier: .gregorian)
+        let december = calendar.date(from: DateComponents(year: 2026, month: 12, day: 10, hour: 12))!
+        let november = calendar.date(from: DateComponents(year: 2026, month: 11, day: 10, hour: 12))!
+
+        XCTAssertEqual(SeasonalAccent.current(enabled: true, on: december)?.season, .christmas)
+        XCTAssertNil(SeasonalAccent.current(enabled: false, on: december))
+        XCTAssertNil(SeasonalAccent.current(enabled: true, on: november))
+    }
+
     func testOwnedTaggedEpisodesComeFromLibraryAndMissingOnesFromCatalog() {
         let tkkg = Universe(name: "TKKG")
         let ownedOpen = Episode(episodeNumber: 165, title: "Advent mit Knall-Effekt", releaseYear: 2009, universe: tkkg)

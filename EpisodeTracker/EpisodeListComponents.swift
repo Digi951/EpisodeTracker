@@ -230,12 +230,16 @@ struct LibrarySnapshotView: View {
     let episodeCount: Int
     let listenedCount: Int
 
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
+
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
         return Double(listenedCount) / Double(episodeCount)
     }
 
     var body: some View {
+        let accent = SeasonalAccent.current(enabled: seasonalAccentsEnabled)
+
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(AppLocalization.format(
@@ -247,15 +251,29 @@ struct LibrarySnapshotView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(progress, format: .percent.precision(.fractionLength(0)))
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
+                HStack(spacing: 4) {
+                    if let accent {
+                        Image(systemName: accent.symbol)
+                            .font(.caption2)
+                            .accessibilityHidden(true)
+                    }
+                    Text(progress, format: .percent.precision(.fractionLength(0)))
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(accentStyle(accent))
             }
 
             ProgressView(value: progress)
+                .tint(accentStyle(accent))
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Ohne Saison die gewählte Akzentfarbe der App (`.tint`), nicht
+    /// `Color.accentColor`, sonst ginge die Auswahl in den Einstellungen verloren.
+    private func accentStyle(_ accent: SeasonalAccent?) -> AnyShapeStyle {
+        accent.map { AnyShapeStyle($0.tint) } ?? AnyShapeStyle(.tint)
     }
 }
 

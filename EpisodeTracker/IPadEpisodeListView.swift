@@ -45,6 +45,7 @@ private struct IPadEpisodeListView: View {
     @Query(sort: \Mood.name) private var moods: [Mood]
 
     @AppStorage("prefersICloudSync") private var prefersICloudSync = false
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
     let libraryTitle: String
     @Binding var selection: Episode?
 
@@ -301,7 +302,15 @@ private struct IPadEpisodeListView: View {
             ContentUnavailableView {
                 Label(episodes.isEmpty ? "Noch keine Folgen" : "Nichts gefunden", systemImage: "magnifyingglass")
             } description: {
-                Text(episodes.isEmpty ? "Lege deine erste Folge an." : "Passe Suche oder Filter an.")
+                if episodes.isEmpty {
+                    if let accent = SeasonalAccent.current(enabled: seasonalAccentsEnabled) {
+                        Text(accent.emptyStateHint + " " + String(localized: "Lege deine erste Folge an."))
+                    } else {
+                        Text("Lege deine erste Folge an.")
+                    }
+                } else {
+                    Text("Passe Suche oder Filter an.")
+                }
             }
             .listRowInsets(EdgeInsets(top: 18, leading: 10, bottom: 12, trailing: 10))
             .listRowBackground(Color.clear)
