@@ -23,6 +23,9 @@ struct EpisodeEditView: View {
     var episode: Episode?
     var prefillEntry: CatalogEntry?
     var prefillUniverseName: String?
+    /// Gesetzt, wenn das Formular aus der Suche „Neue Folge“ geöffnet wurde:
+    /// Sichern schließt dann den ganzen Ablauf, nicht nur dieses Formular.
+    var onSaved: (() -> Void)? = nil
 
     @State private var draft = EpisodeEditDraft()
     @State private var coverHandler = EpisodeEditCoverHandler()
@@ -105,7 +108,8 @@ struct EpisodeEditView: View {
     }
 
     private var titleSuggestions: [CatalogEntry] {
-        guard isNew else { return [] }
+        // Aus der Suche übernommen: Die Folge steht schon fest.
+        guard isNew, prefillEntry == nil else { return [] }
         let activeCollectionNames = activeCatalogCollectionNames
         return CatalogTitleAutocomplete.suggestions(
             for: draft.title,
@@ -257,8 +261,11 @@ struct EpisodeEditView: View {
         .listStyle(.insetGrouped)
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Abbrechen") { dismiss() }
+            if onSaved == nil {
+                // Aus der Suche heraus führt der Zurück-Pfeil zur Suche.
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }
+                }
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Sichern") {
@@ -276,7 +283,11 @@ struct EpisodeEditView: View {
                     )
                     switch outcome {
                     case .saved:
-                        dismiss()
+                        if let onSaved {
+                            onSaved()
+                        } else {
+                            dismiss()
+                        }
                     case .duplicateNumber:
                         formValidationMessage = "Diese Folgennummer ist in diesem Katalog schon vorhanden."
                     case .saveFailed:
@@ -377,8 +388,8 @@ struct EpisodeEditView: View {
             } else {
                 draft.selectedUniverse = preferredCatalogUniverse ?? activeUniverses.first
             }
-        } else if draft.releaseYearText.isEmpty {
-            draft.releaseYearText = "1979"
+        } else if draft.selectedUniverse == nil {
+            // Kein vorbelegtes Jahr: „1979“ passte nur zur ersten Reihe.
             draft.selectedUniverse = preferredCatalogUniverse ?? activeUniverses.first
         }
     }
@@ -616,17 +627,13 @@ private struct EpisodeFormSection: View {
             }
 
             if usesEpisodeNumbers {
-                Toggle("Sonderfolge", isOn: $isSpecial)
-            }
-
-            if usesEpisodeNumbers {
                 LabeledContent(isSpecial ? "Nummer (optional)" : "Nummer") {
                     TextField(isSpecial ? "Nummer (optional)" : "Nummer", text: $episodeNumberText)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.numberPad)
                 }
             }
-            if let catalogMatch, isNew {
+            if let catalogMatch, isNew, catalogMatch.title != title {
                 Button(action: onApplyCatalogMatch) {
                     Label(
                         "Titel übernehmen: \(catalogMatch.title) (\(String(catalogMatch.releaseYear)))",
@@ -675,6 +682,10 @@ private struct EpisodeFormSection: View {
                 TextField("Jahr", text: $releaseYearText)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
+            }
+            // Ausnahmefall, daher unter den Pflichtfeldern statt vor der Nummer.
+            if usesEpisodeNumbers {
+                Toggle("Sonderfolge", isOn: $isSpecial)
             }
             if isNew && !yearSuggestions.isEmpty && episodeNumberText.isEmpty {
                 DisclosureGroup("Folgen aus \(releaseYearText)") {

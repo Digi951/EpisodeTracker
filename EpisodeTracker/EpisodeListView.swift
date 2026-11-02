@@ -184,7 +184,7 @@ struct EpisodeListView: View {
         }
         .sheet(isPresented: $showingAddEpisode) {
             NavigationStack {
-                EpisodeEditView()
+                NewEpisodeView()
             }
         }
         .sheet(isPresented: $showingNewsOverview) {
@@ -475,7 +475,7 @@ private struct EmptyLibraryOnboardingView: View {
                 Text("Dein HörspielLog ist bereit")
                     .font(.title2.weight(.semibold))
                     .multilineTextAlignment(.center)
-                Text("Lege deine erste Folge an. Wenn sie im Katalog steht, wird der Titel automatisch vorgeschlagen.")
+                Text("Lege deine erste Folge an. Such sie in deinen Katalogen oder trag sie selbst ein.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -484,14 +484,14 @@ private struct EmptyLibraryOnboardingView: View {
 
             VStack(spacing: 12) {
                 OnboardingStepRow(
-                    systemImage: "books.vertical",
-                    title: "Katalog wählen",
-                    detail: "Wähle die Reihe, zu der deine Folge gehört."
+                    systemImage: "magnifyingglass",
+                    title: "Folge suchen",
+                    detail: "Tippe die Nummer oder einen Teil des Titels."
                 )
                 OnboardingStepRow(
-                    systemImage: "number",
-                    title: "Folgennummer eingeben",
-                    detail: "Passende Titel erscheinen als Vorschlag."
+                    systemImage: "hand.tap",
+                    title: "Treffer antippen",
+                    detail: "Titel, Nummer und Jahr werden übernommen."
                 )
                 OnboardingStepRow(
                     systemImage: "checkmark.circle",

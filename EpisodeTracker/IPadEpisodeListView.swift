@@ -224,7 +224,7 @@ private struct IPadEpisodeListView: View {
         }
         .sheet(isPresented: $showingAddEpisode) {
             NavigationStack {
-                EpisodeEditView()
+                NewEpisodeView()
             }
         }
         .sheet(isPresented: $showingNewsOverview) {

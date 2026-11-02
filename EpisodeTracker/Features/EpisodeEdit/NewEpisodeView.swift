@@ -1,0 +1,170 @@
+import SwiftUI
+import SwiftData
+
+/// Einstieg für „Neue Folge“: erst suchen, dann das vorausgefüllte Formular.
+/// Ohne aktiven Katalog gibt es nichts zu suchen, dann direkt das Formular.
+struct NewEpisodeView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Episode.episodeNumber) private var allEpisodes: [Episode]
+    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
+
+    @State private var query = ""
+    @State private var isSearchPresented = true
+    @State private var selection: Selection?
+
+    /// Ziel des Formulars; `entry == nil` ist „Ohne Katalog anlegen“.
+    private struct Selection: Identifiable, Hashable {
+        let id = UUID()
+        let entry: CatalogEntry?
+        let universeName: String?
+
+        static func == (lhs: Selection, rhs: Selection) -> Bool { lhs.id == rhs.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    }
+
+    private var activeCollectionNames: Set<String> {
+        let activeIDs = ActiveCatalogStore().activeIDs
+        return Set(
+            EpisodeCatalog.shared.managedSources
+                .filter { activeIDs.contains($0.id) }
+                .map { CatalogLibraryMatcher.normalizedCollectionKey($0.name) }
+        )
+    }
+
+    private var results: [CatalogEpisodeSearch.Result] {
+        CatalogEpisodeSearch.results(
+            for: query,
+            entries: EpisodeCatalog.shared.allEntries,
+            activeCollectionNames: activeCollectionNames,
+            libraryEpisodes: allEpisodes
+        )
+    }
+
+    var body: some View {
+        if activeCollectionNames.isEmpty {
+            EpisodeEditView()
+        } else {
+            searchList
+        }
+    }
+
+    private var searchList: some View {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentResults = results
+
+        return List {
+            if trimmedQuery.isEmpty {
+                Section {
+                    Label {
+                        Text(String(
+                            localized: "NewEpisode.Search.Hint",
+                            defaultValue: "Tippe eine Folgennummer oder einen Teil des Titels."
+                        ))
+                    } icon: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            } else if currentResults.isEmpty {
+                Section {
+                    Text(String(
+                        localized: "NewEpisode.Search.NoResults",
+                        defaultValue: "Keine passende Folge in deinen Katalogen, oder sie steht schon in deiner Bibliothek."
+                    ))
+                    .foregroundStyle(.secondary)
+                }
+            } else {
+                Section(String(localized: "NewEpisode.Search.ResultsHeader", defaultValue: "Aus deinen Katalogen")) {
+                    ForEach(currentResults, id: \.identity) { result in
+                        Button {
+                            selection = Selection(entry: result.entry, universeName: result.universeName)
+                        } label: {
+                            resultRow(result)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            Section {
+                Button {
+                    selection = Selection(entry: nil, universeName: nil)
+                } label: {
+                    Label(
+                        String(localized: "NewEpisode.Search.Manual", defaultValue: "Ohne Katalog anlegen"),
+                        systemImage: "square.and.pencil"
+                    )
+                }
+            } footer: {
+                Text(String(
+                    localized: "NewEpisode.Search.ManualFooter",
+                    defaultValue: "Für Folgen, die in keinem Katalog stehen."
+                ))
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Neue Folge")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(
+            text: $query,
+            isPresented: $isSearchPresented,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: Text(String(localized: "NewEpisode.Search.Prompt", defaultValue: "Nummer oder Titel"))
+        )
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Abbrechen") { dismiss() }
+            }
+        }
+        .navigationDestination(item: $selection) { selection in
+            EpisodeEditView(
+                prefillEntry: selection.entry,
+                prefillUniverseName: selection.universeName,
+                onSaved: { dismiss() }
+            )
+        }
+    }
+
+    private func resultRow(_ result: CatalogEpisodeSearch.Result) -> some View {
+        let accent = AppAccentColor.resolved(from: appAccentColorRawValue).color
+        return HStack(spacing: 12) {
+            Group {
+                if result.entry.kind == .special {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(accent)
+                } else {
+                    Text(result.entry.number.map(String.init) ?? "–")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.headline)
+            .frame(width: 40, alignment: .center)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(result.entry.title)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                Text("\(AppLocalization.displayName(forUniverseName: result.universeName)) · \(String(result.entry.releaseYear))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+private extension CatalogEpisodeSearch.Result {
+    var identity: String {
+        let key = CatalogLibraryMatcher.normalizedCollectionKey(universeName)
+        return "\(key)#\(entry.number.map(String.init) ?? "special:\(entry.slug ?? entry.title)")"
+    }
+}

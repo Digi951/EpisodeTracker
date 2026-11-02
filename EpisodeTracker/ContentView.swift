@@ -118,7 +118,7 @@ private struct PhoneEpisodesRoot: View {
                     case .episode(let episode):
                         EpisodeDetailView(episode: episode)
                     case .addEpisode:
-                        EpisodeEditView()
+                        NewEpisodeView()
                     }
                 }
                 .navigationDestination(for: SmartListNavigation.self) { destination in
