@@ -104,6 +104,20 @@ final class NewsOverviewOrganizerTests: XCTestCase {
         XCTAssertEqual(sections.baldVerfuegbar.first?.events.map(\.episodeNumber), [4, 5])
     }
 
+    func testPastUpcomingEventIsHiddenButTodayAndFutureStay() {
+        let today = Calendar.current.startOfDay(for: now)
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today)!
+        let past = makeEvent(kind: .upcoming, episodeNumber: 1, revision: CalendarDayFormatter.string(from: yesterday), discoveredAt: now)
+        let current = makeEvent(kind: .upcoming, episodeNumber: 2, revision: CalendarDayFormatter.string(from: today), discoveredAt: now)
+        let future = makeEvent(kind: .upcoming, episodeNumber: 3, revision: CalendarDayFormatter.string(from: tomorrow), discoveredAt: now)
+        let undated = makeEvent(kind: .upcoming, episodeNumber: 4, revision: "unbekannt", discoveredAt: now)
+
+        let sections = NewsOverviewOrganizer.sections(from: [past, current, future, undated], now: now)
+
+        XCTAssertEqual(sections.baldVerfuegbar.flatMap(\.events), [current, future, undated])
+    }
+
     // MARK: Neue Reihen
 
     func testNewCatalogEventsAreSortedNewestFirst() {

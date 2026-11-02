@@ -52,7 +52,17 @@ enum NewsOverviewOrganizer {
             ? newEpisodes
             : newEpisodes.filter(isWithinDefaultWindow)
 
-        let upcoming = events.filter { $0.kind == .upcoming }
+        // Vergangene Termine ausblenden (gleiche Regel wie `UpcomingReleasesFeed`):
+        // ein Termin von gestern ist kein "bald" mehr — die erschienene Folge
+        // kommt über "Neu erschienen", sobald sie im Katalog steht. Ein Termin
+        // von heute bleibt sichtbar; Zeilen ohne lesbares Datum ("Termin offen")
+        // ebenfalls.
+        let startOfToday = Calendar.current.startOfDay(for: now)
+        let upcoming = events.filter { event in
+            guard event.kind == .upcoming else { return false }
+            guard let date = CalendarDayFormatter.date(from: event.revision) else { return true }
+            return date >= startOfToday
+        }
         let dateGroups = Dictionary(grouping: upcoming) { event -> Date? in
             CalendarDayFormatter.date(from: event.revision)
         }

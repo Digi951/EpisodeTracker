@@ -197,6 +197,29 @@ enum NewsReconciler {
         return result
     }
 
+    /// Räumt `.upcoming`-Ereignisse auf, deren Termin vor heute liegt — sofort
+    /// und unabhängig von `seenAt`. Die 90-Tage-Regel aus `pruneSeenEvents`
+    /// passt hier nicht: ein nie geöffneter Termin bliebe sonst für immer
+    /// liegen. `lastReconciledRevisions` bleibt wie dort unangetastet: steht
+    /// die Zeile noch unverändert im Feed, taucht sie nicht wieder auf; ein
+    /// verschobener Termin (neue Revision) dagegen schon.
+    static func pruneExpiredUpcomingEvents(
+        document: NewsStoreDocument,
+        now: Date = Date()
+    ) -> NewsStoreDocument {
+        let startOfToday = Calendar.current.startOfDay(for: now)
+        var result = document
+        result.events.removeAll { event in
+            guard event.kind == .upcoming,
+                  let date = CalendarDayFormatter.date(from: event.revision)
+            else {
+                return false
+            }
+            return date < startOfToday
+        }
+        return result
+    }
+
     /// Entfernt Ereignisse deaktivierter Kataloge aus dem Protokoll (Review-
     /// Fund #3): `candidateEvents` verhindert nur, dass ein deaktivierter
     /// Katalog NEUE Zeilen erzeugt — ohne diesen Schritt blieben bereits

@@ -475,6 +475,7 @@ enum AppDataBootstrapper {
         )
         document = NewsReconciler.removeEventsForDeactivatedCatalogs(document: document, activeCatalogIDs: activeCatalogIDs)
         document = NewsReconciler.pruneSeenEvents(document: document)
+        document = NewsReconciler.pruneExpiredUpcomingEvents(document: document)
         try? newsStore.save(document)
     }
 

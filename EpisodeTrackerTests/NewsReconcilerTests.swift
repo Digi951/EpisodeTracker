@@ -371,6 +371,87 @@ final class NewsReconcilerTests: XCTestCase {
         XCTAssertEqual(after90Days.events.count, 0)
     }
 
+    private func reconciledDocument(with release: UpcomingRelease, now: Date) -> NewsStoreDocument {
+        let document = NewsReconciler.establishBaselineIfNeeded(
+            document: NewsStoreDocument(),
+            deltas: [],
+            availability: nil,
+            upcoming: [],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+        return NewsReconciler.reconcile(
+            document: document,
+            deltas: [],
+            availability: nil,
+            upcoming: [release],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: now
+        )
+    }
+
+    func testExpiredUpcomingEventIsPrunedEvenIfUnseenButTodayStays() {
+        let releaseDay = Calendar.current.startOfDay(for: now)
+        let release = UpcomingRelease(catalogID: catalogID, number: 244, title: "Die Spur", releaseDate: releaseDay)
+        let document = reconciledDocument(with: release, now: now)
+        XCTAssertNil(document.events.first?.seenAt)
+
+        let onReleaseDay = NewsReconciler.pruneExpiredUpcomingEvents(document: document, now: now)
+        XCTAssertEqual(onReleaseDay.events.count, 1, "release day itself still counts as upcoming")
+
+        let dayAfter = Calendar.current.date(byAdding: .day, value: 1, to: releaseDay)!
+        let afterRelease = NewsReconciler.pruneExpiredUpcomingEvents(document: document, now: dayAfter)
+        XCTAssertTrue(afterRelease.events.isEmpty, "a past date is pruned regardless of seenAt")
+    }
+
+    func testExpiredUpcomingPruneLeavesOtherKindsAndUndatedRowsAlone() {
+        var document = NewsStoreDocument()
+        let undated = NewsEvent(kind: .upcoming, universeName: universeName, catalogID: catalogID, episodeNumber: 245, title: "Offen", revision: "unbekannt", discoveredAt: now)
+        document.events = [makeSeenEvent(seenAt: nil), undated]
+
+        let result = NewsReconciler.pruneExpiredUpcomingEvents(document: document, now: now.addingTimeInterval(365 * 24 * 60 * 60))
+
+        XCTAssertEqual(result.events.count, 2)
+    }
+
+    func testPrunedExpiredUpcomingDoesNotReappearButReturnsWhenShifted() {
+        let releaseDay = Calendar.current.startOfDay(for: now)
+        let release = UpcomingRelease(catalogID: catalogID, number: 244, title: "Die Spur", releaseDate: releaseDay)
+        let dayAfter = Calendar.current.date(byAdding: .day, value: 1, to: releaseDay)!
+        let pruned = NewsReconciler.pruneExpiredUpcomingEvents(document: reconciledDocument(with: release, now: now), now: dayAfter)
+        XCTAssertTrue(pruned.events.isEmpty)
+
+        // Feed still carries the unchanged row → must not come back.
+        let unchanged = NewsReconciler.reconcile(
+            document: pruned,
+            deltas: [],
+            availability: nil,
+            upcoming: [release],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: dayAfter
+        )
+        XCTAssertTrue(unchanged.events.isEmpty)
+
+        // Postponed to a later date → new revision, row surfaces again unseen.
+        let shiftedDate = Calendar.current.date(byAdding: .day, value: 7, to: releaseDay)!
+        let shifted = UpcomingRelease(catalogID: catalogID, number: 244, title: "Die Spur", releaseDate: shiftedDate)
+        let result = NewsReconciler.reconcile(
+            document: pruned,
+            deltas: [],
+            availability: nil,
+            upcoming: [shifted],
+            namesByCatalogID: namesByCatalogID(),
+            activeCatalogIDs: [catalogID],
+            now: dayAfter
+        )
+        XCTAssertEqual(result.events.count, 1)
+        XCTAssertNil(result.events.first?.seenAt)
+        XCTAssertEqual(result.events.first?.revision, CalendarDayFormatter.string(from: shiftedDate))
+    }
+
     func testPrunedButUnchangedEventDoesNotReappearOnNextReconcile() {
         let delta = makeDelta(currentVersion: 5, addedNumbers: [241])
 
