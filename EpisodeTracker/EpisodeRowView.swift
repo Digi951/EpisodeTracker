@@ -35,6 +35,7 @@ struct EpisodeRowView: View {
     var omitsSeriesPrefix: Bool = false
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
     @Environment(\.episodeNumberColumn) private var numberColumn
+    @Environment(\.editMode) private var editMode
     @ScaledMetric(relativeTo: .headline) private var digitWidth: CGFloat = 10.5
     @ScaledMetric(relativeTo: .headline) private var badgeWidth: CGFloat = 30
 
@@ -221,7 +222,8 @@ struct EpisodeRowView: View {
         }
         // Der Standard-Zeileneinzug (20 pt) ist links doppelt so breit wie der
         // Abstand zum Cover; so steht die Nummer mittig zwischen Rand und Cover.
-        .padding(.leading, isInSidebar ? 0 : -7)
+        // Im Auswahlmodus steht der Auswahlkreis davor, dort kein Versatz.
+        .padding(.leading, isInSidebar || editMode?.wrappedValue.isEditing == true ? 0 : -7)
     }
 }
 

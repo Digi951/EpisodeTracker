@@ -68,6 +68,7 @@ struct SeasonalListView: View {
                             }
                         }
                     }
+                    .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: content.libraryEpisodes))
                 }
             }
 

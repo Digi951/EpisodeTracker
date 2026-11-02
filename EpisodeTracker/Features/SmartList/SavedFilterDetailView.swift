@@ -35,6 +35,7 @@ struct SavedFilterDetailView: View {
                     EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
                 }
             }
+            .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: filteredEpisodes))
         }
         .listStyle(.insetGrouped)
         .navigationTitle(filter.name)

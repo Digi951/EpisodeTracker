@@ -433,6 +433,7 @@ private struct SmartListEpisodeContent: View {
                     }
                 }
             }
+            .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: displayedEpisodes))
         }
     }
 }
@@ -480,6 +481,7 @@ private struct SmartListGroupedEpisodeContent: View {
                             }
                         }
                     }
+                    .environment(\.episodeNumberColumn, EpisodeNumberColumn(episodes: group.episodes))
                 } header: {
                     Text(group.universeName)
                 }
