@@ -13,7 +13,9 @@ enum DemoDataProvider {
 
     static func makeContainerSet() -> AppModelContainerSet {
         do {
-            let config = ModelConfiguration(isStoredInMemoryOnly: true)
+            // cloudKitDatabase defaults to .automatic and would attach CloudKit mirroring
+            // to the in-memory store; its setup races the seed save and crashes on launch.
+            let config = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             let container = try ModelContainer(
                 for: Episode.self, Mood.self, Universe.self,
                 configurations: config
