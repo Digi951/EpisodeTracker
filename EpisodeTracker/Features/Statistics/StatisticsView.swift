@@ -23,7 +23,8 @@ struct StatisticsView: View {
                 StatisticsOverviewItem(
                     kind: .averageRating,
                     // Lokalisiertes Dezimaltrennzeichen ("3,9" in DE/FR) statt "%.1f".
-                    value: "\(avg.formatted(.number.precision(.fractionLength(1)))) ⭐"
+                    // Kein Stern hinter der Zahl: Das Kachel-Icon zeigt ihn schon.
+                    value: avg.formatted(.number.precision(.fractionLength(1)))
                 )
             )
         }

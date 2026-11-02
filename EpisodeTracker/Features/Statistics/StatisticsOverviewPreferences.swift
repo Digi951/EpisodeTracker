@@ -55,25 +55,14 @@ enum StatisticsOverviewKind: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .episodes: "list.number"
-        case .listened: "checkmark.circle"
-        case .open: "circle"
-        case .totalListens: "ear"
-        case .averageRating: "star"
+        // Einheitlich gefüllte SF Symbols statt der früheren Emoji-Kacheln.
+        case .episodes: "headphones"
+        case .listened: "checkmark.circle.fill"
+        case .open: "circle.dashed"
+        case .totalListens: "arrow.counterclockwise"
+        case .averageRating: "star.fill"
         case .favorites: "heart.fill"
         case .bookmarked: "bookmark.fill"
-        }
-    }
-
-    var emoji: String {
-        switch self {
-        case .episodes:      "🎧"
-        case .listened:      "✅"
-        case .open:          "⏳"
-        case .totalListens:  "🔄"
-        case .averageRating: "⭐"
-        case .favorites:     "❤️"
-        case .bookmarked:    "🔖"
         }
     }
 }

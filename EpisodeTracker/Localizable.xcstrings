@@ -2322,28 +2322,6 @@
         }
       }
     },
-    "Cloud-Sync wird erst nach dem nächsten App-Start aktiv." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cloud-Sync wird erst nach dem nächsten App-Start aktiv."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cloud sync becomes active after the next app launch."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La synchronisation iCloud ne sera active qu’au prochain démarrage de l’app."
-          }
-        }
-      }
-    },
     "Cover" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9152,6 +9130,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le titre, le numéro et l’année sont repris."
+          }
+        }
+      }
+    },
+    "Settings.Sync.RestartToEnable" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließe die App und öffne sie neu, damit iCloud-Sync startet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close and reopen the app to start iCloud sync."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferme l’app et rouvre-la pour lancer la synchronisation iCloud."
+          }
+        }
+      }
+    },
+    "Settings.Sync.RestartToDisable" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließe die App und öffne sie neu, damit iCloud-Sync endet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close and reopen the app to stop iCloud sync."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferme l’app et rouvre-la pour arrêter la synchronisation iCloud."
           }
         }
       }

@@ -66,4 +66,28 @@ final class FeatureAnnouncementTests: XCTestCase {
     func testShouldShowFalseWhenFreshInstallAndLibraryEmpty() {
         XCTAssertFalse(FeatureAnnouncement.shouldShow(isPending: true, libraryIsEmpty: true, isEstablishedInstall: false))
     }
+
+    // MARK: - Ablauf nach einer Woche
+
+    func testShouldShowWithinFirstWeekAfterFirstSighting() {
+        let firstShown = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertTrue(FeatureAnnouncement.shouldShow(
+            isPending: true,
+            libraryIsEmpty: false,
+            isEstablishedInstall: true,
+            firstShownAt: firstShown,
+            now: firstShown.addingTimeInterval(6 * 24 * 60 * 60)
+        ))
+    }
+
+    func testShouldShowFalseOneWeekAfterFirstSighting() {
+        let firstShown = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertFalse(FeatureAnnouncement.shouldShow(
+            isPending: true,
+            libraryIsEmpty: false,
+            isEstablishedInstall: true,
+            firstShownAt: firstShown,
+            now: firstShown.addingTimeInterval(FeatureAnnouncement.visibleDuration)
+        ))
+    }
 }

@@ -14,6 +14,12 @@ import Foundation
 enum FeatureAnnouncement {
     static let storageKey = "dismissedFeatureAnnouncementFingerprint"
     static let establishedInstallKey = "featureAnnouncementEstablishedInstall"
+    /// Fingerprint und Zeitpunkt, zu dem das Banner zum ersten Mal sichtbar
+    /// war. Danach läuft es nach `visibleDuration` von selbst ab (Design
+    /// Review 2026-11, Befund 1).
+    static let firstShownFingerprintKey = "featureAnnouncementFirstShownFingerprint"
+    static let firstShownAtKey = "featureAnnouncementFirstShownAt"
+    static let visibleDuration: TimeInterval = 7 * 24 * 60 * 60
 
     /// Bump this whenever a new feature should be announced to existing users.
     /// Changing it makes the banner reappear once for everyone who updates.
@@ -36,8 +42,15 @@ enum FeatureAnnouncement {
     /// Whether a pending announcement should render given the current
     /// dismissal, library, and install-origin state. Pure so it can be unit
     /// tested without SwiftUI.
-    static func shouldShow(isPending: Bool, libraryIsEmpty: Bool, isEstablishedInstall: Bool) -> Bool {
+    static func shouldShow(
+        isPending: Bool,
+        libraryIsEmpty: Bool,
+        isEstablishedInstall: Bool,
+        firstShownAt: Date? = nil,
+        now: Date = .now
+    ) -> Bool {
         guard isPending else { return false }
+        if let firstShownAt, now.timeIntervalSince(firstShownAt) >= visibleDuration { return false }
         guard libraryIsEmpty else { return true }
         return isEstablishedInstall
     }

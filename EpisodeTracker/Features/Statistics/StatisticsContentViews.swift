@@ -318,8 +318,7 @@ private struct TopRatedStatisticRow: View {
             Spacer()
 
             if let rating = episode.rating {
-                Text("\(rating) ⭐")
-                    .foregroundStyle(.secondary)
+                CompactRatingText(rating: rating)
             }
         }
     }
@@ -376,9 +375,11 @@ struct StatisticsHeroCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let rating = episode.rating {
-                    Text("· \(rating) ⭐")
+                    Text(verbatim: "·")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    CompactRatingText(rating: rating)
+                        .font(.subheadline)
                 }
                 if episode.listenCount > 1 {
                     Text("· \(episode.listenCount)× gehört")
@@ -403,9 +404,17 @@ struct StatCardGrid: View {
     let stats: [StatisticsOverviewItem]
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            ForEach(stats) { stat in
-                StatCard(stat: stat)
+        // Bei ungerader Anzahl läuft die letzte Kachel über die volle Breite,
+        // statt allein in der linken Spalte zu stehen.
+        let pairedCount = stats.count - stats.count % 2
+        VStack(spacing: 10) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(stats.prefix(pairedCount)) { stat in
+                    StatCard(stat: stat)
+                }
+            }
+            if let last = stats.last, stats.count % 2 == 1 {
+                StatCard(stat: last)
             }
         }
         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -414,15 +423,18 @@ struct StatCardGrid: View {
     }
 }
 
-// ponytail: intentionally separate from StatSummaryTile above — iPhone (emoji tile)
-// and iPad (icon tile) already render this data with different visual designs.
-// Merge only if a shared look is explicitly wanted for both idioms.
+// ponytail: intentionally separate from StatSummaryTile above — iPhone (compact
+// tile) and iPad (taller panel tile) render this data at different sizes.
+// Both use SF Symbols in the accent color like the rest of the app.
 private struct StatCard: View {
     let stat: StatisticsOverviewItem
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(stat.kind.emoji).font(.title2)
+            Image(systemName: stat.kind.systemImage)
+                .font(.title3)
+                .foregroundStyle(.tint)
+                .accessibilityHidden(true)
             Text(stat.value).font(.title2.weight(.bold)).monospacedDigit()
             Text(stat.kind.title).font(.caption).foregroundStyle(.secondary)
         }
@@ -430,6 +442,26 @@ private struct StatCard: View {
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// „★ 4“ wie in der Folgenliste: ein gelber Stern statt Emoji hinter der Zahl.
+private struct CompactRatingText: View {
+    let rating: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "star.fill")
+                .foregroundStyle(.yellow)
+            Text("\(rating)")
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(AppLocalization.format(
+            "EpisodeRow.RatingAccessibility",
+            defaultValue: "Bewertung %lld von 5",
+            Int64(rating)
+        )))
     }
 }
 

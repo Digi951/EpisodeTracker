@@ -14,12 +14,21 @@ struct FeatureAnnouncementBannerRow: View {
 
     @AppStorage(FeatureAnnouncement.storageKey) private var dismissedFingerprint = ""
     @AppStorage(FeatureAnnouncement.establishedInstallKey) private var isEstablishedInstall = false
+    @AppStorage(FeatureAnnouncement.firstShownFingerprintKey) private var firstShownFingerprint = ""
+    @AppStorage(FeatureAnnouncement.firstShownAtKey) private var firstShownAtInterval: Double = 0
+
+    /// Nur gültig, wenn der Zeitpunkt zur aktuellen Ankündigung gehört.
+    private var firstShownAt: Date? {
+        guard firstShownFingerprint == FeatureAnnouncement.currentFingerprint, firstShownAtInterval > 0 else { return nil }
+        return Date(timeIntervalSince1970: firstShownAtInterval)
+    }
 
     private var shouldShow: Bool {
         FeatureAnnouncement.shouldShow(
             isPending: dismissedFingerprint != FeatureAnnouncement.currentFingerprint,
             libraryIsEmpty: libraryIsEmpty,
-            isEstablishedInstall: isEstablishedInstall
+            isEstablishedInstall: isEstablishedInstall,
+            firstShownAt: firstShownAt
         )
     }
 
@@ -33,6 +42,11 @@ struct FeatureAnnouncementBannerRow: View {
                 : EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
+            .onAppear {
+                guard firstShownAt == nil else { return }
+                firstShownFingerprint = FeatureAnnouncement.currentFingerprint
+                firstShownAtInterval = Date.now.timeIntervalSince1970
+            }
         }
     }
 }

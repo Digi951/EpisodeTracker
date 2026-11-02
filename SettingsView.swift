@@ -85,6 +85,7 @@ struct SettingsView: View {
             )
             SettingsDataSyncSection(
                 prefersICloudSync: $prefersICloudSync,
+                runningWithICloudSync: appContainerSet?.runtimeMode.usesCloudSync ?? false,
                 episodeCount: episodes.count,
                 backupStatusMessage: backup.statusMessage,
                 backupStatusIsError: backup.statusIsError,
@@ -274,7 +275,15 @@ private struct SettingsLibrarySection: View {
         Section {
             // Beschriftet statt eines nackten Textfelds, das wie statischer
             // Text aussah (Design Review 2026-11, Befund 7).
-            LabeledContent(String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek")) {
+            // HStack statt LabeledContent: Mit der Icon-Kachel brach der Wert
+            // sonst in eine zweite Zeile um.
+            HStack(spacing: 12) {
+                SettingsIconLabel(
+                    String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek"),
+                    systemImage: "character.cursor.ibeam"
+                )
+                .lineLimit(1)
+                .layoutPriority(1)
                 TextField(String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek"), text: $libraryTitle)
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
@@ -312,12 +321,10 @@ private struct SettingsLibrarySection: View {
             NavigationLink {
                 SavedFilterManagementView()
             } label: {
-                Label {
-                    Text(String(localized: "Settings.SavedFilters.Label", defaultValue: "Meine Listen"))
-                } icon: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .foregroundStyle(.tint)
-                }
+                SettingsIconLabel(
+                    String(localized: "Settings.SavedFilters.Label", defaultValue: "Meine Listen"),
+                    systemImage: "line.3.horizontal.decrease"
+                )
             }
 
             SettingsStreamingRow(appAccentColorRawValue: $appAccentColorRawValue)
@@ -347,10 +354,12 @@ private struct SettingsPersonalizationSection: View {
         Section("Darstellung") {
             AccentColorPickerRow(selection: $appAccentColorRawValue)
 
-            Picker("Erscheinungsbild", selection: $appearanceModeRawValue) {
+            Picker(selection: $appearanceModeRawValue) {
                 ForEach(AppearanceMode.allCases, id: \.self) { mode in
                     Text(mode.title).tag(mode.rawValue)
                 }
+            } label: {
+                SettingsIconLabel("Erscheinungsbild", systemImage: "circle.lefthalf.filled")
             }
             // Menü statt Segmenten: so steht die Beschriftung
             // „Erscheinungsbild“ sichtbar in der Zeile.
@@ -370,13 +379,15 @@ private struct SettingsPersonalizationSection: View {
                     SettingsNavigationRow(
                         title: "App-Icon",
                         subtitle: AppIconChoice.resolved(from: selectedIconName).title,
-                        systemImage: "app"
+                        systemImage: "app.fill"
                     )
                 }
             }
 #endif
 
-            Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
+            Toggle(isOn: $showsLibrarySnapshot) {
+                SettingsIconLabel("Hörstand anzeigen", systemImage: "chart.bar.fill")
+            }
         }
     }
 }
@@ -386,7 +397,7 @@ private struct AccentColorPickerRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Akzentfarbe")
+            SettingsIconLabel("Akzentfarbe", systemImage: "paintpalette.fill")
 
             HStack(spacing: 14) {
                 ForEach(AppAccentColor.allCases) { accentColor in
@@ -580,6 +591,10 @@ private struct SettingsAppIconStatusRow: View {
 
 private struct SettingsDataSyncSection: View {
     @Binding var prefersICloudSync: Bool
+    /// Läuft die App gerade mit CloudKit? Weicht der Schalter davon ab, wirkt
+    /// die Änderung erst nach einem Neustart — das steht dann direkt unter dem
+    /// Schalter statt nur im Footer (Design Review 2026-11, Befund 7).
+    let runningWithICloudSync: Bool
     let episodeCount: Int
     let backupStatusMessage: String?
     let backupStatusIsError: Bool
@@ -588,7 +603,23 @@ private struct SettingsDataSyncSection: View {
 
     var body: some View {
         Section {
-            Toggle("iCloud-Sync", isOn: $prefersICloudSync)
+            Toggle(isOn: $prefersICloudSync) {
+                SettingsIconLabel("iCloud-Sync", systemImage: "icloud.fill")
+            }
+
+            if prefersICloudSync != runningWithICloudSync {
+                Label {
+                    Text(prefersICloudSync
+                        ? String(localized: "Settings.Sync.RestartToEnable", defaultValue: "Schließe die App und öffne sie neu, damit iCloud-Sync startet.")
+                        : String(localized: "Settings.Sync.RestartToDisable", defaultValue: "Schließe die App und öffne sie neu, damit iCloud-Sync endet.")
+                    )
+                    .font(.footnote)
+                } icon: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.footnote.weight(.semibold))
+                }
+                .foregroundStyle(.orange)
+            }
 
             Button(action: onExport) {
                 SettingsActionRow(
@@ -621,9 +652,7 @@ private struct SettingsDataSyncSection: View {
         } header: {
             Text(String(localized: "Settings.DataSync.Header", defaultValue: "Daten & Sync"))
         } footer: {
-            Text("Cloud-Sync wird erst nach dem nächsten App-Start aktiv.")
-            + Text(verbatim: " ")
-            + Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
+            Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
         }
     }
 }
@@ -635,25 +664,28 @@ private struct SettingsAdvancedSection: View {
     var body: some View {
         Section {
             Toggle(isOn: $prefersCatalogProgressTotals) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Katalogfortschritt verwenden")
-                    Text(String(
+                SettingsNavigationRow(
+                    title: String(localized: "Katalogfortschritt verwenden"),
+                    subtitle: String(
                         localized: "Settings.Advanced.CatalogProgressSubtitle",
                         defaultValue: "Fortschritt gegen den ganzen Katalog statt nur gegen deine Bibliothek"
-                    ))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                    ),
+                    systemImage: "percent"
+                )
             }
 
             NavigationLink {
                 EpisodeEditSectionOrderView()
             } label: {
-                Text(String(localized: "Settings.EpisodeEditOrder.Label", defaultValue: "Felder-Reihenfolge"))
+                SettingsIconLabel(
+                    String(localized: "Settings.EpisodeEditOrder.Label", defaultValue: "Felder-Reihenfolge"),
+                    systemImage: "arrow.up.arrow.down"
+                )
             }
 
             Button(role: .destructive, action: onReset) {
-                Text("Darstellung zurücksetzen")
+                // Rote Kachel zum roten Text, statt Akzent-Icon neben rotem Text.
+                SettingsIconLabel("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise", tileColor: .red)
             }
         } header: {
             Text(String(localized: "Settings.Advanced.Header", defaultValue: "Erweitert"))
@@ -687,7 +719,6 @@ private struct SettingsStreamingRow: View {
     var body: some View {
         SettingsMenuSelectionRow(
             title: String(localized: "Settings.Streaming.Service", defaultValue: "Streaming-Dienst"),
-            valueSystemImage: selectedService.wrappedValue.iconName,
             value: selectedService.wrappedValue.displayName,
             accentColor: appAccentColor
         ) {
@@ -704,7 +735,6 @@ private struct SettingsStreamingRow: View {
 
 private struct SettingsMenuSelectionRow<MenuContent: View>: View {
     let title: String
-    let valueSystemImage: String
     let value: String
     let accentColor: Color
     @ViewBuilder let menuContent: () -> MenuContent
@@ -714,14 +744,14 @@ private struct SettingsMenuSelectionRow<MenuContent: View>: View {
             menuContent()
         } label: {
             HStack {
-                Text(title)
+                SettingsIconLabel(title, systemImage: "play.fill")
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 12)
 
+                // Ohne Dienst-Symbol: Die Kachel links zeigt schon eins.
                 HStack(spacing: 4) {
-                    Image(systemName: valueSystemImage)
                     Text(value)
                         .lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down")
@@ -908,8 +938,7 @@ private struct SettingsNavigationRow: View {
                     .foregroundStyle(.secondary)
             }
         } icon: {
-            Image(systemName: systemImage)
-                .foregroundStyle(.tint)
+            SettingsIconTile(systemImage: systemImage)
         }
     }
 }
@@ -929,8 +958,55 @@ private struct SettingsActionRow: View {
                     .foregroundStyle(.secondary)
             }
         } icon: {
-            Image(systemName: systemImage)
-                .foregroundStyle(.tint)
+            SettingsIconTile(systemImage: systemImage)
+        }
+    }
+}
+
+/// Einheitliche Icon-Kachel wie in den iOS-Einstellungen: weißes Symbol auf
+/// einer Fläche in der Akzentfarbe (Design Review 2026-11, Befund 7).
+private struct SettingsIconTile: View {
+    let systemImage: String
+    var color: Color? = nil
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(
+                color.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.tint),
+                in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+            )
+            .accessibilityHidden(true)
+    }
+}
+
+private struct SettingsIconLabel: View {
+    let title: Text
+    let systemImage: String
+    var tileColor: Color? = nil
+
+    /// Literale werden wie bei `Text("…")` über den String-Katalog übersetzt.
+    init(_ title: LocalizedStringKey, systemImage: String, tileColor: Color? = nil) {
+        self.title = Text(title)
+        self.systemImage = systemImage
+        self.tileColor = tileColor
+    }
+
+    /// Bereits übersetzte Strings, etwa aus `String(localized:)`.
+    @_disfavoredOverload
+    init(_ title: String, systemImage: String, tileColor: Color? = nil) {
+        self.title = Text(verbatim: title)
+        self.systemImage = systemImage
+        self.tileColor = tileColor
+    }
+
+    var body: some View {
+        Label {
+            title
+        } icon: {
+            SettingsIconTile(systemImage: systemImage, color: tileColor)
         }
     }
 }
