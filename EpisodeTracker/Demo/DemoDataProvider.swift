@@ -118,6 +118,19 @@ enum DemoDataProvider {
             universe: freigeister)
         [f1, f2, f3].forEach { context.insert($0) }
 
+        // Hördaten über das laufende Jahr verteilt, damit „Dein Hörjahr“ in
+        // der Statistik etwas zeigt. Fest pro Folge, damit Screenshots gleich
+        // bleiben.
+        let listened = [d1, d2, d3, d4, d5, t1, t2, t3, f1, f2].filter(\.isListened)
+        let today = Calendar.current.dateComponents([.year, .month], from: .now)
+        let months = [2, 3, 3, 5, 7, 9, 10, 10, 10, 11]
+        for (episode, month) in zip(listened, months) {
+            // Nicht in der Zukunft: im laufenden Monat höchstens bis heute.
+            episode.lastListenedAt = Calendar.current.date(
+                from: DateComponents(year: today.year, month: min(month, today.month ?? 12), day: 1, hour: 20)
+            )
+        }
+
         do {
             try context.save()
         } catch {

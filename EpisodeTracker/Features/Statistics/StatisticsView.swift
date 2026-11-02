@@ -9,6 +9,32 @@ struct StatisticsView: View {
     @AppStorage("statisticsHiddenOverviewItems") private var hiddenOverviewItemsRaw = ""
     @Query private var episodes: [Episode]
     @State private var showingCustomization = false
+    @State private var yearInReviewYear: YearInReviewSelection?
+
+    private struct YearInReviewSelection: Identifiable {
+        let year: Int
+        var id: Int { year }
+    }
+
+    /// Jahr für die Karte „Dein Hörjahr“: im Januar das Vorjahr, sonst das
+    /// laufende; fehlen dort Einträge, das letzte Jahr mit Einträgen.
+    private var yearInReviewCardYear: Int? {
+        let years = YearInReviewEngine.availableYears(episodes: episodes)
+        let preferred = YearInReviewEngine.defaultYear(on: .now)
+        return years.contains(preferred) ? preferred : years.last
+    }
+
+    @ViewBuilder
+    private var yearInReviewCard: some View {
+        if let year = yearInReviewCardYear {
+            YearInReviewCard(
+                year: year,
+                episodeCount: YearInReviewEngine(episodes: episodes, year: year).episodeCount
+            ) {
+                yearInReviewYear = YearInReviewSelection(year: year)
+            }
+        }
+    }
 
     private func availableOverviewItems(statistics: StatisticsSnapshot) -> [StatisticsOverviewItem] {
         var items = [
@@ -104,6 +130,9 @@ struct StatisticsView: View {
                 }
             }
         }
+        .sheet(item: $yearInReviewYear) { selection in
+            YearInReviewView(episodes: episodes, year: selection.year)
+        }
         .sheet(isPresented: $showingCustomization) {
             StatisticsCustomizationView(
                 sectionOrderRaw: $sectionOrderRaw,
@@ -120,6 +149,10 @@ struct StatisticsView: View {
             if episodes.isEmpty {
                 StatisticsEmptyState()
             } else {
+                yearInReviewCard
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 StatisticsPhoneContent(
                     visibleSections: visibleSections,
                     visibleOverviewStats: visibleOverviewStats(availableItems: availableItems),
@@ -142,7 +175,9 @@ struct StatisticsView: View {
                     StatisticsEmptyState()
                     .frame(maxWidth: .infinity, minHeight: 360)
                 } else {
-                    StatisticsPadContent(
+                    VStack(alignment: .leading, spacing: 24) {
+                        yearInReviewCard
+                        StatisticsPadContent(
                         layout: layout,
                         visibleSections: visibleSections,
                         visibleOverviewStats: visibleOverviewStats(availableItems: availableItems),
@@ -151,7 +186,8 @@ struct StatisticsView: View {
                         moodSummaryText: moodSummaryText(statistics: statistics),
                         heroEpisode: statistics.heroEpisode,
                         ratingDistribution: statistics.ratingDistribution
-                    )
+                        )
+                    }
                     .frame(maxWidth: layout.contentWidth, alignment: .leading)
                     .padding(.horizontal, layout.horizontalPadding)
                     .padding(.vertical, 24)
