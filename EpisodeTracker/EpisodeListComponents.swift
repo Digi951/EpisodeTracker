@@ -264,8 +264,14 @@ struct LibrarySnapshotView: View {
                 .foregroundStyle(accentStyle(accent))
             }
 
-            ProgressView(value: progress)
-                .tint(accentStyle(accent))
+            // Ohne Saison kein `.tint`-Modifier: `.tint(.tint)` verweist auf
+            // sich selbst und lässt SwiftUI endlos rekursieren (Absturz).
+            if let accent {
+                ProgressView(value: progress)
+                    .tint(accent.tint)
+            } else {
+                ProgressView(value: progress)
+            }
         }
         .accessibilityElement(children: .combine)
     }
