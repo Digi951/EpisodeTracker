@@ -4,6 +4,9 @@ struct EpisodeRowView: View {
     let episode: Episode
     let anyEpisodeHasCover: Bool
     var isInSidebar: Bool = false
+    /// Steht die Zeile unter der Überschrift ihrer Reihe, wiederholt der
+    /// Reihenname vorne am Titel nur die Überschrift und wird gekürzt.
+    var omitsSeriesPrefix: Bool = false
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     private var notePreview: String? {
@@ -18,6 +21,14 @@ struct EpisodeRowView: View {
 
     private var appAccentColor: AppAccentColor {
         AppAccentColor.resolved(from: appAccentColorRawValue)
+    }
+
+    private var displayTitle: String {
+        guard omitsSeriesPrefix, let universe = episode.universe else { return episode.title }
+        return EpisodeListOrganizer.titleOmittingSeriesPrefix(
+            episode.title,
+            seriesNames: [universe.name, AppLocalization.displayName(forUniverseName: universe.name)]
+        )
     }
 
     private var collectionInitial: String {
@@ -103,9 +114,14 @@ struct EpisodeRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(episode.title)
+                // Normale Schriftstärke für alle Titel; gehörte Folgen treten
+                // über die Farbe zurück, damit offene auffallen, ohne dass
+                // eine überwiegend offene Liste komplett fett wird.
+                Text(displayTitle)
                     .font(.body)
+                    .foregroundStyle(episode.isListened ? .secondary : .primary)
                     .lineLimit(isInSidebar ? 2 : 1)
+                    .accessibilityLabel(Text(episode.title))
 
                 if let notePreview {
                     Text(notePreview)
@@ -115,19 +131,26 @@ struct EpisodeRowView: View {
                 }
 
                 HStack(spacing: 6) {
-                    if let rating = episode.rating {
-                        HStack(spacing: 1) {
-                            ForEach(1...5, id: \.self) { star in
-                                Image(systemName: star <= rating ? "star.fill" : "star")
-                                    .font(.caption2)
-                                    .foregroundStyle(star <= rating ? .yellow : .gray.opacity(0.4))
-                            }
-                        }
-                    }
                     if !episode.moods.isEmpty {
                         Text(episode.moods.compactMap(\.iconName).joined())
                             .font(.caption)
                             .lineLimit(1)
+                    }
+                    if let rating = episode.rating {
+                        // Kompakt statt fünf Sterne: leere Sterne sind nur Rauschen.
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill")
+                                .foregroundStyle(.yellow)
+                            Text("\(rating)")
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.caption)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(AppLocalization.format(
+                            "EpisodeRow.RatingAccessibility",
+                            defaultValue: "Bewertung %lld von 5",
+                            Int64(rating)
+                        )))
                     }
                     // Sonderfolgen-Markierung: Das ✨-Icon im Nummernslot reicht;
                     // die Detailansicht zeigt "Sonderfolge" als Titel.
@@ -138,9 +161,22 @@ struct EpisodeRowView: View {
             Spacer()
 
             if episode.isListened {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                Image(systemName: "checkmark")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("Gehört"))
                     .transition(.scale(scale: 0.5).combined(with: .opacity))
+            } else {
+                Text("Offen")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.tint.opacity(0.12), in: Capsule())
+                    // Die Pille behält ihre Breite; gekürzt wird der Titel.
+                    .fixedSize()
+                    .layoutPriority(2)
+                    .transition(.opacity)
             }
         }
     }

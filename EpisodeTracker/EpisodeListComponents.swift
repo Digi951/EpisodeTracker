@@ -223,82 +223,39 @@ struct FloatingAddButton: View {
     }
 }
 
+/// Hörstand als eine schmale Zeile über der Liste. Früher eine Karte mit drei
+/// Kennzahlen, die dieselben Zahlen wie der Statistik-Tab wiederholte und die
+/// erste Folge unter den Bildschirmrand schob (Design Review 2026-11, Befund 1).
 struct LibrarySnapshotView: View {
     let episodeCount: Int
     let listenedCount: Int
-    let openCount: Int
-    let totalListens: Int
-    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
-    @Environment(\.colorScheme) private var colorScheme
 
     private var progress: Double {
         guard episodeCount > 0 else { return 0 }
         return Double(listenedCount) / Double(episodeCount)
     }
 
-    private var appAccentColor: AppAccentColor {
-        AppAccentColor.resolved(from: appAccentColorRawValue)
-    }
-
-    private var accentTintOpacity: Double {
-        colorScheme == .dark ? 0.10 : 0.06
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Dein Hörstand")
-                        .font(.headline)
-                    Text(AppLocalization.format(
-                        "EpisodeList.ProgressSummary",
-                        defaultValue: "%lld von %lld Folgen gehört",
-                        Int64(listenedCount),
-                        Int64(episodeCount)
-                    ))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                Text(AppLocalization.format(
+                    "EpisodeList.ProgressSummary",
+                    defaultValue: "%lld von %lld Folgen gehört",
+                    Int64(listenedCount),
+                    Int64(episodeCount)
+                ))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text(progress, format: .percent.precision(.fractionLength(0)))
-                    .font(.title3.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
                     .foregroundStyle(.tint)
             }
 
             ProgressView(value: progress)
-
-            HStack(spacing: 12) {
-                SnapshotMetric(value: "\(episodeCount)", label: "Folgen")
-                Divider()
-                SnapshotMetric(value: "\(openCount)", label: "Offen")
-                Divider()
-                SnapshotMetric(value: "\(totalListens)", label: "Hördurchgänge")
-            }
-            .frame(minHeight: 44)
         }
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(appAccentColor.color.opacity(accentTintOpacity), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-    }
-}
-
-private struct SnapshotMetric: View {
-    let value: String
-    let label: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.headline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 

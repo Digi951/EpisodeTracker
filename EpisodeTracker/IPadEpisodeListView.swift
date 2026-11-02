@@ -178,7 +178,7 @@ private struct IPadEpisodeListView: View {
                     Button {
                         showingNewsOverview = true
                     } label: {
-                        Image(systemName: "sparkles")
+                        Image(systemName: "bell")
                     }
                     .accessibilityLabel("Neuigkeiten")
                     .overlay(alignment: .topTrailing) {
@@ -274,13 +274,12 @@ private struct IPadEpisodeListView: View {
         iPadLibraryHeader
 
         if showsLibrarySnapshot && !episodes.isEmpty {
-            CompactLibrarySnapshotView(
+            // Gleiche schmale Zeile wie auf dem iPhone (Design Review 2026-11).
+            LibrarySnapshotView(
                 episodeCount: librarySnapshot.episodeCount,
-                listenedCount: librarySnapshot.listenedCount,
-                openCount: librarySnapshot.openCount,
-                totalListens: librarySnapshot.totalListens
+                listenedCount: librarySnapshot.listenedCount
             )
-            .listRowInsets(EdgeInsets(top: 8, leading: 10, bottom: 10, trailing: 10))
+            .listRowInsets(EdgeInsets(top: 4, leading: 14, bottom: 8, trailing: 14))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         }
@@ -288,7 +287,11 @@ private struct IPadEpisodeListView: View {
         moodFilterRow
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
-        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+        if EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: catalogUpdateBanner != nil,
+            hasActiveFilter: controls.hasActiveFilter,
+            searchText: controls.searchText
+        ) {
             FeatureAnnouncementBannerRow(style: .sidebar, libraryIsEmpty: episodes.isEmpty)
         }
 
@@ -306,7 +309,7 @@ private struct IPadEpisodeListView: View {
                 Section {
                     if !isCollapsed(group) {
                         ForEach(group.episodes) { episode in
-                            episodeRow(episode)
+                            episodeRow(episode, omitsSeriesPrefix: group.isUniverseGroup)
                         }
                         .onDelete { offsets in
                             requestDeleteEpisodes(group.episodes, at: offsets)
@@ -357,13 +360,13 @@ private struct IPadEpisodeListView: View {
     }
 
     @ViewBuilder
-    private func episodeRow(_ episode: Episode) -> some View {
+    private func episodeRow(_ episode: Episode, omitsSeriesPrefix: Bool = false) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true, omitsSeriesPrefix: omitsSeriesPrefix)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, isInSidebar: true, omitsSeriesPrefix: omitsSeriesPrefix)
             }
             .swipeActions(edge: .leading) {
                 Button {
@@ -477,62 +480,3 @@ private struct IPadEpisodeListView: View {
     }
 }
 
-private struct CompactLibrarySnapshotView: View {
-    let episodeCount: Int
-    let listenedCount: Int
-    let openCount: Int
-    let totalListens: Int
-    @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var progress: Double {
-        guard episodeCount > 0 else { return 0 }
-        return Double(listenedCount) / Double(episodeCount)
-    }
-
-    private var appAccentColor: AppAccentColor {
-        AppAccentColor.resolved(from: appAccentColorRawValue)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Hörstand")
-                    .font(.headline)
-                Spacer()
-                Text(progress, format: .percent.precision(.fractionLength(0)))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.tint)
-            }
-
-            ProgressView(value: progress)
-
-            HStack(spacing: 10) {
-                CompactSidebarMetric(value: "\(episodeCount)", label: "Folgen")
-                CompactSidebarMetric(value: "\(openCount)", label: "Offen")
-                CompactSidebarMetric(value: "\(totalListens)", label: "Hörgänge")
-            }
-        }
-        .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(appAccentColor.color.opacity(colorScheme == .dark ? 0.10 : 0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
-private struct CompactSidebarMetric: View {
-    let value: String
-    let label: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.headline)
-                .lineLimit(1)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}

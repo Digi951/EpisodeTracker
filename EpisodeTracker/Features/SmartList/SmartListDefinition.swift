@@ -216,7 +216,21 @@ enum SmartListDefinition: String, CaseIterable, Identifiable, Hashable {
             }
         }
 
-        results.sort { $0.lastActivity > $1.lastActivity }
+        // Gleichstand (z. B. ohne `lastListenedAt`) eindeutig auflösen: die
+        // Gruppen kommen aus einem Dictionary, ohne Tiebreak sprang die
+        // Reihenfolge — und damit die Empfehlung in „Als nächstes“ — zwischen
+        // zwei Renderings.
+        results.sort { lhs, rhs in
+            if lhs.lastActivity != rhs.lastActivity {
+                return lhs.lastActivity > rhs.lastActivity
+            }
+            let name0 = lhs.episode.universe?.name ?? ""
+            let name1 = rhs.episode.universe?.name ?? ""
+            if name0 != name1 {
+                return name0.localizedCompare(name1) == .orderedAscending
+            }
+            return lhs.episode.episodeNumber < rhs.episode.episodeNumber
+        }
         return results.map(\.episode)
     }
 

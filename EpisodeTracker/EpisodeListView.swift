@@ -139,7 +139,9 @@ struct EpisodeListView: View {
                         // Eingebautes Symbol-Badge statt eines eigenen Overlays: das
                         // sitzt immer am Glyph, egal wie groß der Button-Rahmen ist,
                         // und skaliert mit Dynamic Type mit.
-                        Image(systemName: "sparkles")
+                        // Glocke statt Sparkles: ✨ markiert in der Liste
+                        // bereits Sonderfolgen.
+                        Image(systemName: "bell")
                     }
                     .accessibilityLabel("Neuigkeiten")
                     // Das Overlay hängt außen am Button - innerhalb des label-Closures
@@ -236,11 +238,9 @@ struct EpisodeListView: View {
         if showsLibrarySnapshot && !episodes.isEmpty {
             LibrarySnapshotView(
                 episodeCount: librarySnapshot.episodeCount,
-                listenedCount: librarySnapshot.listenedCount,
-                openCount: librarySnapshot.openCount,
-                totalListens: librarySnapshot.totalListens
+                listenedCount: librarySnapshot.listenedCount
             )
-            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         }
@@ -258,7 +258,11 @@ struct EpisodeListView: View {
 
     @ViewBuilder
     private var featureAnnouncementRow: some View {
-        if !controls.hasActiveFilter && controls.searchText.isEmpty {
+        if EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: catalogUpdateBanner != nil,
+            hasActiveFilter: controls.hasActiveFilter,
+            searchText: controls.searchText
+        ) {
             FeatureAnnouncementBannerRow(style: .phone, libraryIsEmpty: episodes.isEmpty)
         }
     }
@@ -292,7 +296,7 @@ struct EpisodeListView: View {
             Section {
                 if !isCollapsed(group) {
                     ForEach(group.episodes) { episode in
-                        episodeRow(episode)
+                        episodeRow(episode, omitsSeriesPrefix: group.isUniverseGroup)
                     }
                     .onDelete { offsets in
                         requestDeleteEpisodes(group.episodes, at: offsets)
@@ -322,13 +326,13 @@ struct EpisodeListView: View {
     }
 
     @ViewBuilder
-    private func episodeRow(_ episode: Episode) -> some View {
+    private func episodeRow(_ episode: Episode, omitsSeriesPrefix: Bool = false) -> some View {
         if isEditing {
-            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+            EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, omitsSeriesPrefix: omitsSeriesPrefix)
                 .tag(episode.persistentModelID)
         } else {
             NavigationLink(value: episode) {
-                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover)
+                EpisodeRowView(episode: episode, anyEpisodeHasCover: anyEpisodeHasCover, omitsSeriesPrefix: omitsSeriesPrefix)
             }
             .swipeActions(edge: .leading) {
                 Button {

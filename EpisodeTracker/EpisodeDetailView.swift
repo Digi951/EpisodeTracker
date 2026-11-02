@@ -68,6 +68,10 @@ struct EpisodeDetailView: View {
                     ? String(format: NSLocalizedString("Folge %d", comment: ""), episode.episodeNumber)
                     : episode.title)
         )
+        // Kleiner Titel oben: Der echte Folgentitel im Panel ist die
+        // Überschrift, „Folge 5“ als großer Titel war die unwichtigste
+        // Information auf dem Screen (Design Review 2026-11, Befund 5).
+        .navigationBarTitleDisplayMode(.inline)
         .background(fullScreenCoverBackground)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -129,11 +133,6 @@ struct EpisodeDetailView: View {
                 moodsBlock
             }
 
-            if let externalLink = resolvedExternalLink {
-                panelDivider
-                streamingBlock(externalLink)
-            }
-
             if let note = episode.personalNote, !note.isEmpty {
                 panelDivider
                 noteBlock(note)
@@ -184,30 +183,19 @@ struct EpisodeDetailView: View {
             Text(episode.title)
                 .font(.title2.weight(.bold))
 
-            // Status + Rating Zeile
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) {
-                    statusBadge
-                    ratingStars
-                    Spacer(minLength: 0)
-                    listenAgainButton
-                }
-
-                HStack(spacing: 10) {
-                    statusBadge
-                    ratingStars
-                    Spacer(minLength: 0)
-                    compactListenAgainButton
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        statusBadge
-                        compactListenAgainButton
-                    }
-                    ratingStars
-                }
+            // Hauptaktion: nur der in den Einstellungen gewählte Dienst.
+            if let externalLink = resolvedExternalLink {
+                streamingButton(externalLink)
             }
+
+            // Status + Rating Zeile
+            HStack(spacing: 12) {
+                statusBadge
+                Spacer(minLength: 0)
+                ratingStars
+            }
+
+            listenAgainButton
 
             if let lastListened = episode.lastListenedAt {
                 Text(AppLocalization.format(
@@ -242,30 +230,22 @@ struct EpisodeDetailView: View {
         }
     }
 
+    // Immer beschriftet: ein Symbol allein war für die Hauptaktion zu
+    // rätselhaft (Design Review 2026-11, Befund 5).
     private var listenAgainButton: some View {
         Button(action: recordListen) {
             Label(
-                episode.isListened ? "Nochmal" : "Gehört",
+                episode.isListened ? "Nochmal gehört" : "Als gehört markieren",
                 systemImage: episode.isListened ? "arrow.counterclockwise" : "ear"
             )
-            .font(.subheadline.weight(.semibold))
+            .font(.body.weight(.semibold))
             .labelStyle(.titleAndIcon)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
+        .controlSize(.large)
         .tint(listenActionColor)
-    }
-
-    private var compactListenAgainButton: some View {
-        Button(action: recordListen) {
-            Image(systemName: episode.isListened ? "arrow.counterclockwise" : "ear")
-                .font(.subheadline.weight(.semibold))
-                .frame(width: 30, height: 30)
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
-        .tint(listenActionColor)
-        .accessibilityLabel(episode.isListened ? "Nochmal hören" : "Als gehört markieren")
     }
 
     private func recordListen() {
@@ -302,14 +282,15 @@ struct EpisodeDetailView: View {
         .padding(DetailMetrics.blockPadding)
     }
 
-    private func streamingBlock(_ link: (url: URL, label: String, systemImage: String)) -> some View {
+    private func streamingButton(_ link: (url: URL, label: String, systemImage: String)) -> some View {
         Link(destination: link.url) {
             Label(link.label, systemImage: link.systemImage)
-                .font(.body)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(DetailMetrics.blockPadding)
-                .contentShape(Rectangle())
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
     }
 
     private func noteBlock(_ note: String) -> some View {

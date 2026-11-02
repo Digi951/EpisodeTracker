@@ -27,6 +27,12 @@ struct EpisodeListGroup: Identifiable {
         progress.formatted(.percent.precision(.fractionLength(0)))
     }
 
+    /// Gruppe einer ganzen Reihe (Mehr-Reihen-Ansicht) statt eines Nummern-,
+    /// Jahres- oder Bewertungsbands.
+    var isUniverseGroup: Bool {
+        id.hasPrefix("universe:")
+    }
+
     var summary: String {
         AppLocalization.format(
             "EpisodeList.GroupSummary",
@@ -38,9 +44,8 @@ struct EpisodeListGroup: Identifiable {
     }
 }
 
-/// Kennzahlen für die Bibliotheks-Übersichtskarte. Wird von der iPhone-Liste
-/// (`LibrarySnapshotView`) und der iPad-Sidebar (`CompactLibrarySnapshotView`)
-/// geteilt; die beiden Views unterscheiden sich nur im Layout.
+/// Kennzahlen für die Hörstand-Zeile (`LibrarySnapshotView`) auf iPhone und
+/// in der iPad-Sidebar.
 struct EpisodeLibrarySnapshot {
     let episodeCount: Int
     let listenedCount: Int
@@ -219,6 +224,53 @@ enum EpisodeListOrganizer {
     /// `docs/reviews/2026-09-08/01-erststart.png`).
     static func shouldShowFloatingAddButton(isEditing: Bool, isLibraryEmpty: Bool) -> Bool {
         !isEditing && !isLibraryEmpty
+    }
+
+    /// Nur die Feature-Ankündigung zeigen, wenn kein Katalog-Banner ansteht —
+    /// zwei Banner übereinander drücken die erste Folge unter den Rand
+    /// (Design Review 2026-11, Befund 1).
+    static func shouldShowFeatureAnnouncement(hasCatalogBanner: Bool, hasActiveFilter: Bool, searchText: String) -> Bool {
+        !hasCatalogBanner && !hasActiveFilter && searchText.isEmpty
+    }
+
+    /// Kürzt den Reihennamen vorne am Titel weg, wenn die Folge ohnehin unter
+    /// der Überschrift ihrer Reihe steht („Fünf Freigeister auf Abenteuer“ →
+    /// „… auf Abenteuer“), damit der eigentliche Titel nicht abgeschnitten
+    /// wird. Als Präfix zählen der volle Reihenname und dessen Kurzform vor
+    /// einem Gedankenstrich („TKKF – Team für …“ → „TKKF“).
+    ///
+    /// Bewusst vorsichtig: Nach einem Leerzeichen muss der Rest klein beginnen
+    /// („… und der Bankräuber“), sonst wäre der Präfix Teil eines eigenen
+    /// Titels („Fünf Freunde Spezial“ bleibt). Nach „:“ oder einem Strich wird
+    /// der Rest ohne Auslassungszeichen übernommen.
+    static func titleOmittingSeriesPrefix(_ title: String, seriesNames: [String]) -> String {
+        let prefixes = seriesNames.flatMap { name -> [String] in
+            let trimmed = name.trimmingCharacters(in: .whitespaces)
+            let shortForm = trimmed.components(separatedBy: CharacterSet(charactersIn: "–—"))
+                .first?
+                .trimmingCharacters(in: .whitespaces) ?? ""
+            return [trimmed, shortForm]
+        }
+        .filter { !$0.isEmpty }
+        .sorted { $0.count > $1.count }
+
+        for prefix in prefixes {
+            guard title.count > prefix.count,
+                  title.range(of: prefix, options: [.anchored, .caseInsensitive]) != nil
+            else { continue }
+
+            let remainder = title.dropFirst(prefix.count)
+            let rest = remainder
+                .trimmingCharacters(in: CharacterSet(charactersIn: " :–—-"))
+            guard let firstLetter = rest.first else { continue }
+
+            if let punctuation = remainder.first(where: { $0 != " " }), ":–—-".contains(punctuation) {
+                return rest
+            }
+            guard remainder.first == " ", firstLetter.isLowercase else { continue }
+            return "… " + rest
+        }
+        return title
     }
 
     // MARK: - Filtern, Sortieren, Gruppieren

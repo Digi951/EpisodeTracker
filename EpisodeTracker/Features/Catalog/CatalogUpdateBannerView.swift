@@ -107,8 +107,10 @@ struct CatalogUpdateBannerView: View {
                 Text(recommendation.title)
                     .font(isSidebar ? .subheadline.weight(.semibold) : .headline)
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
+                    // Zwei Zeilen statt Abschneiden: „13 neue Kataloge hinzuge…“
+                    // passte selbst verkleinert nicht (Design Review 2026-11).
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(recommendation.message)
                     .font(isSidebar ? .caption : .footnote)

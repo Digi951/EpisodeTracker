@@ -13,6 +13,9 @@ struct UpNextView: View {
     @State private var showingNewsOverview = false
     @State private var renameFilter: SavedFilter?
     @State private var renameText = ""
+    @State private var recommendationOffset = 0
+    @State private var openedEpisode: Episode?
+    @State private var showsEmptyLists = false
     @Binding var iPadNavSelection: SmartListNavigation?
     private let usesSelectionMode: Bool
 
@@ -37,6 +40,14 @@ struct UpNextView: View {
     /// seine Ereignisse erst beim Öffnen als gesehen markiert.
     private var hasUnseenNews: Bool {
         NewsStore().load().events.contains { $0.seenAt == nil }
+    }
+
+    private var recommendationCandidates: [UpNextRecommendation] {
+        UpNextRecommendation.candidates(from: episodes)
+    }
+
+    private func hasItems(_ smartList: SmartListDefinition) -> Bool {
+        count(for: smartList) > 0 || smartList == .randomByMood
     }
 
     private func count(for smartList: SmartListDefinition) -> Int {
@@ -66,8 +77,40 @@ struct UpNextView: View {
                     .listRowSeparator(.hidden)
             }
 
-            ForEach(SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)) { smartList in
-                smartListRow(smartList)
+            recommendationRow
+
+            let visibleLists = SmartListPreferences.visibleLists(orderRaw: smartListOrderRaw, hiddenRaw: hiddenSmartListsRaw)
+            let filledLists = visibleLists.filter(hasItems)
+            let emptyLists = visibleLists.filter { !hasItems($0) }
+
+            Section {
+                ForEach(filledLists) { smartList in
+                    smartListRow(smartList)
+                }
+            } header: {
+                if !recommendationCandidates.isEmpty {
+                    Text(String(localized: "UpNext.MoreSuggestions.Header", defaultValue: "Weitere Vorschläge"))
+                }
+            }
+
+            // Leere Listen eingeklappt statt ausgegraut in voller Höhe
+            // (Design Review 2026-11, Befund 4).
+            if !emptyLists.isEmpty {
+                Section {
+                    DisclosureGroup(isExpanded: $showsEmptyLists) {
+                        ForEach(emptyLists) { smartList in
+                            smartListRow(smartList)
+                        }
+                    } label: {
+                        Text(AppLocalization.format(
+                            "UpNext.EmptyLists.Label",
+                            defaultValue: "%lld Listen ohne Folgen",
+                            Int64(emptyLists.count)
+                        ))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             if !savedFilterStore.filters.isEmpty {
@@ -85,7 +128,7 @@ struct UpNextView: View {
                 Button {
                     showingNewsOverview = true
                 } label: {
-                    Image(systemName: "sparkles")
+                    Image(systemName: "bell")
                 }
                 .accessibilityLabel("Neuigkeiten")
                 .overlay(alignment: .topTrailing) {
@@ -104,6 +147,9 @@ struct UpNextView: View {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
             }
+        }
+        .navigationDestination(item: $openedEpisode) { episode in
+            EpisodeDetailView(episode: episode)
         }
         .sheet(isPresented: $showingEditSheet) {
             SmartListEditSheet(
@@ -136,6 +182,43 @@ struct UpNextView: View {
                 renameFilter = nil
             }
         }
+    }
+
+    @ViewBuilder
+    private var recommendationRow: some View {
+        let candidates = recommendationCandidates
+        if !candidates.isEmpty {
+            let recommendation = candidates[recommendationOffset % candidates.count]
+            UpNextRecommendationCard(
+                recommendation: recommendation,
+                hasAlternatives: candidates.count > 1,
+                isCompact: usesSelectionMode,
+                onOpen: openAction(for: recommendation),
+                onNext: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        recommendationOffset += 1
+                    }
+                }
+            )
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
+    }
+
+    /// iPhone: die Folge öffnen. iPad-Sidebar: Dort gibt es keinen Stack für
+    /// Folgen, also die Liste rechts zeigen, aus der die Empfehlung stammt.
+    private func openAction(for recommendation: UpNextRecommendation) -> (() -> Void)? {
+        guard usesSelectionMode else {
+            return { openedEpisode = recommendation.episode }
+        }
+        let source: SmartListDefinition? = switch recommendation.reason {
+        case .continueSeries: .continueListening
+        case .bookmarked: .laterListen
+        case .open: nil
+        }
+        guard let source else { return nil }
+        return { iPadNavSelection = .detail(source) }
     }
 
     @ViewBuilder
@@ -184,6 +267,9 @@ struct UpNextView: View {
             } label: {
                 content
             }
+            // Ohne eigenen Stil färbt die Sidebar den ganzen Zeilentext in
+            // der Akzentfarbe ein.
+            .buttonStyle(.plain)
             .listRowBackground(
                 iPadNavSelection == navValue
                     ? Color.accentColor.opacity(0.12)
@@ -284,27 +370,15 @@ private struct SmartListRowContent: View {
     var teaser: String?
     var onInfoTap: (() -> Void)?
 
-    private var color: Color {
-        switch smartList.accentColor {
-        case "cyan": .cyan
-        case "red": .red
-        case "blue": .blue
-        case "green": .green
-        case "orange": .orange
-        case "yellow": .yellow
-        case "purple": .purple
-        case "pink": .pink
-        default: .accentColor
-        }
-    }
-
     var body: some View {
         HStack(spacing: 14) {
+            // Einheitlich in der Akzentfarbe: neun Signalfarben konkurrierten
+            // mit der gewählten Akzentfarbe (Design Review 2026-11, Befund 4).
             Image(systemName: smartList.icon)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(color.gradient, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 34, height: 34)
+                .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -334,7 +408,7 @@ private struct SmartListRowContent: View {
             if count > 0 {
                 Text("\(count)")
                     .font(.subheadline.weight(.medium).monospacedDigit())
-                    .foregroundStyle(color)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)

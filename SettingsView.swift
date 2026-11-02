@@ -64,41 +64,36 @@ struct SettingsView: View {
 
     var body: some View {
         List {
+            // Gliederung nach Design Review 2026-11, Befund 7: fünf Abschnitte
+            // statt neun, iCloud-Sync nicht mehr ganz unten.
             SettingsLibrarySection(
                 libraryTitle: $libraryTitle,
-                showsLibrarySnapshot: $showsLibrarySnapshot,
-                prefersCatalogProgressTotals: $prefersCatalogProgressTotals
+                activeCatalogCount: activeCatalogCount,
+                managedCatalogCount: managedCatalogCount,
+                moodCount: moods.count,
+                appAccentColorRawValue: $appAccentColorRawValue
             )
             SettingsPersonalizationSection(
                 appearanceModeRawValue: $appearanceModeRawValue,
                 appAccentColorRawValue: $appAccentColorRawValue,
+                showsLibrarySnapshot: $showsLibrarySnapshot,
                 selectedIconName: selectedAppIconName,
                 statusMessage: appIconStatusMessage,
                 statusIsError: appIconStatusIsError,
                 isChangingIcon: isChangingAppIcon,
                 onSelectIcon: changeAppIcon
             )
-            SettingsManagementSection(
-                activeCatalogCount: activeCatalogCount,
-                managedCatalogCount: managedCatalogCount,
-                moodCount: moods.count
-            )
-            SettingsCustomizationSection()
-            SettingsStreamingSection(appAccentColorRawValue: $appAccentColorRawValue)
-            SettingsBackupSection(
+            SettingsDataSyncSection(
+                prefersICloudSync: $prefersICloudSync,
                 episodeCount: episodes.count,
                 backupStatusMessage: backup.statusMessage,
                 backupStatusIsError: backup.statusIsError,
                 onExport: { backup.export(universes: universes, moods: moods, episodes: episodes) },
                 onImport: { backup.showingImporter = true }
             )
-
-            SettingsResetSection(
+            SettingsAdvancedSection(
+                prefersCatalogProgressTotals: $prefersCatalogProgressTotals,
                 onReset: { showingResetConfirmation = true }
-            )
-
-            SettingsSyncSection(
-                prefersICloudSync: $prefersICloudSync
             )
 
 #if DEBUG
@@ -125,7 +120,9 @@ struct SettingsView: View {
         .navigationTitle("Einstellungen")
         .tint(AppAccentColor.resolved(from: appAccentColorRawValue).color)
         .listStyle(.insetGrouped)
-        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 104 : 0, for: .scrollContent)
+        // Auf dem iPhone die Standard-Einrückung von `insetGrouped` behalten:
+        // mit 0 liefen die Abschnitte randlos, anders als jeder andere Screen.
+        .contentMargins(.horizontal, horizontalSizeClass == .regular ? 104 : nil, for: .scrollContent)
         .contentMargins(.top, horizontalSizeClass == .regular ? 12 : 0, for: .scrollContent)
         .fileExporter(
             isPresented: $backup.showingExporter,
@@ -268,18 +265,66 @@ struct SettingsView: View {
 
 private struct SettingsLibrarySection: View {
     @Binding var libraryTitle: String
-    @Binding var showsLibrarySnapshot: Bool
-    @Binding var prefersCatalogProgressTotals: Bool
+    let activeCatalogCount: Int
+    let managedCatalogCount: Int
+    let moodCount: Int
+    @Binding var appAccentColorRawValue: String
 
     var body: some View {
         Section {
-            TextField("Sammlungsname", text: $libraryTitle)
-            Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
-            Toggle("Katalogfortschritt verwenden", isOn: $prefersCatalogProgressTotals)
+            // Beschriftet statt eines nackten Textfelds, das wie statischer
+            // Text aussah (Design Review 2026-11, Befund 7).
+            LabeledContent(String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek")) {
+                TextField(String(localized: "Settings.Library.Name", defaultValue: "Name der Bibliothek"), text: $libraryTitle)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundStyle(.secondary)
+            }
+
+            NavigationLink {
+                CatalogManagementView()
+            } label: {
+                SettingsNavigationRow(
+                    title: String(localized: "Kataloge"),
+                    subtitle: AppLocalization.format(
+                        "Settings.Manage.CatalogsSubtitle",
+                        defaultValue: "%lld von %lld Katalogen aktiv",
+                        Int64(activeCatalogCount),
+                        Int64(managedCatalogCount)
+                    ),
+                    systemImage: "books.vertical"
+                )
+            }
+
+            NavigationLink {
+                MoodManagementView()
+            } label: {
+                SettingsNavigationRow(
+                    title: String(localized: "Stimmungen"),
+                    subtitle: AppLocalization.format(
+                        "Settings.Manage.MoodsSubtitle",
+                        defaultValue: "%lld Stimmungen gespeichert",
+                        Int64(moodCount)
+                    ),
+                    systemImage: "tag"
+                )
+            }
+
+            NavigationLink {
+                SavedFilterManagementView()
+            } label: {
+                Label {
+                    Text(String(localized: "Settings.SavedFilters.Label", defaultValue: "Meine Listen"))
+                } icon: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(.tint)
+                }
+            }
+
+            SettingsStreamingRow(appAccentColorRawValue: $appAccentColorRawValue)
         } header: {
-            Text("Mediathek")
+            Text(String(localized: "Settings.Library.Header", defaultValue: "Bibliothek"))
         } footer: {
-            Text("Der Sammlungsname erscheint oben in deiner Folgenliste. Den Hörstand kannst du ausblenden, wenn du lieber direkt mit der Liste startest. Bei bekannten Katalogen kann der Fortschritt optional gegen den gesamten Katalog statt nur gegen deine Bibliothek berechnet werden.")
+            Text("In der Folgendetailansicht kannst du verfügbare Kataloglinks direkt im gewählten Dienst öffnen.")
         }
     }
 }
@@ -287,6 +332,7 @@ private struct SettingsLibrarySection: View {
 private struct SettingsPersonalizationSection: View {
     @Binding var appearanceModeRawValue: String
     @Binding var appAccentColorRawValue: String
+    @Binding var showsLibrarySnapshot: Bool
     let selectedIconName: String?
     let statusMessage: String?
     let statusIsError: Bool
@@ -306,7 +352,9 @@ private struct SettingsPersonalizationSection: View {
                     Text(mode.title).tag(mode.rawValue)
                 }
             }
-            .pickerStyle(.segmented)
+            // Menü statt Segmenten: so steht die Beschriftung
+            // „Erscheinungsbild“ sichtbar in der Zeile.
+            .pickerStyle(.menu)
 
 #if canImport(UIKit)
             if UIApplication.shared.supportsAlternateIcons {
@@ -327,6 +375,8 @@ private struct SettingsPersonalizationSection: View {
                 }
             }
 #endif
+
+            Toggle("Hörstand anzeigen", isOn: $showsLibrarySnapshot)
         }
     }
 }
@@ -528,46 +578,8 @@ private struct SettingsAppIconStatusRow: View {
     }
 }
 
-private struct SettingsManagementSection: View {
-    let activeCatalogCount: Int
-    let managedCatalogCount: Int
-    let moodCount: Int
-
-    var body: some View {
-        Section("Verwalten") {
-            NavigationLink {
-                CatalogManagementView()
-            } label: {
-                SettingsNavigationRow(
-                    title: String(localized: "Kataloge"),
-                    subtitle: AppLocalization.format(
-                        "Settings.Manage.CatalogsSubtitle",
-                        defaultValue: "%lld von %lld Katalogen aktiv",
-                        Int64(activeCatalogCount),
-                        Int64(managedCatalogCount)
-                    ),
-                    systemImage: "books.vertical"
-                )
-            }
-
-            NavigationLink {
-                MoodManagementView()
-            } label: {
-                SettingsNavigationRow(
-                    title: String(localized: "Stimmungen"),
-                    subtitle: AppLocalization.format(
-                        "Settings.Manage.MoodsSubtitle",
-                        defaultValue: "%lld Stimmungen gespeichert",
-                        Int64(moodCount)
-                    ),
-                    systemImage: "tag"
-                )
-            }
-        }
-    }
-}
-
-private struct SettingsBackupSection: View {
+private struct SettingsDataSyncSection: View {
+    @Binding var prefersICloudSync: Bool
     let episodeCount: Int
     let backupStatusMessage: String?
     let backupStatusIsError: Bool
@@ -576,6 +588,8 @@ private struct SettingsBackupSection: View {
 
     var body: some View {
         Section {
+            Toggle("iCloud-Sync", isOn: $prefersICloudSync)
+
             Button(action: onExport) {
                 SettingsActionRow(
                     title: String(localized: "Backup exportieren"),
@@ -587,6 +601,7 @@ private struct SettingsBackupSection: View {
                     systemImage: "square.and.arrow.up"
                 )
             }
+            .buttonStyle(.plain)
 
             Button(action: onImport) {
                 SettingsActionRow(
@@ -595,6 +610,8 @@ private struct SettingsBackupSection: View {
                     systemImage: "square.and.arrow.down"
                 )
             }
+            // Zeilen wie die übrigen Einträge, nicht als blaue Links.
+            .buttonStyle(.plain)
 
             if let backupStatusMessage {
                 Text(backupStatusMessage)
@@ -602,26 +619,49 @@ private struct SettingsBackupSection: View {
                     .foregroundStyle(backupStatusIsError ? .red : .secondary)
             }
         } header: {
-            Text("Daten")
+            Text(String(localized: "Settings.DataSync.Header", defaultValue: "Daten & Sync"))
         } footer: {
-            Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
+            Text("Cloud-Sync wird erst nach dem nächsten App-Start aktiv.")
+            + Text(verbatim: " ")
+            + Text("Backups bleiben lokal als JSON-Datei und enthalten deine Folgen, Kataloge, Stimmungen und Notizen.")
         }
     }
 }
 
-private struct SettingsResetSection: View {
+private struct SettingsAdvancedSection: View {
+    @Binding var prefersCatalogProgressTotals: Bool
     let onReset: () -> Void
 
     var body: some View {
-        Section("Zurücksetzen") {
-            Button(role: .destructive, action: onReset) {
-                Label("Darstellung zurücksetzen", systemImage: "arrow.counterclockwise")
+        Section {
+            Toggle(isOn: $prefersCatalogProgressTotals) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Katalogfortschritt verwenden")
+                    Text(String(
+                        localized: "Settings.Advanced.CatalogProgressSubtitle",
+                        defaultValue: "Fortschritt gegen den ganzen Katalog statt nur gegen deine Bibliothek"
+                    ))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
+
+            NavigationLink {
+                EpisodeEditSectionOrderView()
+            } label: {
+                Text(String(localized: "Settings.EpisodeEditOrder.Label", defaultValue: "Felder-Reihenfolge"))
+            }
+
+            Button(role: .destructive, action: onReset) {
+                Text("Darstellung zurücksetzen")
+            }
+        } header: {
+            Text(String(localized: "Settings.Advanced.Header", defaultValue: "Erweitert"))
         }
     }
 }
 
-private struct SettingsStreamingSection: View {
+private struct SettingsStreamingRow: View {
     @Binding var appAccentColorRawValue: String
     @AppStorage("preferredStreamingService") private var preferredServiceRaw = StreamingMarketProfile.current.defaultService.rawValue
 
@@ -645,25 +685,19 @@ private struct SettingsStreamingSection: View {
     }
 
     var body: some View {
-        Section {
-            SettingsMenuSelectionRow(
-                title: String(localized: "Settings.Streaming.Service", defaultValue: "Streaming-Dienst"),
-                valueSystemImage: selectedService.wrappedValue.iconName,
-                value: selectedService.wrappedValue.displayName,
-                accentColor: appAccentColor
-            ) {
-                ForEach(StreamingMarketProfile.current.services) { service in
-                    Button {
-                        selectedService.wrappedValue = service
-                    } label: {
-                        Label(service.displayName, systemImage: service.iconName)
-                    }
+        SettingsMenuSelectionRow(
+            title: String(localized: "Settings.Streaming.Service", defaultValue: "Streaming-Dienst"),
+            valueSystemImage: selectedService.wrappedValue.iconName,
+            value: selectedService.wrappedValue.displayName,
+            accentColor: appAccentColor
+        ) {
+            ForEach(StreamingMarketProfile.current.services) { service in
+                Button {
+                    selectedService.wrappedValue = service
+                } label: {
+                    Label(service.displayName, systemImage: service.iconName)
                 }
             }
-        } header: {
-            Text("Streaming")
-        } footer: {
-            Text("In der Folgendetailansicht kannst du verfügbare Kataloglinks direkt im gewählten Dienst öffnen.")
         }
     }
 }
@@ -702,20 +736,6 @@ private struct SettingsMenuSelectionRow<MenuContent: View>: View {
     }
 }
 
-private struct SettingsSyncSection: View {
-    @Binding var prefersICloudSync: Bool
-
-    var body: some View {
-        Section {
-            Toggle("iCloud-Sync", isOn: $prefersICloudSync)
-        } header: {
-            Text("Sync")
-        } footer: {
-            Text("Cloud-Sync wird erst nach dem nächsten App-Start aktiv.")
-        }
-    }
-}
-
 private struct SettingsAboutSection: View {
     var body: some View {
         Section {
@@ -751,31 +771,6 @@ private struct SettingsStoreRecoverySection: View {
             Text("Datenbank-Diagnose")
         } footer: {
             Text("Die Datenbank musste beim Start automatisch repariert werden. Diese Angabe hilft bei der Fehlersuche und verlässt das Gerät nicht.")
-        }
-    }
-}
-
-private struct SettingsCustomizationSection: View {
-    var body: some View {
-        Section("Anpassen") {
-            NavigationLink {
-                SavedFilterManagementView()
-            } label: {
-                Label(
-                    String(localized: "Settings.SavedFilters.Label",
-                           defaultValue: "Meine Listen"),
-                    systemImage: "line.3.horizontal.decrease.circle.fill"
-                )
-            }
-            NavigationLink {
-                EpisodeEditSectionOrderView()
-            } label: {
-                Label(
-                    String(localized: "Settings.EpisodeEditOrder.Label",
-                           defaultValue: "Felder-Reihenfolge"),
-                    systemImage: "list.number"
-                )
-            }
         }
     }
 }
