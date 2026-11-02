@@ -4,6 +4,12 @@ import SwiftData
 /// Rückblick „Dein Hörjahr“ als Sheet aus der Statistik. Aufbau wie der
 /// Jahresrückblick in BoardGameLog: dasselbe Poster auf dem Bildschirm und
 /// mit fester Breite für das geteilte Bild.
+/// Jahr für `.sheet(item:)`.
+struct YearInReviewSelection: Identifiable {
+    let year: Int
+    var id: Int { year }
+}
+
 struct YearInReviewView: View {
     let episodes: [Episode]
 
@@ -116,7 +122,7 @@ struct YearInReviewView: View {
 
 /// Inhalt des Rückblicks, auf dem Bildschirm ohne feste Breite und für den
 /// Export mit `exportWidth`.
-private struct YearInReviewPoster: View {
+struct YearInReviewPoster: View {
     let engine: YearInReviewEngine
     let accentColor: Color
     var width: CGFloat?
@@ -191,44 +197,63 @@ private struct YearInReviewPoster: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// `Grid` statt `LazyVGrid`, damit Kacheln einer Reihe gleich hoch sind.
     private var tileGrid: some View {
         let columns = dynamicTypeSize.isAccessibilitySize ? 1 : 2
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .top), count: columns), spacing: 12) {
-            if let series = engine.favoriteSeries {
-                YearInReviewTile(
-                    systemImage: "rectangle.stack.fill",
-                    title: String(localized: "YearInReview.FavoriteSeries", defaultValue: "Lieblingsreihe"),
-                    value: series.name,
-                    detail: Self.episodeCountText(series.count)
-                )
-            }
-            if let month = engine.strongestMonth {
-                YearInReviewTile(
-                    systemImage: "calendar",
-                    title: String(localized: "YearInReview.StrongestMonth", defaultValue: "Stärkster Monat"),
-                    value: Calendar.current.standaloneMonthSymbols[month.month - 1],
-                    detail: Self.episodeCountText(month.count)
-                )
-            }
-            if !engine.topMoods.isEmpty {
-                YearInReviewTile(
-                    systemImage: "theatermasks.fill",
-                    title: String(localized: "YearInReview.TopMoods", defaultValue: "Häufigste Stimmungen"),
-                    value: engine.topMoods
-                        .map { [$0.mood.iconName, $0.mood.name].compactMap { $0 }.joined(separator: " ") }
-                        .joined(separator: "\n"),
-                    detail: nil
-                )
-            }
-            if engine.podium.count == 1, let best = engine.podium.first {
-                YearInReviewTile(
-                    systemImage: "star.fill",
-                    title: String(localized: "YearInReview.BestEpisode", defaultValue: "Beste Folge"),
-                    value: best.title,
-                    detail: AppLocalization.displayName(forUniverseName: best.universe?.name)
-                )
+        let rows = stride(from: 0, to: tiles.count, by: columns).map {
+            Array(tiles[$0..<min($0 + columns, tiles.count)])
+        }
+        return Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+            ForEach(rows.indices, id: \.self) { index in
+                GridRow {
+                    ForEach(rows[index]) { tile in
+                        YearInReviewTile(tile: tile)
+                    }
+                    if rows[index].count < columns {
+                        Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                    }
+                }
             }
         }
+    }
+
+    private var tiles: [YearInReviewTileContent] {
+        var tiles: [YearInReviewTileContent] = []
+        if let series = engine.favoriteSeries {
+            tiles.append(YearInReviewTileContent(
+                systemImage: "rectangle.stack.fill",
+                title: String(localized: "YearInReview.FavoriteSeries", defaultValue: "Lieblingsreihe"),
+                value: series.name,
+                detail: Self.episodeCountText(series.count)
+            ))
+        }
+        if let month = engine.strongestMonth {
+            tiles.append(YearInReviewTileContent(
+                systemImage: "calendar",
+                title: String(localized: "YearInReview.StrongestMonth", defaultValue: "Stärkster Monat"),
+                value: Calendar.current.standaloneMonthSymbols[month.month - 1],
+                detail: Self.episodeCountText(month.count)
+            ))
+        }
+        if !engine.topMoods.isEmpty {
+            tiles.append(YearInReviewTileContent(
+                systemImage: "theatermasks.fill",
+                title: String(localized: "YearInReview.TopMoods", defaultValue: "Häufigste Stimmungen"),
+                value: engine.topMoods
+                    .map { [$0.mood.iconName, $0.mood.name].compactMap { $0 }.joined(separator: " ") }
+                    .joined(separator: "\n"),
+                detail: nil
+            ))
+        }
+        if engine.podium.count == 1, let best = engine.podium.first {
+            tiles.append(YearInReviewTileContent(
+                systemImage: "star.fill",
+                title: String(localized: "YearInReview.BestEpisode", defaultValue: "Beste Folge"),
+                value: best.title,
+                detail: AppLocalization.displayName(forUniverseName: best.universe?.name)
+            ))
+        }
+        return tiles
     }
 
     /// Zweiter, erster, dritter Platz wie auf einem Siegertreppchen.
@@ -266,29 +291,35 @@ private struct YearArrow: View {
     }
 }
 
-private struct YearInReviewTile: View {
+private struct YearInReviewTileContent: Identifiable {
     let systemImage: String
     let title: String
     let value: String
     let detail: String?
 
+    var id: String { title }
+}
+
+private struct YearInReviewTile: View {
+    let tile: YearInReviewTileContent
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: systemImage)
+            Label(tile.title, systemImage: tile.systemImage)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.75))
-            Text(value)
+            Text(tile.value)
                 .font(.headline)
                 .foregroundStyle(.white)
                 .lineLimit(3)
                 .minimumScaleFactor(0.8)
-            if let detail {
+            if let detail = tile.detail {
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)

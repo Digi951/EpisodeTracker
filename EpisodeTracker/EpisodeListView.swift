@@ -20,6 +20,10 @@ struct EpisodeListView: View {
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
     @State private var showingNewsOverview = false
+    @State private var yearInReviewSelection: YearInReviewSelection?
+    @AppStorage(CatalogUpdateBannerRow.dismissedFingerprintKey) private var dismissedCatalogBannerFingerprint = ""
+    @AppStorage(YearInReviewBanner.dismissedYearKey) private var dismissedYearInReviewBannerYear = 0
+    @AppStorage(SeasonalContext.accentsEnabledKey) private var seasonalAccentsEnabled = true
 
     private var librarySnapshot: EpisodeLibrarySnapshot {
         EpisodeLibrarySnapshot(episodes: episodes)
@@ -83,12 +87,51 @@ struct EpisodeListView: View {
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
     }
 
+    /// Das Katalog-Banner, wie es tatsächlich erscheint: geschlossene zählen
+    /// nicht, sonst halten sie Hörjahr-Banner und Ankündigung zurück.
+    private var visibleCatalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        catalogUpdateBanner.flatMap { $0.fingerprint == dismissedCatalogBannerFingerprint ? nil : $0 }
+    }
+
     /// Badge am Neuigkeiten-Symbol: unabhängig vom `NewsOverviewView`, das seine
     /// eigenen Ereignisse erst beim Öffnen als gesehen markiert. Gleiche
     /// "irgendeine ungesehene Neuigkeit"-Regel wie in `UpNextView` — beide
     /// Einstiege öffnen dieselbe Ansicht, also auch dasselbe Badge-Kriterium.
     private var hasUnseenNews: Bool {
         NewsStore().load().events.contains { $0.seenAt == nil }
+    }
+
+    /// Jahr für das Hörjahr-Banner. Gleiche Regel wie die Feature-Ankündigung:
+    /// nur ohne Katalog-Banner, Filter und Suche, damit nie zwei Banner
+    /// übereinander stehen.
+    private var yearInReviewBannerYear: Int? {
+        guard EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: visibleCatalogUpdateBanner != nil,
+            hasActiveFilter: controls.hasActiveFilter,
+            searchText: controls.searchText
+        ) else { return nil }
+        return YearInReviewBanner.pendingYear(
+            episodes: episodes,
+            dismissedYear: dismissedYearInReviewBannerYear,
+            accentsEnabled: seasonalAccentsEnabled
+        )
+    }
+
+    @ViewBuilder
+    private var yearInReviewBannerRow: some View {
+        if let year = yearInReviewBannerYear {
+            YearInReviewBannerRow(
+                year: year,
+                style: .phone,
+                onOpen: {
+                    yearInReviewSelection = YearInReviewSelection(year: year)
+                    dismissedYearInReviewBannerYear = year
+                },
+                onDismiss: {
+                    withAnimation { dismissedYearInReviewBannerYear = year }
+                }
+            )
+        }
     }
 
     var body: some View {
@@ -106,6 +149,7 @@ struct EpisodeListView: View {
                     librarySnapshotRow
                     moodFilterRow
                     CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .phone)
+                    yearInReviewBannerRow
                     featureAnnouncementRow
                     contentRows
                 }
@@ -190,6 +234,9 @@ struct EpisodeListView: View {
         .sheet(isPresented: $showingNewsOverview) {
             NewsOverviewView(initialFocus: .baldVerfuegbar)
         }
+        .sheet(item: $yearInReviewSelection) { selection in
+            YearInReviewView(episodes: episodes, year: selection.year)
+        }
         .task {
             await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()
         }
@@ -258,8 +305,8 @@ struct EpisodeListView: View {
 
     @ViewBuilder
     private var featureAnnouncementRow: some View {
-        if EpisodeListOrganizer.shouldShowFeatureAnnouncement(
-            hasCatalogBanner: catalogUpdateBanner != nil,
+        if yearInReviewBannerYear == nil, EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: visibleCatalogUpdateBanner != nil,
             hasActiveFilter: controls.hasActiveFilter,
             searchText: controls.searchText
         ) {

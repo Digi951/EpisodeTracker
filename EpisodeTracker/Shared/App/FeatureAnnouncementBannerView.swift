@@ -34,7 +34,12 @@ struct FeatureAnnouncementBannerRow: View {
 
     var body: some View {
         if shouldShow {
-            FeatureAnnouncementBannerView(style: style) {
+            HomeBannerView(
+                style: style,
+                systemImage: "paintpalette.fill",
+                title: String(localized: "Neu: Farbe & Icon"),
+                message: String(localized: "Personalisiere App-Icon und Akzentfarbe in den Einstellungen.")
+            ) {
                 withAnimation { dismissedFingerprint = FeatureAnnouncement.currentFingerprint }
             }
             .listRowInsets(style == .sidebar
@@ -51,8 +56,14 @@ struct FeatureAnnouncementBannerRow: View {
     }
 }
 
-private struct FeatureAnnouncementBannerView: View {
+/// Hinweiskarte über der Folgenliste. Mit `onTap` ist die ganze Karte
+/// antippbar, das Schließen-Kreuz bleibt eigenständig.
+struct HomeBannerView: View {
     let style: FeatureAnnouncementBannerStyle
+    let systemImage: String
+    let title: String
+    let message: String
+    var onTap: (() -> Void)? = nil
     let onDismiss: () -> Void
 
     private var isSidebar: Bool {
@@ -61,20 +72,20 @@ private struct FeatureAnnouncementBannerView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: isSidebar ? 10 : 12) {
-            Image(systemName: "paintpalette.fill")
+            Image(systemName: systemImage)
                 .font(isSidebar ? .subheadline.weight(.semibold) : .headline.weight(.semibold))
                 .foregroundStyle(.tint)
                 .frame(width: isSidebar ? 30 : 36, height: isSidebar ? 30 : 36)
                 .background(.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: isSidebar ? 3 : 5) {
-                Text("Neu: Farbe & Icon")
+                Text(title)
                     .font(isSidebar ? .subheadline.weight(.semibold) : .headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
-                Text("Personalisiere App-Icon und Akzentfarbe in den Einstellungen.")
+                Text(message)
                     .font(isSidebar ? .caption : .footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -94,6 +105,11 @@ private struct FeatureAnnouncementBannerView: View {
         }
         .padding(isSidebar ? 12 : 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture { onTap?() }
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(onTap == nil ? [] : .isButton)
+        .accessibilityAction { onTap?() }
+        .accessibilityAction(named: String(localized: "Banner.Dismiss", defaultValue: "Ausblenden"), onDismiss)
     }
 }

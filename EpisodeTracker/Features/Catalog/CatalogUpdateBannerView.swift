@@ -9,7 +9,11 @@ struct CatalogUpdateBannerRow: View {
     let recommendation: CatalogUpdateBannerRecommendation?
     let style: CatalogUpdateBannerStyle
 
-    @AppStorage("dismissedCatalogBannerFingerprint") private var dismissedBannerFingerprint = ""
+    /// Die Listen lesen denselben Schlüssel, damit ein geschlossenes Banner
+    /// keine anderen Banner mehr verdrängt.
+    static let dismissedFingerprintKey = "dismissedCatalogBannerFingerprint"
+
+    @AppStorage(dismissedFingerprintKey) private var dismissedBannerFingerprint = ""
     @State private var newsOverviewFocus: NewsOverviewSection?
 
     /// `nil` (kein Fokus, Banner nicht antippbar) für `.removed` — eine

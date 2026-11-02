@@ -11,11 +11,6 @@ struct StatisticsView: View {
     @State private var showingCustomization = false
     @State private var yearInReviewYear: YearInReviewSelection?
 
-    private struct YearInReviewSelection: Identifiable {
-        let year: Int
-        var id: Int { year }
-    }
-
     /// Jahr für die Karte „Dein Hörjahr“: im Januar das Vorjahr, sonst das
     /// laufende; fehlen dort Einträge, das letzte Jahr mit Einträgen.
     private var yearInReviewCardYear: Int? {

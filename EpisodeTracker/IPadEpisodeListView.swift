@@ -58,6 +58,9 @@ private struct IPadEpisodeListView: View {
     @State private var showingSaveFilterAlert = false
     @State private var saveFilterName = ""
     @State private var showingNewsOverview = false
+    @State private var yearInReviewSelection: YearInReviewSelection?
+    @AppStorage(CatalogUpdateBannerRow.dismissedFingerprintKey) private var dismissedCatalogBannerFingerprint = ""
+    @AppStorage(YearInReviewBanner.dismissedYearKey) private var dismissedYearInReviewBannerYear = 0
 
     /// Badge am Neuigkeiten-Symbol: unabhängig vom `NewsOverviewView`, das seine
     /// eigenen Ereignisse erst beim Öffnen als gesehen markiert. Gleiche
@@ -123,6 +126,45 @@ private struct IPadEpisodeListView: View {
             catalogEpisodeDeltas: EpisodeCatalog.shared.catalogEpisodeDeltas,
             activeCatalogIDs: ActiveCatalogStore().activeIDs
         ) ?? EpisodeCatalog.shared.removedCatalogBanner
+    }
+
+    /// Das Katalog-Banner, wie es tatsächlich erscheint: geschlossene zählen
+    /// nicht, sonst halten sie Hörjahr-Banner und Ankündigung zurück.
+    private var visibleCatalogUpdateBanner: CatalogUpdateBannerRecommendation? {
+        catalogUpdateBanner.flatMap { $0.fingerprint == dismissedCatalogBannerFingerprint ? nil : $0 }
+    }
+
+    /// Jahr für das Hörjahr-Banner. Gleiche Regel wie die Feature-Ankündigung:
+    /// nur ohne Katalog-Banner, Filter und Suche, damit nie zwei Banner
+    /// übereinander stehen.
+    private var yearInReviewBannerYear: Int? {
+        guard EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: visibleCatalogUpdateBanner != nil,
+            hasActiveFilter: controls.hasActiveFilter,
+            searchText: controls.searchText
+        ) else { return nil }
+        return YearInReviewBanner.pendingYear(
+            episodes: episodes,
+            dismissedYear: dismissedYearInReviewBannerYear,
+            accentsEnabled: seasonalAccentsEnabled
+        )
+    }
+
+    @ViewBuilder
+    private var yearInReviewBannerRow: some View {
+        if let year = yearInReviewBannerYear {
+            YearInReviewBannerRow(
+                year: year,
+                style: .sidebar,
+                onOpen: {
+                    yearInReviewSelection = YearInReviewSelection(year: year)
+                    dismissedYearInReviewBannerYear = year
+                },
+                onDismiss: {
+                    withAnimation { dismissedYearInReviewBannerYear = year }
+                }
+            )
+        }
     }
 
     var body: some View {
@@ -233,6 +275,9 @@ private struct IPadEpisodeListView: View {
         .sheet(isPresented: $showingNewsOverview) {
             NewsOverviewView(initialFocus: .baldVerfuegbar)
         }
+        .sheet(item: $yearInReviewSelection) { selection in
+            YearInReviewView(episodes: episodes, year: selection.year)
+        }
         .task {
             await EpisodeCatalog.shared.refreshUpcomingReleasesIfNeeded()
         }
@@ -290,8 +335,9 @@ private struct IPadEpisodeListView: View {
         moodFilterRow
 
         CatalogUpdateBannerRow(recommendation: catalogUpdateBanner, style: .sidebar)
-        if EpisodeListOrganizer.shouldShowFeatureAnnouncement(
-            hasCatalogBanner: catalogUpdateBanner != nil,
+        yearInReviewBannerRow
+        if yearInReviewBannerYear == nil, EpisodeListOrganizer.shouldShowFeatureAnnouncement(
+            hasCatalogBanner: visibleCatalogUpdateBanner != nil,
             hasActiveFilter: controls.hasActiveFilter,
             searchText: controls.searchText
         ) {

@@ -119,3 +119,38 @@ final class YearInReviewEngineTests: XCTestCase {
         XCTAssertEqual(YearInReviewEngine.defaultYear(on: date(2026, 6, 1), calendar: calendar), 2026)
     }
 }
+
+final class YearInReviewBannerTests: XCTestCase {
+    private var calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return calendar
+    }()
+
+    private func date(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    func testWindowRunsFromDecember27ToJanuary6() {
+        XCTAssertNil(YearInReviewBanner.year(on: date(2026, 12, 26), calendar: calendar))
+        XCTAssertEqual(YearInReviewBanner.year(on: date(2026, 12, 27), calendar: calendar), 2026)
+        XCTAssertEqual(YearInReviewBanner.year(on: date(2027, 1, 6), calendar: calendar), 2026)
+        XCTAssertNil(YearInReviewBanner.year(on: date(2027, 1, 7), calendar: calendar))
+    }
+
+    func testPendingYearNeedsEntriesToggleAndNoDismissal() {
+        let tkkg = Universe(name: "TKKG")
+        let episodes = [
+            Episode(episodeNumber: 1, title: "Folge 1", releaseYear: 2000, isListened: true,
+                    listenCount: 1, lastListenedAt: date(2026, 5, 1), universe: tkkg)
+        ]
+        let now = date(2026, 12, 28)
+
+        XCTAssertEqual(YearInReviewBanner.pendingYear(episodes: episodes, dismissedYear: 0, accentsEnabled: true, on: now, calendar: calendar), 2026)
+        XCTAssertNil(YearInReviewBanner.pendingYear(episodes: episodes, dismissedYear: 2026, accentsEnabled: true, on: now, calendar: calendar))
+        XCTAssertNil(YearInReviewBanner.pendingYear(episodes: episodes, dismissedYear: 0, accentsEnabled: false, on: now, calendar: calendar))
+        XCTAssertNil(YearInReviewBanner.pendingYear(episodes: [], dismissedYear: 0, accentsEnabled: true, on: now, calendar: calendar))
+        // Weggeklicktes Vorjahr hält das neue Jahr nicht auf.
+        XCTAssertEqual(YearInReviewBanner.pendingYear(episodes: episodes, dismissedYear: 2025, accentsEnabled: true, on: now, calendar: calendar), 2026)
+    }
+}
