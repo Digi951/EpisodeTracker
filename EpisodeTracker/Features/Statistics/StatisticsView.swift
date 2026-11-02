@@ -22,7 +22,8 @@ struct StatisticsView: View {
             items.append(
                 StatisticsOverviewItem(
                     kind: .averageRating,
-                    value: String(format: "%.1f ⭐", avg)
+                    // Lokalisiertes Dezimaltrennzeichen ("3,9" in DE/FR) statt "%.1f".
+                    value: "\(avg.formatted(.number.precision(.fractionLength(1)))) ⭐"
                 )
             )
         }
