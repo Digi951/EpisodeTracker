@@ -1,7 +1,15 @@
-This version gives you news at a glance and a third language.
+This version makes AudioPlayLog clearer and keeps you company through December.
 
-• News: What used to be just "Coming soon" since 1.17 is now a complete overview: newly released episodes, announced release dates, and new series are now gathered under one icon, including a bookmark action right from the list.
+• Calmer list: Unplayed episodes stand out right away, played ones step back. Your progress sits in a slim line above the list.
 
-• Now also in French: AudioPlayLog now speaks French, including two curated French audio drama series to start. In the catalog settings, you can subscribe to multiple languages at once.
+• Up Next: At the top you now get a concrete suggestion for what to listen to next. Not in the mood? Tap "Another Suggestion".
+
+• Add episodes by search: Type the number or part of the title, and AudioPlayLog finds the episode in your catalogs. Title, number and year are filled in for you.
+
+• Christmas episodes: From December 1 to 26, Up Next gathers advent calendars and Christmas specials from your catalogs. Not your thing? Turn off "Seasonal touches" in Settings.
+
+• Your listening year: Statistics now has your year in review with favorite series, strongest month and your top 3. Share it as an image.
+
+Plus a clearer detail view, reorganized settings and more improvements under the hood.
 
 Enjoy your listening!

@@ -1,7 +1,15 @@
-Diese Version bringt dir Neuigkeiten auf einen Blick und eine dritte Sprache.
+Diese Version macht HörspielLog übersichtlicher und begleitet dich durch den Dezember.
 
-• Neuigkeiten: Was seit 1.17 nur „Bald verfügbar" zeigte, ist jetzt ein vollständiger Überblick: neu erschienene Folgen, angekündigte Termine und neue Reihen findest du gesammelt unter einem Symbol, inklusive Merkliste-Aktion direkt aus der Liste.
+• Ruhigere Liste: Offene Folgen fallen sofort auf, gehörte treten zurück. Dein Hörstand steht in einer schlanken Zeile über der Liste.
 
-• Jetzt auch auf Französisch: HörspielLog spricht jetzt Französisch, inklusive zweier kuratierter französischer Hörspielreihen zum Start. In den Katalogeinstellungen kannst du mehrere Sprachen gleichzeitig abonnieren.
+• Als nächstes: Oben wartet jetzt ein konkreter Vorschlag, was du als Nächstes hören kannst. Passt er gerade nicht, tippst du auf „Anderer Vorschlag“.
+
+• Neue Folge per Suche: Tippe die Nummer oder einen Teil des Titels, und HörspielLog findet die Folge in deinen Katalogen. Titel, Nummer und Jahr werden übernommen.
+
+• Weihnachtsfolgen: Vom 1. bis 26. Dezember sammelt „Als nächstes“ Adventskalender und Weihnachtsspecials aus deinen Katalogen. Wer das nicht mag, schaltet „Saisonale Akzente“ in den Einstellungen aus.
+
+• Dein Hörjahr: In der Statistik wartet dein Jahresrückblick mit Lieblingsreihe, stärkstem Monat und deinen Top 3. Als Bild kannst du ihn mit anderen teilen.
+
+Dazu kommen eine klarere Detailansicht, neu geordnete Einstellungen und weitere Verbesserungen unter der Haube.
 
 Viel Freude beim Hören!
