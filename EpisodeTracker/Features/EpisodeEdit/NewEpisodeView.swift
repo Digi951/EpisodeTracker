@@ -9,8 +9,8 @@ struct NewEpisodeView: View {
     @AppStorage(AppAccentColor.storageKey) private var appAccentColorRawValue: String = AppAccentColor.defaultValue.rawValue
 
     @State private var query = ""
-    @State private var isSearchPresented = true
     @State private var selection: Selection?
+    @FocusState private var isSearchFieldFocused: Bool
 
     /// Ziel des Formulars; `entry == nil` ist „Ohne Katalog anlegen“.
     private struct Selection: Identifiable, Hashable {
@@ -100,22 +100,14 @@ struct NewEpisodeView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Neue Folge")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(
-            text: $query,
-            isPresented: $isSearchPresented,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text(String(localized: "NewEpisode.Search.Prompt", defaultValue: "Nummer oder Titel"))
-        )
-        // Die Suche ist beim Öffnen aktiv; iOS blendet dabei Titel und
-        // „Abbrechen“ aus und zeigt nur das X der Suche. Das X beendete bloß
-        // die Suche, danach tauchte „Abbrechen“ auf. Jetzt schließt es das
-        // Sheet wie „Abbrechen“. Nicht beim Wechsel ins Formular: Da endet
-        // die Suche auch, aber `selection` ist dann schon gesetzt.
-        .onChange(of: isSearchPresented) { _, isPresented in
-            if !isPresented, selection == nil {
-                dismiss()
-            }
+        // Eigenes Suchfeld statt `.searchable`: Dessen Suche wird erst nach
+        // dem Einblenden des Sheets aktiv, dann verschwanden „Abbrechen“ und
+        // Titel sichtbar wieder. So bleibt die Leiste stehen, nur die
+        // Tastatur fährt hoch.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            searchField
         }
+        .onAppear { isSearchFieldFocused = true }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -129,6 +121,37 @@ struct NewEpisodeView: View {
                 onSaved: { dismiss() }
             )
         }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField(
+                String(localized: "NewEpisode.Search.Prompt", defaultValue: "Nummer oder Titel"),
+                text: $query
+            )
+            .focused($isSearchFieldFocused)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .submitLabel(.search)
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Suche löschen"))
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 9)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(.systemGroupedBackground))
     }
 
     private func resultRow(_ result: CatalogEpisodeSearch.Result) -> some View {
